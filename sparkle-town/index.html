@@ -267,7 +267,7 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 <script>
 /* Every spoken line. Recorded clips live in voice/<id>.m4a; if a clip is missing the device voice reads the text. */
 var LINES = {
-  hello: "Hi! Welcome to Sparkle Town! Where do you want to go?",
+  hello: "Welcome to Sparkle Town! Where do you want to go?",
   pl_shop: "Shop!", pl_babysit: "Babysitting!", pl_abc: "A, B, C!", pl_dress: "Dress up!",
   shop_hi: "Welcome to the shop! Drag what you want into the basket.",
   item_apple: "An apple! One coin.", item_banana: "A banana! One coin.", item_carrot: "A carrot! One coin.", item_straw: "Strawberries! One coin.",
@@ -301,15 +301,29 @@ Object.keys(ABC).forEach(function (k) { LINES['l_' + k] = k + '!'; LINES['m_' + 
 
 (function () {
   'use strict';
-  var VERSION = '1.1.0';
-  var KEY = 'sparkletown_v1';
+  var VERSION = '1.2.0';
+  var KEY = 'sparkletown_v1', PKEY = 'sparkletown_players';
   var $ = function (id) { return document.getElementById(id); };
 
   /* ---------- save ---------- */
-  var S = { name: '', coins: 3, owned: {}, look: { hair: '#6b3e26', dress: '#ff6fb5', acc: [] }, stickers: 0, sound: true, music: true, cares: 0, rounds: 0 };
-  try { var raw = localStorage.getItem(KEY); if (raw) { var o = JSON.parse(raw); for (var k in o) S[k] = o[k]; } } catch (e) { }
-  if (S.music === undefined) S.music = true;
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+  function defaults() { return { name: '', coins: 3, owned: {}, look: { hair: '#6b3e26', dress: '#ff6fb5', acc: [] }, stickers: 0, sound: true, music: true, cares: 0, rounds: 0 }; }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { } }
+  var players = []; try { players = JSON.parse(lsGet(PKEY)) || []; } catch (e) { players = []; }
+  // one-time move of the single save from versions 1.0/1.1 into the first player
+  if (!players.length && lsGet(KEY)) { try { var old = JSON.parse(lsGet(KEY)); players = [{ id: 'p1', name: old.name || 'Player 1' }]; lsSet(KEY + '_p1', lsGet(KEY)); lsSet(PKEY, JSON.stringify(players)); } catch (e) { } }
+  var S = defaults(), cur = null;
+  function loadPlayer(id) {
+    var d = defaults(); try { var o = JSON.parse(lsGet(KEY + '_' + id)); if (o) for (var k in o) d[k] = o[k]; } catch (e) { }
+    Object.keys(S).forEach(function (k) { delete S[k]; }); for (var k2 in d) S[k2] = d[k2];
+    cur = id; lsSet('sparkletown_last', id);
+  }
+  function savePlayers() { lsSet(PKEY, JSON.stringify(players)); }
+  function save() {
+    if (!cur) return; lsSet(KEY + '_' + cur, JSON.stringify(S));
+    players.forEach(function (p) { if (p.id === cur && S.name) p.name = S.name; }); savePlayers();
+  }
 
   /* ---------- audio engine ---------- */
   var ac = null, master, sfxBus, voiceBus, musicBus;
@@ -357,6 +371,7 @@ Object.keys(ABC).forEach(function (k) { LINES['l_' + k] = k + '!'; LINES['m_' + 
   }
   if (window.speechSynthesis) { pickDeviceVoice(); speechSynthesis.onvoiceschanged = pickDeviceVoice; }
   function loadClip(id) {
+    if (id.charAt(0) === '~') return Promise.resolve(null);
     if (clipCache[id] !== undefined) return clipCache[id];
     var a = audio();
     clipCache[id] = (!a || !window.fetch) ? Promise.resolve(null) : fetch('voice/' + id + '.m4a').then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
@@ -376,7 +391,7 @@ Object.keys(ABC).forEach(function (k) { LINES['l_' + k] = k + '!'; LINES['m_' + 
       }
       return new Promise(function (res) {
         if (!window.speechSynthesis) return res();
-        var u = new SpeechSynthesisUtterance(LINES[id] || id); if (dev) u.voice = dev; u.rate = 0.95; u.pitch = 1.05;
+        var u = new SpeechSynthesisUtterance(id.charAt(0) === '~' ? id.slice(1) : (LINES[id] || id)); if (dev) u.voice = dev; u.rate = 0.95; u.pitch = 1.05;
         var done = false, fin = function () { if (!done) { done = true; duck(false); res(); } };
         u.onend = u.onerror = fin; setTimeout(fin, 6000); duck(true); speechSynthesis.speak(u);
       });
@@ -548,7 +563,7 @@ Object.keys(ABC).forEach(function (k) { LINES['l_' + k] = k + '!'; LINES['m_' + 
   function initHome(quiet) {
     $('hello').textContent = 'Hi, ' + (S.name || 'friend') + '! 💖';
     $('stickers').textContent = (S.stickerList || []).join(' ');
-    if (!quiet && started) say('hello');
+    if (!quiet && started) say(S.name ? ['~Hi, ' + S.name + '!', 'hello'] : 'hello');
   }
   document.querySelectorAll('.place').forEach(function (p) { p.addEventListener('pointerdown', function () { say('pl_' + p.getAttribute('data-go')); }); });
 
@@ -783,30 +798,50 @@ Object.keys(ABC).forEach(function (k) { LINES['l_' + k] = k + '!'; LINES['m_' + 
     sfx.tap(); stopVoice();
     modal('<h2>For grown-ups</h2><p>Player name</p><input id="pName" maxlength="16" value="' + esc(S.name) + '" placeholder="First name">' +
       '<div class="btns"><button class="bigbtn green" id="pSave">Save</button></div>' +
-      '<div class="btns"><button class="small" id="pCoins">Add 5 coins</button><button class="small" id="pReset">Start over</button><button class="small" id="pClose">Close</button></div>' +
+      '<div class="btns"><button class="small" id="pSwitch">👥 Switch player</button><button class="small" id="pCoins">Add 5 coins</button><button class="small" id="pReset">Start this player over</button><button class="small" id="pRemove">Remove this player</button><button class="small" id="pClose">Close</button></div>' +
       '<p style="font-size:14px;opacity:.6">Sparkle Town ' + VERSION + ' · works offline · nothing leaves this device</p>', function (b) {
       b.querySelector('#pSave').onclick = function () { S.name = b.querySelector('#pName').value.trim().slice(0, 16); save(); closeModal(); go(current, true); };
       b.querySelector('#pCoins').onclick = function () { S.coins += 5; save(); renderCoins(); bumpPiggy(); sfx.coin(); };
-      b.querySelector('#pReset').onclick = function () { var r = b.querySelector('#pReset'); r.textContent = 'Tap again to erase'; r.onclick = function () { try { localStorage.removeItem(KEY); } catch (e) { } location.reload(); }; };
+      b.querySelector('#pSwitch').onclick = function () { closeModal(); whoPlays(); };
+      b.querySelector('#pReset').onclick = function () { var r = b.querySelector('#pReset'); r.textContent = 'Tap again to start over'; r.onclick = function () { var n = S.name, snd = S.sound, mus = S.music, d = defaults(); Object.keys(S).forEach(function (k) { delete S[k]; }); for (var k in d) S[k] = d[k]; S.name = n; S.sound = snd; S.music = mus; save(); closeModal(); renderCoins(); go('home', true); }; };
+      b.querySelector('#pRemove').onclick = function () { var r = b.querySelector('#pRemove'); r.textContent = 'Tap again to remove ' + (S.name || 'player'); r.onclick = function () { lsDel(KEY + '_' + cur); players = players.filter(function (p) { return p.id !== cur; }); savePlayers(); cur = null; closeModal(); whoPlays(); }; };
       b.querySelector('#pClose').onclick = closeModal;
     });
   }
 
   /* ---------- start ---------- */
-  function begin() { started = true; audio(); sfx.yay(); go('home'); }
-  function welcome() {
-    modal('<div class="em">✨🏡✨</div><h2>Welcome to Sparkle Town!</h2><p>What is your name?</p><input id="wName" maxlength="16" placeholder="Your name">' +
-      '<div class="btns"><button class="bigbtn green" id="wGo">Let’s play! ▶</button></div>', function (b) {
-      b.querySelector('#wGo').onclick = function () { S.name = b.querySelector('#wName').value.trim().slice(0, 16); S.started = 1; save(); closeModal(); begin(); };
+  function begin(id) {
+    loadPlayer(id); renderCoins(); renderToggles();
+    if (!S.music) stopMusic();
+    started = true; audio(); sfx.yay(); go('home');
+  }
+  var COLORS = ['#ff5fae', '#4fb6ff', '#8f5cff', '#ffb21f', '#2fc77a', '#ff7a59'];
+  function whoPlays() {
+    stopVoice();
+    if (!players.length) return newPlayer(true);
+    modal('<div class="em" style="font-size:clamp(56px,12vmin,110px)">✨🏡✨</div><h2>Who’s playing?</h2><div class="btns">' +
+      players.map(function (p, i) { return '<button class="bigbtn" data-pid="' + p.id + '" style="background:' + COLORS[i % COLORS.length] + ';box-shadow:0 6px 0 #0003">' + esc(p.name) + '</button>'; }).join('') +
+      '<button class="bigbtn green" id="wNew">＋ New player</button></div>', function (b) {
+      b.querySelectorAll('[data-pid]').forEach(function (el) { el.onclick = function () { closeModal(); begin(el.getAttribute('data-pid')); }; });
+      b.querySelector('#wNew').onclick = function () { newPlayer(false); };
     });
   }
-  function tapToPlay() {
-    modal('<div class="em">✨🏡✨</div><h2>Sparkle Town</h2><div class="btns"><button class="bigbtn green" id="wGo">▶ Play</button></div>', function (b) {
-      b.querySelector('#wGo').onclick = function () { closeModal(); begin(); };
+  function newPlayer(first) {
+    modal('<div class="em">✨🏡✨</div><h2>' + (first ? 'Welcome to Sparkle Town!' : 'New player') + '</h2><p>What is your name?</p><input id="wName" maxlength="16" placeholder="Your name">' +
+      '<div class="btns"><button class="bigbtn green" id="wGo">Let’s play! ▶</button>' + (first ? '' : '<button class="bigbtn" id="wBack">Back</button>') + '</div>', function (b) {
+      var inp = b.querySelector('#wName');
+      b.querySelector('#wGo').onclick = function () {
+        var name = inp.value.trim().slice(0, 16);
+        if (!name) { inp.focus(); inp.style.borderColor = '#ff5fae'; return; }
+        var id = 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1000);
+        players.push({ id: id, name: name }); savePlayers();
+        loadPlayer(id); S.name = name; save(); closeModal(); begin(id);
+      };
+      var back = b.querySelector('#wBack'); if (back) back.onclick = whoPlays;
     });
   }
-  renderCoins(); renderToggles(); go('home', true);
-  if (!S.started) welcome(); else tapToPlay();
+  renderToggles(); go('home', true);
+  whoPlays();
 
   /* ---------- offline + updates ---------- */
   if ('serviceWorker' in navigator && /^http/.test(location.protocol)) {
@@ -818,7 +853,7 @@ Object.keys(ABC).forEach(function (k) { LINES['l_' + k] = k + '!'; LINES['m_' + 
     var reloaded = false, hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
   }
-  window.ST = { S: S, go: go, version: VERSION, say: say, LINES: LINES };
+  window.ST = { S: S, go: go, version: VERSION, say: say, LINES: LINES, players: function () { return players; } };
 })();
 </script>
 </body>

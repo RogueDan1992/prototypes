@@ -1,5 +1,5 @@
 /* Sparkle Town offline service worker. Cache-first; one cache per version (bump VERSION in index.html and here). */
-var CACHE = 'sparkle-town-1.1.0';
+var CACHE = 'sparkle-town-1.2.0';
 var FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png", "./fonts/fredoka-latin-600-normal.woff2", "./fonts/fredoka-latin-700-normal.woff2"];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); })); });
 self.addEventListener('activate', function (e) {
