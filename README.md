@@ -5,4 +5,4 @@ Shareable prototypes and games. Each folder is one prototype, published with Git
 
 | Prototype | Link |
 |---|---|
-| From Nothing (kids money game) | https://roguedan1992.github.io/prototypes/from-nothing/ |
+| Penny to Plenty (kids money and life-choices game) | https://roguedan1992.github.io/prototypes/penny-to-plenty/ |

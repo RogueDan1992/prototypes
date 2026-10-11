@@ -1,7 +1,7 @@
 {
- "name": "From Nothing",
- "short_name": "From Nothing",
- "description": "Build your future from nothing: a money and life simulator for kids.",
+ "name": "Penny to Plenty",
+ "short_name": "Penny to Plenty",
+ "description": "Start with a penny, build a life: a money and life-choices game for kids.",
  "display": "standalone",
  "start_url": "./",
  "scope": "./",
