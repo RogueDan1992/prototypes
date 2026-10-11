@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Sparkle Town</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sparkle Town">
+<meta name="theme-color" content="#ff7ac6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root {
+  --pink: #ff6fb5; --purple: #9b6bff; --sky1: #8fd3ff; --sky2: #ffd6f0; --grass: #7ee08a;
+  --ink: #3b2a5a; --gold: #ffc93c; --card: #ffffffee;
+  --big: clamp(22px, 4.2vmin, 40px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html, body { margin: 0; height: 100%; overflow: hidden; touch-action: manipulation; }
+body {
+  font-family: "Chalkboard SE", "Comic Sans MS", "Marker Felt", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  color: var(--ink); background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 70%, #fff3fb 100%);
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+.screen { position: absolute; inset: 0; display: none; flex-direction: column; padding: calc(env(safe-area-inset-top) + 76px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 14px); }
+.screen.on { display: flex; animation: popin .35s ease; }
+@keyframes popin { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+
+/* top bar */
+#top { position: fixed; z-index: 20; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) 8px calc(env(safe-area-inset-left) + 12px); }
+.round { width: 60px; height: 60px; border-radius: 50%; background: var(--card); box-shadow: 0 4px 0 #0001, 0 6px 16px #0002; display: grid; place-items: center; font-size: 32px; flex: none; }
+.round:active { transform: scale(.92); }
+#homeBtn.hide { visibility: hidden; }
+#piggy { display: flex; align-items: center; gap: 6px; padding: 6px 18px 6px 10px; border-radius: 40px; background: var(--card); box-shadow: 0 4px 0 #0001, 0 6px 16px #0002; font-size: 34px; font-weight: 800; }
+#piggy .pig { font-size: 40px; }
+#piggy.bump { animation: bump .4s; }
+@keyframes bump { 40% { transform: scale(1.18); } }
+.spacer { flex: 1; }
+#parentBtn { font-size: 22px; width: 46px; height: 46px; opacity: .65; }
+
+/* coins */
+.coin { display: inline-grid; place-items: center; width: 1.1em; height: 1.1em; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff7c2, var(--gold) 45%, #e89b00); box-shadow: inset 0 -3px 0 #c97f00; color: #a35f00; font-weight: 900; font-size: .9em; line-height: 1; }
+.coin::after { content: "★"; font-size: .6em; }
+.coins { display: inline-flex; gap: 3px; }
+
+/* home / town */
+#home { justify-content: center; align-items: center; }
+.title { font-size: clamp(36px, 8vmin, 84px); font-weight: 900; margin: 0 0 1vmin; letter-spacing: .02em; color: #fff; text-shadow: 0 4px 0 var(--pink), 0 8px 18px #b0459a66; text-align: center; }
+.hello { font-size: var(--big); margin: 0 0 3vmin; text-align: center; }
+.town { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3vmin; width: min(92vw, 820px); }
+@media (min-aspect-ratio: 4/3) { .town { grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(96vw, 1100px); } }
+.place { position: relative; border-radius: 32px; padding: 3vmin 1vmin 2vmin; background: var(--card); box-shadow: 0 8px 0 #0001, 0 10px 24px #6b3c9a33; display: flex; flex-direction: column; align-items: center; gap: 1vmin; animation: bob 3s ease-in-out infinite; }
+.place:nth-child(2) { animation-delay: .4s; } .place:nth-child(3) { animation-delay: .8s; } .place:nth-child(4) { animation-delay: 1.2s; }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+.place:active { transform: scale(.95); }
+.place .ico { font-size: clamp(64px, 14vmin, 130px); line-height: 1; filter: drop-shadow(0 6px 6px #0002); }
+.place .lbl { font-size: var(--big); font-weight: 800; }
+.place.shop { border: 6px solid #ff9ad0; } .place.sit { border: 6px solid #9fd8ff; } .place.abc { border: 6px solid #ffd76a; } .place.dress { border: 6px solid #c7a7ff; }
+.stickers { margin-top: 3vmin; font-size: clamp(26px, 5vmin, 44px); min-height: 1.2em; text-align: center; max-width: 92vw; }
+.sun { position: fixed; top: 9vmin; right: 6vmin; font-size: 12vmin; opacity: .9; animation: spin 30s linear infinite; pointer-events: none; z-index: -1; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.cloud { position: fixed; font-size: 14vmin; opacity: .8; pointer-events: none; z-index: -1; animation: drift 60s linear infinite; }
+@keyframes drift { from { transform: translateX(-30vw); } to { transform: translateX(130vw); } }
+.grass { position: fixed; left: 0; right: 0; bottom: 0; height: 12vh; background: linear-gradient(180deg, var(--grass), #4fc46b); border-radius: 50% 50% 0 0 / 30% 30% 0 0; z-index: -1; }
+
+/* panels shared */
+.panel { background: var(--card); border-radius: 32px; box-shadow: 0 8px 24px #6b3c9a2a; padding: 2vmin; }
+.stage { flex: 1; display: flex; gap: 2vmin; min-height: 0; }
+@media (max-aspect-ratio: 1/1) { .stage { flex-direction: column; } }
+.prompt { font-size: var(--big); font-weight: 800; text-align: center; margin: 0 0 1.5vmin; }
+.bigbtn { font-size: var(--big); font-weight: 900; padding: .45em 1.1em; border-radius: 40px; background: linear-gradient(180deg, #ff8fd0, var(--pink)); color: #fff; box-shadow: 0 6px 0 #c93e8a; text-shadow: 0 2px 0 #0002; }
+.bigbtn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c93e8a; }
+.bigbtn.green { background: linear-gradient(180deg, #8ef0a0, #34c26a); box-shadow: 0 6px 0 #1f8e48; }
+.bigbtn.green:active { box-shadow: 0 2px 0 #1f8e48; }
+.drag { touch-action: none; cursor: grab; }
+.sel { outline: 6px solid var(--gold); outline-offset: 2px; animation: wiggle .5s ease-in-out infinite; }
+@keyframes wiggle { 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+.hint { animation: pulse .7s ease-in-out 3; }
+@keyframes pulse { 50% { transform: scale(1.18); box-shadow: 0 0 0 10px #ffc93c88; } }
+.ghost { position: fixed; z-index: 100; pointer-events: none; transform: translate(-50%, -50%) scale(1.15); font-size: clamp(60px, 12vmin, 110px); filter: drop-shadow(0 10px 10px #0003); }
+.over { box-shadow: 0 0 0 8px var(--gold) !important; }
+
+/* shop */
+.shelf { flex: 3; display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 17vmin, 150px), 1fr)); gap: 1.6vmin; align-content: start; overflow-y: auto; }
+.item { border-radius: 24px; background: #fff; box-shadow: 0 5px 0 #0001, 0 4px 12px #0001; display: flex; flex-direction: column; align-items: center; padding: 1vmin .5vmin 1.2vmin; border: 4px solid #ffe1f2; }
+.item .e { font-size: clamp(48px, 10vmin, 86px); line-height: 1.1; }
+.item .coins { font-size: clamp(18px, 3.4vmin, 28px); }
+.item.owned { opacity: .45; }
+.basket { flex: 2; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border: 6px dashed #ff9ad0; }
+.basket .bk { font-size: clamp(70px, 15vmin, 140px); }
+.basket .inbk { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; font-size: clamp(40px, 8vmin, 72px); min-height: 1.3em; }
+.basket .total { font-size: var(--big); font-weight: 900; display: flex; align-items: center; gap: 10px; }
+
+/* babysit */
+.nursery { flex: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: linear-gradient(180deg, #e7f6ff, #fff); }
+.baby { font-size: clamp(120px, 30vmin, 280px); line-height: 1; transition: transform .2s; border-radius: 50%; padding: 1vmin; }
+.baby { position: relative; } .mood { position: absolute; right: -6%; bottom: 4%; font-size: .38em; }
+.fuss { animation: fuss .6s ease-in-out infinite; } @keyframes fuss { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+.need { position: absolute; top: 4%; right: 8%; font-size: clamp(56px, 12vmin, 110px); background: #fff; border-radius: 50%; width: 1.5em; height: 1.5em; display: grid; place-items: center; box-shadow: 0 6px 18px #0002; animation: bob 1.2s ease-in-out infinite; }
+.need::after { content: ""; position: absolute; left: 6%; bottom: -6%; width: 22%; height: 22%; background: #fff; border-radius: 50%; }
+.meter { display: flex; gap: 8px; font-size: clamp(32px, 6vmin, 56px); margin-top: 1vmin; }
+.tools { flex: 2; display: grid; grid-template-columns: repeat(auto-fit, minmax(clamp(90px, 15vmin, 140px), 1fr)); gap: 1.6vmin; align-content: center; }
+.tool { border-radius: 26px; background: #fff; box-shadow: 0 5px 0 #0001, 0 4px 12px #0001; font-size: clamp(56px, 11vmin, 100px); padding: 1.5vmin 0; text-align: center; border: 4px solid #d6efff; }
+
+/* abc */
+.abcwrap { flex: 1; display: flex; gap: 3vmin; align-items: stretch; justify-content: center; }
+@media (max-aspect-ratio: 1/1) { .abcwrap { flex-direction: column; } }
+.col { flex: 1; display: flex; flex-direction: column; gap: 2vmin; justify-content: center; }
+@media (max-aspect-ratio: 1/1) { .col { flex-direction: row; } }
+.letter { flex: 1; border-radius: 28px; background: linear-gradient(180deg, #fff, #fff4d1); border: 5px solid #ffd76a; box-shadow: 0 6px 0 #e7b93d; font-size: clamp(64px, 13vmin, 130px); font-weight: 900; display: grid; place-items: center; color: var(--purple); min-height: 1.4em; }
+.letter.done { visibility: hidden; }
+.pic { flex: 1; border-radius: 28px; background: #fff; border: 5px dashed #c7a7ff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: clamp(56px, 12vmin, 120px); min-height: 1.6em; position: relative; }
+.pic .tag { position: absolute; top: 6px; left: 12px; font-size: .45em; font-weight: 900; color: var(--purple); }
+.pic.done { border-style: solid; border-color: #34c26a; background: #ecffef; }
+
+/* dress up */
+.dressroom { flex: 3; display: flex; align-items: center; justify-content: center; position: relative; background: radial-gradient(circle at 50% 40%, #fff, #f3e9ff); }
+#doll { height: 100%; max-height: 72vh; width: auto; max-width: 100%; }
+.closet { flex: 2; display: flex; flex-direction: column; gap: 1.6vmin; overflow-y: auto; }
+.row { display: flex; flex-wrap: wrap; gap: 1.2vmin; justify-content: center; }
+.sw { position: relative; width: clamp(52px, 9vmin, 80px); height: clamp(52px, 9vmin, 80px); border-radius: 50%; border: 5px solid #fff; box-shadow: 0 4px 10px #0002; }
+.acc { position: relative; width: clamp(64px, 11vmin, 96px); height: clamp(64px, 11vmin, 96px); border-radius: 22px; background: #fff; box-shadow: 0 4px 10px #0002; font-size: clamp(40px, 7vmin, 64px); display: grid; place-items: center; border: 4px solid #eadcff; }
+.acc.on, .sw.on { border-color: var(--gold); }
+.acc.locked { opacity: .35; }
+@media (max-aspect-ratio: 1/1) { .dressroom { flex: 1.1; } #doll { max-height: 38vh; } .closet { flex: 1.5; } .closet .prompt { font-size: 22px; } }
+.lock { position: absolute; right: -4px; bottom: -4px; font-size: 20px; }
+.flash { position: fixed; inset: 0; background: #fff; z-index: 90; animation: flash .5s forwards; pointer-events: none; }
+@keyframes flash { to { opacity: 0; } }
+
+/* overlays */
+#burst { position: fixed; inset: 0; pointer-events: none; z-index: 80; overflow: hidden; }
+.bit { position: absolute; font-size: 34px; animation: fly 1.4s ease-out forwards; }
+@keyframes fly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: 0; } }
+.flycoin { position: fixed; z-index: 85; font-size: 44px; transition: transform .7s cubic-bezier(.5,-0.3,.6,1), opacity .7s; pointer-events: none; }
+#modal { position: fixed; inset: 0; z-index: 70; background: #3b2a5a88; display: none; align-items: center; justify-content: center; padding: 20px; }
+#modal.on { display: flex; }
+#modal .box { background: #fff; border-radius: 34px; padding: 4vmin; max-width: 640px; width: 100%; text-align: center; box-shadow: 0 20px 50px #0004; animation: popin .3s; }
+#modal h2 { font-size: clamp(30px, 6vmin, 52px); margin: 0 0 2vmin; }
+#modal .em { font-size: clamp(80px, 18vmin, 160px); line-height: 1.1; }
+#modal input { font: inherit; font-size: var(--big); padding: .4em .6em; border-radius: 20px; border: 4px solid #ffb6dd; width: 100%; text-align: center; margin: 1vmin 0 3vmin; color: var(--ink); -webkit-user-select: text; user-select: text; }
+#modal .btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 2vmin; }
+#modal .small { font-size: 18px; padding: 10px 18px; border-radius: 20px; background: #f1e8ff; }
+#modal p { font-size: 20px; }
+#update { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 16px); transform: translateX(-50%); z-index: 95; display: none; }
+#update.on { display: block; }
+</style>
+</head>
+<body>
+<div class="grass"></div>
+<div class="sun">☀️</div>
+<div class="cloud" style="top:8vh">☁️</div>
+<div class="cloud" style="top:20vh; animation-duration:85s; animation-delay:-40s">☁️</div>
+
+<div id="top">
+  <button class="round" id="homeBtn" aria-label="Home">🏠</button>
+  <div id="piggy" aria-label="Coins"><span class="pig">🐷</span><span class="coin"></span><span id="coinCount">0</span></div>
+  <div class="spacer"></div>
+  <button class="round" id="soundBtn" aria-label="Sound">🔊</button>
+  <button class="round" id="parentBtn" aria-label="Grown-ups">⚙️</button>
+</div>
+
+<!-- HOME -->
+<section class="screen on" id="home">
+  <h1 class="title">Sparkle Town</h1>
+  <p class="hello" id="hello"></p>
+  <div class="town">
+    <button class="place shop" data-go="shop"><span class="ico">🛍️</span><span class="lbl">Shop</span></button>
+    <button class="place sit" data-go="babysit"><span class="ico">👶</span><span class="lbl">Babysit</span></button>
+    <button class="place abc" data-go="abc"><span class="ico">🔤</span><span class="lbl">ABC</span></button>
+    <button class="place dress" data-go="dress"><span class="ico">👗</span><span class="lbl">Dress Up</span></button>
+  </div>
+  <div class="stickers" id="stickers"></div>
+</section>
+
+<!-- SHOP -->
+<section class="screen" id="shop">
+  <p class="prompt">🛍️ Drag what you want into the basket!</p>
+  <div class="stage">
+    <div class="shelf panel" id="shelf"></div>
+    <div class="basket panel" data-drop="basket" id="basket">
+      <div class="bk">🧺</div>
+      <div class="inbk" id="inBasket"></div>
+      <div class="total" id="total"></div>
+      <button class="bigbtn green" id="payBtn">Pay 💳</button>
+    </div>
+  </div>
+</section>
+
+<!-- BABYSIT -->
+<section class="screen" id="babysit">
+  <p class="prompt" id="babyPrompt">👶 What does the baby need?</p>
+  <div class="stage">
+    <div class="nursery panel">
+      <div class="baby" data-drop="baby" id="baby">👶<span class="mood" id="mood"></span></div>
+      <div class="need" id="need">🍼</div>
+      <div class="meter" id="meter"></div>
+    </div>
+    <div class="tools panel" id="tools"></div>
+  </div>
+</section>
+
+<!-- ABC -->
+<section class="screen" id="abc">
+  <p class="prompt">🔤 Drag each letter to its picture!</p>
+  <div class="abcwrap">
+    <div class="col" id="letters"></div>
+    <div class="col" id="pics"></div>
+  </div>
+</section>
+
+<!-- DRESS UP -->
+<section class="screen" id="dress">
+  <div class="stage">
+    <div class="dressroom panel" data-drop="doll" id="dollWrap">
+      <svg id="doll" viewBox="0 0 300 460" aria-label="Doll"></svg>
+    </div>
+    <div class="closet panel">
+      <p class="prompt" style="margin:0">Hair</p><div class="row" id="hairRow"></div>
+      <p class="prompt" style="margin:0">Dress</p><div class="row" id="dressRow"></div>
+      <p class="prompt" style="margin:0">Extras</p><div class="row" id="accRow"></div>
+      <div class="row"><button class="bigbtn" id="photoBtn">📸 Photo</button></div>
+    </div>
+  </div>
+</section>
+
+<div id="burst"></div>
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<button class="bigbtn green" id="update">✨ New version! Tap to update</button>
+
+<script>
+(function () {
+  'use strict';
+  var VERSION = '1.0.0';
+  var KEY = 'sparkletown_v1';
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- save ---------- */
+  var S = { name: '', coins: 3, owned: {}, look: { hair: '#6b3e26', dress: '#ff6fb5', acc: [] }, stickers: 0, sound: true, cares: 0, rounds: 0 };
+  try { var raw = localStorage.getItem(KEY); if (raw) { var o = JSON.parse(raw); for (var k in o) S[k] = o[k]; } } catch (e) { }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+
+  /* ---------- sound ---------- */
+  var ac = null;
+  function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } if (ac && ac.state === 'suspended') ac.resume(); return ac; }
+  function tone(f, t0, d, type, vol, f2) {
+    var a = audio(); if (!a || !S.sound) return;
+    var o = a.createOscillator(), g = a.createGain(), t = a.currentTime + (t0 || 0);
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + 0.05);
+  }
+  var sfx = {
+    tap: function () { tone(660, 0, .08, 'sine', .15, 880); },
+    pop: function () { tone(500, 0, .12, 'sine', .25, 1100); },
+    coin: function (i) { var d = (i || 0) * 0.18; tone(988, d, .08, 'square', .12); tone(1319, d + .08, .22, 'square', .12); },
+    yay: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, i * .09, .25, 'triangle', .2); }); tone(1568, .4, .35, 'sine', .12); },
+    oops: function () { tone(392, 0, .18, 'sine', .18, 330); tone(330, .18, .28, 'sine', .15, 262); },
+    snap: function () { tone(2000, 0, .04, 'square', .15, 400); tone(300, .05, .12, 'triangle', .2, 120); },
+    munch: function () { [0, .14, .28].forEach(function (t) { tone(180, t, .08, 'sawtooth', .08, 90); }); },
+    baby: function () { tone(880, 0, .15, 'sine', .15, 1320); tone(1100, .16, .2, 'sine', .15, 1500); },
+    song: function () { [523, 587, 659, 523, 659, 698, 784].forEach(function (f, i) { tone(f, i * .18, .2, 'sine', .18); }); }
+  };
+
+  /* ---------- voice ---------- */
+  var voice = null;
+  function pickVoice() {
+    if (!window.speechSynthesis) return;
+    var vs = speechSynthesis.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    voice = vs.filter(function (v) { return /Samantha|Karen|Moira|Tessa|Ava|Allison|Susan|Victoria|Google US English|Female/i.test(v.name); })[0] || vs[0] || null;
+  }
+  if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function say(text) {
+    if (!S.sound || !window.speechSynthesis) return;
+    try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.rate = 0.92; u.pitch = 1.2; speechSynthesis.speak(u); } catch (e) { }
+  }
+  function nm() { return S.name || 'friend'; }
+
+  /* ---------- helpers ---------- */
+  function coinsHTML(n) { var h = ''; for (var i = 0; i < n; i++) h += '<span class="coin"></span>'; return '<span class="coins">' + h + '</span>'; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function renderCoins() { $('coinCount').textContent = S.coins; }
+  function bumpPiggy() { var p = $('piggy'); p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); }
+  function burst(x, y, chars) {
+    var b = $('burst'); chars = chars || ['⭐', '✨', '💖', '🌟', '🎉'];
+    for (var i = 0; i < 18; i++) {
+      var s = document.createElement('div'); s.className = 'bit'; s.textContent = pick(chars);
+      s.style.left = x + 'px'; s.style.top = y + 'px';
+      var ang = Math.random() * Math.PI * 2, dist = 120 + Math.random() * 220;
+      s.style.setProperty('--dx', Math.cos(ang) * dist + 'px'); s.style.setProperty('--dy', Math.sin(ang) * dist + 'px'); s.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      b.appendChild(s); setTimeout(function (el) { el.remove(); }.bind(null, s), 1500);
+    }
+  }
+  function centerOf(el) { var r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
+  // coins fly from (fromEl) to (toEl); n coins, onEach(i), done()
+  function flyCoins(fromEl, toEl, n, onEach, done) {
+    var a = centerOf(fromEl), b = centerOf(toEl);
+    for (var i = 0; i < n; i++) (function (i) {
+      setTimeout(function () {
+        var c = document.createElement('div'); c.className = 'flycoin'; c.innerHTML = '<span class="coin"></span>';
+        c.style.left = (a[0] - 22) + 'px'; c.style.top = (a[1] - 22) + 'px'; document.body.appendChild(c);
+        requestAnimationFrame(function () { requestAnimationFrame(function () { c.style.transform = 'translate(' + (b[0] - a[0]) + 'px,' + (b[1] - a[1]) + 'px) scale(.8)'; }); });
+        setTimeout(function () { c.remove(); sfx.coin(); if (onEach) onEach(i); if (i === n - 1 && done) done(); }, 720);
+      }, i * 380);
+    })(i);
+    if (!n && done) done();
+  }
+  function modal(html, onReady) { $('modalBox').innerHTML = html; $('modal').classList.add('on'); if (onReady) onReady($('modalBox')); }
+  function closeModal() { $('modal').classList.remove('on'); }
+  function sticker(e) { S.stickers++; S.stickerList = (S.stickerList || []).concat([e]).slice(-30); save(); }
+
+  /* ---------- drag & tap ---------- */
+  // Any element with class "drag" and data-id can be dragged to an element with data-drop.
+  // A tap selects it (and calls onTap); tapping a drop target then drops the selected item.
+  var dragHandlers = {}; // screen -> {tap(id, el), drop(id, el, targetEl)}
+  var selected = null, drag = null;
+  function screenOf(el) { var s = el.closest('.screen'); return s ? s.id : ''; }
+  function clearSel() { if (selected) selected.classList.remove('sel'); selected = null; }
+  document.addEventListener('pointerdown', function (e) {
+    audio();
+    var el = e.target.closest('.drag'); if (!el) return;
+    drag = { el: el, x: e.clientX, y: e.clientY, moved: false, ghost: null, over: null, id: e.pointerId };
+    try { el.setPointerCapture(e.pointerId); } catch (er) { }
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 12) {
+      drag.moved = true; clearSel();
+      var g = document.createElement('div'); g.className = 'ghost'; g.innerHTML = drag.el.getAttribute('data-ghost') || drag.el.innerHTML;
+      document.body.appendChild(g); drag.ghost = g; drag.el.style.opacity = '.35'; sfx.tap();
+    }
+    if (drag.moved) {
+      drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+      var t = document.elementFromPoint(e.clientX, e.clientY); t = t && t.closest('[data-drop]');
+      if (t !== drag.over) { if (drag.over) drag.over.classList.remove('over'); if (t) t.classList.add('over'); drag.over = t; }
+    }
+  });
+  function endDrag(e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var d = drag; drag = null;
+    var h = dragHandlers[screenOf(d.el)] || {};
+    if (d.moved) {
+      d.ghost.remove(); d.el.style.opacity = '';
+      if (d.over) { d.over.classList.remove('over'); if (h.drop) h.drop(d.el.getAttribute('data-id'), d.el, d.over); }
+    } else {
+      if (selected === d.el) { clearSel(); return; }
+      clearSel(); selected = d.el; d.el.classList.add('sel'); sfx.tap();
+      if (h.tap) h.tap(d.el.getAttribute('data-id'), d.el);
+    }
+  }
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', function (e) { if (drag && drag.moved) { drag.ghost.remove(); drag.el.style.opacity = ''; if (drag.over) drag.over.classList.remove('over'); } drag = null; });
+  // tap on drop target while something is selected
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-drop]'); if (!t || !selected) return;
+    var el = selected, h = dragHandlers[screenOf(el)] || {}; clearSel();
+    if (h.drop) h.drop(el.getAttribute('data-id'), el, t);
+  });
+
+  /* ---------- navigation ---------- */
+  var current = 'home';
+  function go(id) {
+    clearSel();
+    document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
+    $('homeBtn').classList.toggle('hide', id === 'home'); current = id;
+    ({ home: initHome, shop: initShop, babysit: initBaby, abc: initAbc, dress: initDress })[id]();
+  }
+  document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { sfx.pop(); go(b.getAttribute('data-go')); }); });
+  $('homeBtn').addEventListener('click', function () { sfx.pop(); go('home'); });
+  $('soundBtn').addEventListener('click', function () { S.sound = !S.sound; save(); renderSound(); if (S.sound) { sfx.pop(); say('Sound on!'); } else if (window.speechSynthesis) speechSynthesis.cancel(); });
+  function renderSound() { $('soundBtn').textContent = S.sound ? '🔊' : '🔇'; }
+  $('piggy').addEventListener('click', function () { sfx.coin(); say('You have ' + S.coins + (S.coins === 1 ? ' coin' : ' coins') + ' in your piggy bank!'); });
+
+  /* ---------- home ---------- */
+  function initHome() {
+    $('hello').textContent = 'Hi, ' + nm() + '! Where do you want to go?';
+    $('stickers').textContent = (S.stickerList || []).join(' ');
+  }
+  document.querySelectorAll('.place').forEach(function (p) {
+    p.addEventListener('pointerdown', function () { say({ shop: 'Shop', babysit: 'Babysitting', abc: 'A B C', dress: 'Dress up' }[p.getAttribute('data-go')]); });
+  });
+
+  /* ---------- shop ---------- */
+  var ITEMS = [
+    { id: 'apple', e: '🍎', n: 'an apple', p: 1, kind: 'healthy' }, { id: 'banana', e: '🍌', n: 'a banana', p: 1, kind: 'healthy' },
+    { id: 'carrot', e: '🥕', n: 'a carrot', p: 1, kind: 'healthy' }, { id: 'straw', e: '🍓', n: 'strawberries', p: 1, kind: 'healthy' },
+    { id: 'milk', e: '🥛', n: 'milk', p: 1, kind: 'healthy' }, { id: 'cookie', e: '🍪', n: 'a cookie', p: 2, kind: 'treat' },
+    { id: 'cupcake', e: '🧁', n: 'a cupcake', p: 2, kind: 'treat' }, { id: 'balloon', e: '🎈', n: 'a balloon', p: 2, kind: 'toy' },
+    { id: 'bow', e: '🎀', n: 'a bow', p: 2, kind: 'wear' }, { id: 'glasses', e: '🕶️', n: 'sunglasses', p: 2, kind: 'wear' },
+    { id: 'flower', e: '🌸', n: 'a flower', p: 2, kind: 'wear' }, { id: 'crown', e: '👑', n: 'a crown', p: 3, kind: 'wear' },
+    { id: 'hat', e: '👒', n: 'a sun hat', p: 3, kind: 'wear' }, { id: 'sparkle', e: '✨', n: 'a sparkle dress', p: 3, kind: 'wear' },
+    { id: 'rainbow', e: '🌈', n: 'a rainbow dress', p: 3, kind: 'wear' }
+  ];
+  var byId = {}; ITEMS.forEach(function (i) { byId[i.id] = i; });
+  var basket = [];
+  function initShop() {
+    basket = [];
+    $('shelf').innerHTML = ITEMS.map(function (it) {
+      var owned = it.kind === 'wear' && S.owned[it.id];
+      return '<div class="item drag' + (owned ? ' owned' : '') + '" data-id="' + it.id + '" data-ghost="' + it.e + '"><div class="e">' + it.e + '</div>' + (owned ? '<div style="font-size:22px">✔️</div>' : coinsHTML(it.p)) + '</div>';
+    }).join('');
+    renderBasket();
+    say('Welcome to the shop, ' + nm() + '! Drag what you want into the basket.');
+  }
+  function basketTotal() { return basket.reduce(function (t, id) { return t + byId[id].p; }, 0); }
+  function renderBasket() {
+    $('inBasket').innerHTML = basket.map(function (id, i) { return '<span data-i="' + i + '" class="bkit">' + byId[id].e + '</span>'; }).join('');
+    var t = basketTotal(); $('total').innerHTML = t ? coinsHTML(t) : '';
+    $('payBtn').style.visibility = t ? 'visible' : 'hidden';
+  }
+  $('inBasket').addEventListener('click', function (e) { var s = e.target.closest('.bkit'); if (!s) return; basket.splice(+s.getAttribute('data-i'), 1); sfx.pop(); renderBasket(); });
+  dragHandlers.shop = {
+    tap: function (id) { var it = byId[id]; say(it.n + '. ' + it.p + (it.p === 1 ? ' coin.' : ' coins.')); },
+    drop: function (id) {
+      var it = byId[id];
+      if (it.kind === 'wear' && (S.owned[id] || basket.indexOf(id) >= 0)) { sfx.oops(); say('You already have ' + it.n + '!'); return; }
+      if (basket.length >= 6) { sfx.oops(); say('Your basket is full!'); return; }
+      basket.push(id); sfx.pop(); renderBasket();
+      var t = basketTotal(); say(it.n + '! That makes ' + t + (t === 1 ? ' coin.' : ' coins.'));
+    }
+  };
+  $('payBtn').addEventListener('click', function () {
+    var t = basketTotal(); if (!t) return;
+    if (t > S.coins) {
+      sfx.oops(); var need = t - S.coins;
+      say('Oh no! You need ' + need + ' more ' + (need === 1 ? 'coin' : 'coins') + '. Let’s go babysitting to earn more!');
+      modal('<div class="em">🐷💭</div><h2>Need ' + need + ' more ' + coinsHTML(need) + '</h2><div class="btns"><button class="bigbtn green" id="mGo">👶 Earn coins</button><button class="bigbtn" id="mOk">OK</button></div>', function (b) {
+        b.querySelector('#mGo').onclick = function () { closeModal(); go('babysit'); };
+        b.querySelector('#mOk').onclick = function () { closeModal(); };
+      });
+      return;
+    }
+    var bought = basket.slice(); basket = []; renderBasket();
+    say('Let’s count! ');
+    flyCoins($('piggy'), $('basket'), t, function (i) { S.coins--; renderCoins(); say(String(i + 1)); }, function () {
+      var healthy = bought.some(function (id) { return byId[id].kind === 'healthy'; });
+      var wear = bought.filter(function (id) { return byId[id].kind === 'wear'; });
+      wear.forEach(function (id) { S.owned[id] = true; });
+      if (healthy) sticker('🍎');
+      save(); sfx.yay(); var c = centerOf($('basket')); burst(c[0], c[1]);
+      var msg = 'Thank you for shopping! ';
+      if (healthy) msg += 'Yum! Fruits and veggies help you grow big and strong! ';
+      if (bought.some(function (id) { return byId[id].kind === 'treat'; })) msg += 'A treat is fun sometimes. ';
+      if (wear.length) msg += 'Your new things are in the dress up closet!';
+      setTimeout(function () { say(msg); }, 300);
+      modal('<div class="em">' + bought.map(function (id) { return byId[id].e; }).join('') + '</div><h2>You bought it!</h2>' + (healthy ? '<p style="font-size:28px">🍎 Healthy sticker!</p>' : '') +
+        '<div class="btns">' + (wear.length ? '<button class="bigbtn" id="mDress">👗 Dress up</button>' : '') + '<button class="bigbtn green" id="mOk">Yay!</button></div>', function (b) {
+        b.querySelector('#mOk').onclick = function () { closeModal(); initShop(); };
+        var d = b.querySelector('#mDress'); if (d) d.onclick = function () { closeModal(); go('dress'); };
+        if (bought.some(function (id) { return byId[id].kind === 'healthy' || byId[id].kind === 'treat'; })) sfx.munch();
+      });
+    });
+  });
+
+  /* ---------- babysit ---------- */
+  var NEEDS = [
+    { need: '🍼', tool: 'bottle', face: '😢', say: 'The baby is hungry! Give the baby a bottle.' },
+    { need: '😴', tool: 'blanket', face: '🥱', say: 'The baby is sleepy. Put the baby to bed.' },
+    { need: '🧸', tool: 'teddy', face: '🥺', say: 'The baby wants to play! Find a toy.' },
+    { need: '🛁', tool: 'bath', face: '😣', say: 'The baby is messy. Time for a bath!' },
+    { need: '🎵', tool: 'music', face: '😭', say: 'The baby is sad. Sing the baby a song!' }
+  ];
+  var TOOLS = [{ id: 'bottle', e: '🍼', n: 'bottle' }, { id: 'blanket', e: '🛏️', n: 'bed' }, { id: 'teddy', e: '🧸', n: 'teddy bear' }, { id: 'bath', e: '🛁', n: 'bath' }, { id: 'music', e: '🎵', n: 'song' }];
+  var shift = null;
+  function initBaby() {
+    shift = { done: 0, goal: 4, queue: shuffle(NEEDS).slice(0, 4), cur: null };
+    $('tools').innerHTML = shuffle(TOOLS).map(function (t) { return '<div class="tool drag" data-id="' + t.id + '" data-ghost="' + t.e + '">' + t.e + '</div>'; }).join('');
+    say('Thank you for babysitting, ' + nm() + '! Take good care of the baby.');
+    setTimeout(nextNeed, 1800);
+    renderMeter();
+  }
+  function renderMeter() { var h = ''; for (var i = 0; i < shift.goal; i++) h += i < shift.done ? '💖' : '🤍'; $('meter').innerHTML = h; }
+  function nextNeed() {
+    if (current !== 'babysit') return;
+    shift.cur = shift.queue[shift.done];
+    $('mood').textContent = shift.cur.face; $('baby').classList.add('fuss'); $('need').textContent = shift.cur.need; $('need').style.visibility = 'visible';
+    $('babyPrompt').textContent = '👶 What does the baby need?';
+    sfx.baby(); say(shift.cur.say);
+  }
+  dragHandlers.babysit = {
+    tap: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; say(t.n); },
+    drop: function (id, el) {
+      if (!shift || !shift.cur) return;
+      if (id !== shift.cur.tool) {
+        sfx.oops(); say('Hmm, not that one. ' + shift.cur.say);
+        var right = document.querySelector('.tool[data-id="' + shift.cur.tool + '"]'); right.classList.remove('hint'); void right.offsetWidth; right.classList.add('hint');
+        return;
+      }
+      if (id === 'music') sfx.song(); else sfx.yay();
+      shift.done++; renderMeter(); var c = centerOf($('baby')); burst(c[0], c[1], ['💖', '💕', '✨', '⭐']);
+      $('mood').textContent = id === 'blanket' ? '😴' : '😊'; $('baby').classList.remove('fuss'); $('need').style.visibility = 'hidden'; shift.cur = null;
+      if (shift.done >= shift.goal) {
+        S.cares++; sticker('👶'); save();
+        setTimeout(function () {
+          say('Great job! The baby is so happy. You were kind and helpful. You earned 3 coins!');
+          modal('<div class="em">👶💖</div><h2>Job done! +' + coinsHTML(3) + '</h2><div class="btns"><button class="bigbtn green" id="mOk">Get paid!</button></div>', function (b) {
+            b.querySelector('#mOk').onclick = function () {
+              var btn = b.querySelector('#mOk'); btn.disabled = true;
+              flyCoins(btn, $('piggy'), 3, function () { S.coins++; renderCoins(); bumpPiggy(); }, function () {
+                save(); setTimeout(function () {
+                  modal('<div class="em">🐷</div><h2>' + S.coins + ' ' + coinsHTML(Math.min(S.coins, 10)) + '</h2><div class="btns"><button class="bigbtn" id="mShop">🛍️ Go shop</button><button class="bigbtn green" id="mAgain">👶 Again</button></div>', function (b2) {
+                    say('Now you have ' + S.coins + ' coins! Do you want to go shopping, or babysit again?');
+                    b2.querySelector('#mShop').onclick = function () { closeModal(); go('shop'); };
+                    b2.querySelector('#mAgain').onclick = function () { closeModal(); initBaby(); };
+                  });
+                }, 300);
+              });
+            };
+          });
+        }, 900);
+      } else {
+        var praise = pick(['Yay! The baby is happy!', 'Good job!', 'You are so kind!', 'The baby loves you!']);
+        say(praise); setTimeout(nextNeed, 2200);
+      }
+    }
+  };
+
+  /* ---------- ABC ---------- */
+  var WORDS = { A: ['🍎', 'Apple'], B: ['🐝', 'Bee'], C: ['🐱', 'Cat'], D: ['🐶', 'Dog'], E: ['🥚', 'Egg'], F: ['🐟', 'Fish'], G: ['🍇', 'Grapes'], H: ['🎩', 'Hat'], I: ['🍦', 'Ice cream'], J: ['🧃', 'Juice'], K: ['🪁', 'Kite'], L: ['🦁', 'Lion'], M: ['🌙', 'Moon'], N: ['👃', 'Nose'], O: ['🍊', 'Orange'], P: ['🐷', 'Pig'], Q: ['👸', 'Queen'], R: ['🌈', 'Rainbow'], S: ['☀️', 'Sun'], T: ['🌳', 'Tree'], U: ['☂️', 'Umbrella'], V: ['🎻', 'Violin'], W: ['🐳', 'Whale'], Y: ['🪀', 'Yo-yo'], Z: ['🦓', 'Zebra'] };
+  var round = null;
+  function initAbc() {
+    var keys = shuffle(Object.keys(WORDS)).slice(0, 3);
+    round = { keys: keys, left: 3 };
+    $('letters').innerHTML = shuffle(keys).map(function (k) { return '<div class="letter drag" data-id="' + k + '" data-ghost="' + k + '">' + k + '</div>'; }).join('');
+    $('pics').innerHTML = keys.map(function (k) { return '<div class="pic" data-drop="pic" data-k="' + k + '">' + WORDS[k][0] + '<span class="tag"></span></div>'; }).join('');
+    say('Drag each letter to its picture!');
+  }
+  dragHandlers.abc = {
+    tap: function (k) { say(k + '!'); },
+    drop: function (k, el, target) {
+      var want = target.getAttribute('data-k');
+      if (!want || target.classList.contains('done')) return;
+      if (k !== want) { sfx.oops(); say(k + ' is not for ' + WORDS[want][1] + '. Try again!'); return; }
+      sfx.yay(); el.classList.add('done'); target.classList.add('done'); target.querySelector('.tag').textContent = k;
+      var c = centerOf(target); burst(c[0], c[1]);
+      say(k + '! ' + k + ' is for ' + WORDS[k][1] + '!');
+      round.left--;
+      if (!round.left) {
+        S.rounds++; sticker('⭐'); S.coins++; renderCoins(); bumpPiggy(); save();
+        setTimeout(function () {
+          say('You did it, ' + nm() + '! Here is a star sticker and a coin!'); sfx.coin();
+          modal('<div class="em">⭐</div><h2>You did it! +' + coinsHTML(1) + '</h2><div class="btns"><button class="bigbtn green" id="mOk">More letters!</button><button class="bigbtn" id="mHome">🏠</button></div>', function (b) {
+            b.querySelector('#mOk').onclick = function () { closeModal(); initAbc(); };
+            b.querySelector('#mHome').onclick = function () { closeModal(); go('home'); };
+          });
+        }, 1600);
+      }
+    }
+  };
+
+  /* ---------- dress up ---------- */
+  var HAIR = ['#6b3e26', '#f2c14e', '#1f1a24', '#c4572a', '#ff8fc8', '#8e6bff'];
+  var DRESSES = [{ id: 'pink', c: '#ff6fb5' }, { id: 'blue', c: '#5ab8ff' }, { id: 'purple', c: '#9b6bff' }, { id: 'yellow', c: '#ffd23f' }, { id: 'sparkle', c: 'url(#sparkleFill)', buy: 'sparkle', e: '✨' }, { id: 'rainbow', c: 'url(#rainbowFill)', buy: 'rainbow', e: '🌈' }];
+  var ACC = [{ id: 'crown', e: '👑', x: 150, y: 46, s: 64 }, { id: 'hat', e: '👒', x: 150, y: 58, s: 90 }, { id: 'bow', e: '🎀', x: 205, y: 70, s: 44 }, { id: 'flower', e: '🌸', x: 98, y: 78, s: 40 }, { id: 'glasses', e: '🕶️', x: 150, y: 116, s: 56 }];
+  function drawDoll() {
+    var L = S.look, acc = L.acc || [];
+    var defs = '<defs><linearGradient id="rainbowFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a7a"/><stop offset=".2" stop-color="#ffa53d"/><stop offset=".4" stop-color="#ffe14d"/><stop offset=".6" stop-color="#5fd97a"/><stop offset=".8" stop-color="#5ab8ff"/><stop offset="1" stop-color="#9b6bff"/></linearGradient>' +
+      '<pattern id="sparkleFill" width="28" height="28" patternUnits="userSpaceOnUse"><rect width="28" height="28" fill="#ffd84d"/><path d="M14 4l2.5 7.5L24 14l-7.5 2.5L14 24l-2.5-7.5L4 14l7.5-2.5z" fill="#fff8c9"/></pattern></defs>';
+    var hair = L.hair, dress = L.dress;
+    var svg = defs +
+      '<ellipse cx="150" cy="440" rx="80" ry="12" fill="#0001"/>' +
+      // back hair
+      '<path d="M78 120 Q70 40 150 34 Q230 40 222 120 L230 230 Q190 250 150 245 Q110 250 70 230 Z" fill="' + hair + '"/>' +
+      // legs + shoes
+      '<rect x="122" y="330" width="20" height="90" rx="10" fill="#f5c9a8"/><rect x="158" y="330" width="20" height="90" rx="10" fill="#f5c9a8"/>' +
+      '<ellipse cx="128" cy="424" rx="22" ry="12" fill="#ff4f9a"/><ellipse cx="172" cy="424" rx="22" ry="12" fill="#ff4f9a"/>' +
+      // arms
+      '<rect x="78" y="190" width="20" height="110" rx="10" fill="#f5c9a8" transform="rotate(12 88 190)"/><rect x="202" y="190" width="20" height="110" rx="10" fill="#f5c9a8" transform="rotate(-12 212 190)"/>' +
+      // neck + dress
+      '<rect x="138" y="160" width="24" height="26" fill="#f5c9a8"/>' +
+      '<path d="M112 182 Q150 172 188 182 L200 240 Q236 330 244 344 Q150 372 56 344 Q64 330 100 240 Z" fill="' + dress + '" stroke="#0000001a" stroke-width="3"/>' +
+      '<path d="M112 182 Q150 200 188 182" fill="none" stroke="#fff8" stroke-width="5"/>' +
+      // head
+      '<circle cx="150" cy="112" r="56" fill="#f8d5b8"/>' +
+      // bangs
+      '<path d="M96 104 Q100 56 150 54 Q200 56 204 104 Q180 80 150 84 Q120 80 96 104Z" fill="' + hair + '"/>' +
+      // face
+      '<ellipse cx="128" cy="118" rx="6" ry="8" fill="#3b2a5a"/><ellipse cx="172" cy="118" rx="6" ry="8" fill="#3b2a5a"/>' +
+      '<circle cx="130" cy="115" r="2" fill="#fff"/><circle cx="174" cy="115" r="2" fill="#fff"/>' +
+      '<circle cx="116" cy="136" r="9" fill="#ff9ac2" opacity=".6"/><circle cx="184" cy="136" r="9" fill="#ff9ac2" opacity=".6"/>' +
+      '<path d="M136 140 Q150 154 164 140" fill="none" stroke="#c2456f" stroke-width="5" stroke-linecap="round"/>';
+    ACC.forEach(function (a) {
+      if (acc.indexOf(a.id) < 0) return;
+      svg += '<text x="' + a.x + '" y="' + a.y + '" font-size="' + a.s + '" text-anchor="middle" dominant-baseline="middle">' + a.e + '</text>';
+    });
+    $('doll').innerHTML = svg;
+  }
+  function initDress() {
+    $('hairRow').innerHTML = HAIR.map(function (c) { return '<button class="sw' + (S.look.hair === c ? ' on' : '') + '" data-hair="' + c + '" style="background:' + c + '"></button>'; }).join('');
+    $('dressRow').innerHTML = DRESSES.map(function (d) {
+      var locked = d.buy && !S.owned[d.buy], bg = d.e ? '#fff' : d.c;
+      var cls = (d.e ? 'acc' : 'sw') + (S.look.dress === d.c ? ' on' : '') + (locked ? ' locked' : '');
+      return '<button class="' + cls + (locked ? '' : ' drag') + '" data-dress="' + d.id + '" data-id="d:' + d.id + '" data-ghost="👗" style="background:' + bg + '">' + (d.e ? d.e + (locked ? '<span class="lock">🔒</span>' : '') : '') + '</button>';
+    }).join('');
+    $('accRow').innerHTML = ACC.map(function (a) {
+      var locked = !S.owned[a.id], on = (S.look.acc || []).indexOf(a.id) >= 0;
+      return '<button class="acc' + (on ? ' on' : '') + (locked ? ' locked' : ' drag') + '" data-acc="' + a.id + '" data-id="a:' + a.id + '" data-ghost="' + a.e + '">' + a.e + (locked ? '<span class="lock">🔒</span>' : '') + '</button>';
+    }).join('');
+    drawDoll();
+    var any = ACC.some(function (a) { return S.owned[a.id]; });
+    say(any ? 'Let’s play dress up!' : 'Let’s play dress up! Buy crowns and bows at the shop to add them here.');
+  }
+  function applyDress(id) { var d = DRESSES.filter(function (x) { return x.id === id; })[0]; if (d.buy && !S.owned[d.buy]) return lockedMsg(); S.look.dress = d.c; save(); sfx.pop(); initDressRows(); say(pick(['So pretty!', 'Beautiful!', 'I love it!'])); }
+  function toggleAcc(id) {
+    if (!S.owned[id]) return lockedMsg();
+    var acc = S.look.acc || [], i = acc.indexOf(id);
+    if (i >= 0) acc.splice(i, 1); else { if (id === 'hat') acc = acc.filter(function (x) { return x !== 'crown'; }); if (id === 'crown') acc = acc.filter(function (x) { return x !== 'hat'; }); acc.push(id); }
+    S.look.acc = acc; save(); sfx.pop(); initDressRows(); if (i < 0) say(pick(['Looking great!', 'Fancy!', 'So cute!']));
+  }
+  function lockedMsg() { sfx.oops(); say('You can buy that at the shop with your coins!'); }
+  function initDressRows() { var s = say; say = function () { }; initDress(); say = s; }
+  $('hairRow').addEventListener('click', function (e) { var b = e.target.closest('[data-hair]'); if (!b) return; S.look.hair = b.getAttribute('data-hair'); save(); sfx.pop(); initDressRows(); });
+  $('dressRow').addEventListener('click', function (e) { var b = e.target.closest('[data-dress]'); if (b && b.classList.contains('locked')) lockedMsg(); });
+  $('accRow').addEventListener('click', function (e) { var b = e.target.closest('[data-acc]'); if (b && b.classList.contains('locked')) lockedMsg(); });
+  dragHandlers.dress = {
+    tap: function (id) { clearSel(); if (id.indexOf('d:') === 0) applyDress(id.slice(2)); else toggleAcc(id.slice(2)); },
+    drop: function (id) { if (id.indexOf('d:') === 0) applyDress(id.slice(2)); else toggleAcc(id.slice(2)); }
+  };
+  $('photoBtn').addEventListener('click', function () {
+    sfx.snap(); var f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(function () { f.remove(); }, 600);
+    var c = centerOf($('dollWrap')); setTimeout(function () { burst(c[0], c[1], ['📸', '💖', '✨', '⭐']); sfx.yay(); }, 250);
+    say(pick(['Say cheese! So beautiful!', 'What a great outfit!', 'You have great style, ' + nm() + '!']));
+    if (!S.photoSticker) { S.photoSticker = 1; sticker('📸'); }
+  });
+
+  /* ---------- grown-ups (hold to open) ---------- */
+  var holdT = null;
+  $('parentBtn').addEventListener('pointerdown', function () { holdT = setTimeout(openParent, 1500); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { $('parentBtn').addEventListener(ev, function () { clearTimeout(holdT); }); });
+  $('parentBtn').addEventListener('click', function () { say('Ask a grown-up to hold this button.'); });
+  function openParent() {
+    sfx.tap();
+    modal('<h2>For grown-ups</h2><p>Player name</p><input id="pName" maxlength="16" value="' + esc(S.name) + '" placeholder="First name">' +
+      '<div class="btns"><button class="bigbtn green" id="pSave">Save</button></div>' +
+      '<div class="btns"><button class="small" id="pCoins">Add 5 coins</button><button class="small" id="pReset">Start over</button><button class="small" id="pClose">Close</button></div>' +
+      '<p style="font-size:14px;opacity:.6">Sparkle Town ' + VERSION + ' · works offline · nothing leaves this device</p>', function (b) {
+      b.querySelector('#pSave').onclick = function () { S.name = b.querySelector('#pName').value.trim().slice(0, 16); save(); closeModal(); go(current); };
+      b.querySelector('#pCoins').onclick = function () { S.coins += 5; save(); renderCoins(); bumpPiggy(); sfx.coin(); };
+      b.querySelector('#pReset').onclick = function () {
+        b.querySelector('#pReset').textContent = 'Tap again to erase'; b.querySelector('#pReset').onclick = function () { try { localStorage.removeItem(KEY); } catch (e) { } location.reload(); };
+      };
+      b.querySelector('#pClose').onclick = closeModal;
+    });
+  }
+
+  /* ---------- first run ---------- */
+  function welcome() {
+    modal('<div class="em">✨🏡✨</div><h2>Welcome to Sparkle Town!</h2><p>What is your name?</p><input id="wName" maxlength="16" placeholder="Your name">' +
+      '<div class="btns"><button class="bigbtn green" id="wGo">Let’s play! ▶</button></div>', function (b) {
+      b.querySelector('#wGo').onclick = function () {
+        audio(); S.name = b.querySelector('#wName').value.trim().slice(0, 16); save(); closeModal(); sfx.yay();
+        go('home'); say('Hi ' + nm() + '! Welcome to Sparkle Town! Where do you want to go?');
+      };
+    });
+  }
+
+  renderCoins(); renderSound(); go('home');
+  if (!S.started) { S.started = 1; save(); welcome(); }
+
+  /* ---------- offline + updates ---------- */
+  if ('serviceWorker' in navigator && /^http/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      function waiting(w) { var u = $('update'); u.classList.add('on'); u.onclick = function () { w.postMessage('skipWaiting'); }; }
+      if (reg.waiting && navigator.serviceWorker.controller) waiting(reg.waiting);
+      reg.addEventListener('updatefound', function () { var nw = reg.installing; nw.addEventListener('statechange', function () { if (nw.state === 'installed' && navigator.serviceWorker.controller) waiting(nw); }); });
+    }).catch(function () { });
+    var reloaded = false, hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
+  }
+  window.ST = { S: S, go: go, version: VERSION };
+})();
+</script>
+</body>
+</html>
