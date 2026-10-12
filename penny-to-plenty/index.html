@@ -377,6 +377,7 @@ body.on-title .update-banner { display: none; }
 .country-hint { margin: 10px 0 12px; padding: 12px 14px; border-radius: 16px; border: 2px solid var(--green); background: rgba(57, 194, 122, .12); }
 .country-hint .ch-title { font-weight: 900; font-size: 18px; margin-bottom: 4px; }
 .country-hint p { margin: 0 0 8px; line-height: 1.4; }
+.btn.bed-later { opacity: .7; }
 
 </style>
 </head>
@@ -420,12 +421,12 @@ body.on-title .update-banner { display: none; }
    GAME_VERSION: bump for every release (also names the offline cache in site/sw.js).
    FEEDBACK_URL: tester feedback form; empty hides the button. "{version}" is replaced with GAME_VERSION. */
 window.FN = window.FN || {};
-FN.Config = { GAME_VERSION: '1.5.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
+FN.Config = { GAME_VERSION: '1.6.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
 // Shown once as a headline on the title screen after an update (keep it short and kid-friendly).
 FN.Config.WHATS_NEW = [
-  '⬆️ Businesses keep growing! A lemonade stand can become a franchise, a woodcraft workshop a furniture factory, and there is no top level.',
-  '🚜 Can\'t find the countryside? The World Map now shows you how to get there.',
-  '🧮 The calculator is on every Money Challenge (or in the ☰ Menu).'
+  '📊 The Index Fund now grows every night and stays invested. Open My Money to see what it earned last night.',
+  '🌙 Bedtime is 5 PM or later (or when you run out of energy), so no skipping ahead to collect extra days.',
+  '⬆️ Businesses keep growing: a lemonade stand can become a franchise, a workshop a furniture factory.'
 ];
 
 /* ==== src/core/rng.js ==== */
@@ -489,7 +490,8 @@ window.FN = window.FN || {};
   var C = {};
   C.START_HOUR = 7;
   C.END_HOUR = 21;
-  C.TIME_SCALE = 0.5;   // each action uses half its listed hours (1.3.0: longer days)
+  C.TIME_SCALE = 0.5;
+  C.BEDTIME = 17;       // 1.6.0: you can go to bed from 5 PM (earlier only if worn out or the day is over)   // each action uses half its listed hours (1.3.0: longer days)
   C.SAVE_PREFIX = 'fromnothing_v1_';
 
   // Players are open profiles now: see FN.State.profiles() (src/core/state.js).
@@ -694,7 +696,7 @@ window.FN = window.FN || {};
   C.BASE_PRICES = { eggs: 0.4, feed: 0.25, lemons: 0.4, produce: 1.6, goods: 1.8, crafts: 11, recyclables: 0.05 };
 
   C.BANK = { savingsRate: 0.005 }; // per week
-  C.INVEST = { index: { name: 'Index Fund', desc: 'A basket of many companies. Goes up and down; grows over time on average.', mean: 0.004, vol: 0.025 } };
+  C.INVEST = { index: { name: 'Index Fund', desc: 'A basket of many companies. Goes up and down; grows over time on average.', mean: 0.004, vol: 0.025, dailyVol: 0.0015 } };
   // Loan offers from the Community Bank. rate = interest per week.
   C.LOANS = [
     { id: 'micro', name: 'Starter Loan', amount: 50, rate: 0.01, weeks: 8, requires: {} },
@@ -1556,18 +1558,20 @@ window.FN = window.FN || {};
       s.cash = E.r2(s.cash - unpaid); // the borrowed amount goes straight to the bills
       rep.warnings.push('Your business bills (' + E.fmt(unpaid) + ') became debt. Consider selling stock or a business you can\'t afford.');
     }
-    // 5. Weekly money: savings interest, investments, loan payments
+    // 5a. 1.6.0: the Index Fund grows (or dips a little) every night and stays invested
+    var invd = s.investments.index;
+    if (invd.value > 0) {
+      var dret = (C.INVEST.index.mean + C.PHASES[s.economy.phase].invest) / 7 + R.normal(rng) * C.INVEST.index.dailyVol;
+      var dchg = E.r2(invd.value * dret);
+      invd.value = E.r2(Math.max(0, invd.value + dchg));
+      invd.lastChange = dchg; invd.lastPct = Math.round(dret * 10000) / 100; invd.lastDay = s.day;
+      rep.lines.push({ icon: '📊', text: 'Index Fund ' + (dchg >= 0 ? 'grew' : 'dipped') + ' ' + Math.abs(invd.lastPct) + '% overnight (now worth ' + E.fmt(invd.value) + ')', amount: dchg });
+    }
+    // 5. Weekly money: savings interest, loan payments
     var newDay = s.day + 1;
     if (newDay % 7 === 1 && newDay > 1) {
       var interest = E.r2(s.savings * C.BANK.savingsRate);
       if (interest > 0) { s.savings = E.r2(s.savings + interest); s.stats.earned = E.r2(s.stats.earned + interest); row.income = E.r2(row.income + interest); E.log(s, 'Savings interest', interest); rep.lines.push({ icon: '🐷', text: 'Weekly savings interest', amount: interest }); }
-      var inv = s.investments.index;
-      if (inv.value > 0) {
-        var ret = C.INVEST.index.mean + C.PHASES[s.economy.phase].invest + R.normal(rng) * C.INVEST.index.vol;
-        var change = E.r2(inv.value * ret);
-        inv.value = E.r2(Math.max(0, inv.value + change));
-        rep.lines.push({ icon: '📊', text: 'Index Fund ' + (change >= 0 ? 'went up' : 'went down') + ' ' + (Math.round(ret * 1000) / 10) + '% this week', amount: change });
-      }
     }
     s.loans.forEach(function (l) {
       if ((newDay - l.startDay) % 7 === 0 && newDay > l.startDay) {
@@ -1624,6 +1628,11 @@ window.FN = window.FN || {};
     return { weather: s.weather.today, forecast: s.weather.tomorrow, phase: s.economy.phase, level: s.level, rng: function () { return R.next(s); } };
   };
   G.hoursLeft = function (s) { return Math.max(0, C.END_HOUR - s.hour); };
+  // 1.6.0: no skipping ahead to collect another day of income. Bed opens at C.BEDTIME, when the day is over, or when worn out.
+  G.sleepReason = function (s) {
+    if (s.hour >= (C.BEDTIME || 0) || G.hoursLeft(s) < 0.5 || s.energy <= 15) return '';
+    return 'It\'s only ' + G.clockText(s.hour) + '. You can go to bed after ' + G.clockText(C.BEDTIME) + ' (or when you\'re out of energy).';
+  };
   // 1.3.0: actions use TIME_SCALE of their listed hours, so a day holds more play.
   G.hrs = function (h) { return (+h || 0) * (C.TIME_SCALE || 1); };
   G.hrsText = function (h, long) {
@@ -2445,7 +2454,8 @@ window.FN = window.FN || {};
 
   F.project = function (s) {
     var inp = F.inputs(s);
-    var seed = R.hash('future', s.seed, s.day, s.stats.decisions, Math.round(inp.netWorth));
+    // same day + same decisions = same luck, so more money always shows a better future (1.6.0)
+    var seed = R.hash('future', s.seed, s.day, s.stats.decisions);
     return {
       inputs: inp, seed: seed,
       cases: { best: F.projectCase(inp, 'best', seed), likely: F.projectCase(inp, 'likely', seed), challenging: F.projectCase(inp, 'challenging', seed) }
@@ -8993,7 +9003,7 @@ window.FN = window.FN || {};
       '</div><div class="tb-actions">' +
       (FN.Milestones.isUnlocked(s) ? btn('future', null, '🔮<span class="lbl"> SEE MY FUTURE</span>', 'gold small', false, 'See my future — 10 years later')
         : btn('future', null, '🔒<span class="lbl"> SEE MY FUTURE</span> <span class="ms-count">' + FN.Milestones.count(s) + '/5</span>', 'small locked-future', false, 'Complete 5 milestones to unlock your future')) +
-      btn('nextDay', null, '🌙<span class="lbl"> Next Day</span>', 'primary small', false, 'Sleep and start the next day') +
+      (G.sleepReason(s) ? btn('nextDay', null, '🌙<span class="lbl"> Bed at ' + G.clockText(C.BEDTIME) + '</span>', 'small bed-later', false, G.sleepReason(s)) : btn('nextDay', null, '🌙<span class="lbl"> Next Day</span>', 'primary small', false, 'Sleep and start the next day')) +
       btn('saveGame', null, '💾<span class="lbl"> Save</span>', 'small save-btn', false, 'Save Game — saves your progress on this device' + (A.lastSaved ? ' (last saved ' + A.lastSaved + ')' : '')) +
       btn('mute', null, A.muted ? '🔇' : '🔊', 'small', false, A.muted ? 'Sound off' : 'Sound on') + btn('gameMenu', null, '☰<span class="lbl"> Menu</span>', 'small', false, 'Menu') + '</div>';
     FN.Effects.cashTick($('cash'), s.cash, fmt);
@@ -9119,8 +9129,9 @@ window.FN = window.FN || {};
       btn('withdraw', 5, 'Take out $5', 'small', s.savings < 5) + btn('withdraw', 'all', 'Take out all', 'small', s.savings <= 0) + '</div>';
     // invest
     var inv = s.investments.index, gain = E.r2(inv.value - inv.cost);
-    h += '<h3>📊 Index Fund <small class="muted">(can go up or down each week)</small></h3><p class="muted">' + esc(C.INVEST.index.desc) + '</p>' +
-      '<p>Value: <b>' + fmt(inv.value) + '</b> · You put in: ' + fmt(inv.cost) + ' · ' + (gain >= 0 ? '<span class="good">Gain ' + fmt(gain) + '</span>' : '<span class="bad">Loss ' + fmt(-gain) + '</span>') + '</p><div class="row">' +
+    h += '<h3>📊 Index Fund <small class="muted">(a long-term investment: it stays invested and changes a little every night)</small></h3><p class="muted">' + esc(C.INVEST.index.desc) + '</p>' +
+      '<p>Value: <b>' + fmt(inv.value) + '</b> · You put in: ' + fmt(inv.cost) + ' · ' + (gain >= 0 ? '<span class="good">Total earned ' + fmt(gain) + '</span>' : '<span class="bad">Down ' + fmt(-gain) + '</span>') +
+      (inv.value > 0 && inv.lastChange !== undefined ? '<br>Last night: <b class="' + (inv.lastChange >= 0 ? 'good' : 'bad') + '">' + (inv.lastChange >= 0 ? '+' : '−') + fmt(Math.abs(inv.lastChange)) + ' (' + (inv.lastPct >= 0 ? '+' : '') + inv.lastPct + '%)</b>' : (inv.value > 0 ? '<br><span class="muted">Check back tomorrow morning to see what it earned overnight.</span>' : '')) + '</p><div class="row">' +
       btn('invest', 10, 'Invest $10', 'small', s.cash < 10) + btn('invest', 50, 'Invest $50', 'small', s.cash < 50) + btn('invest', 250, 'Invest $250', 'small', s.cash < 250) +
       btn('sellInvest', 'all', 'Sell all', 'small', inv.value <= 0) + '</div>';
     // loans
@@ -9660,6 +9671,7 @@ window.FN = window.FN || {};
     rest: function () { var r = G.rest(A.s); if (r.ok) toast('😌 You rested. +20 energy'); after(r); },
     nextDay: function () {
       if (A.sleeping) return;
+      var notYet = G.sleepReason(A.s); if (notYet) { toast('🌙 ' + notYet); return; }
       A.result = null; A.panel = null; A.sleeping = true;
       closeModal();
       FN.Effects.sleep(A.s.day + 1, function () {
