@@ -373,6 +373,11 @@ body.on-title .update-banner { display: none; }
 .title-wrap > * { max-width: 100%; }
 .tagline { font-size: clamp(14px, 2.4vw, 28px); }
 
+/* 1.5.0 countryside hint on the World Map */
+.country-hint { margin: 10px 0 12px; padding: 12px 14px; border-radius: 16px; border: 2px solid var(--green); background: rgba(57, 194, 122, .12); }
+.country-hint .ch-title { font-weight: 900; font-size: 18px; margin-bottom: 4px; }
+.country-hint p { margin: 0 0 8px; line-height: 1.4; }
+
 </style>
 </head>
 <body>
@@ -415,12 +420,12 @@ body.on-title .update-banner { display: none; }
    GAME_VERSION: bump for every release (also names the offline cache in site/sw.js).
    FEEDBACK_URL: tester feedback form; empty hides the button. "{version}" is replaced with GAME_VERSION. */
 window.FN = window.FN || {};
-FN.Config = { GAME_VERSION: '1.4.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
+FN.Config = { GAME_VERSION: '1.5.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
 // Shown once as a headline on the title screen after an update (keep it short and kid-friendly).
 FN.Config.WHATS_NEW = [
-  '🧮 New calculator! Tap "Use the calculator" on any Money Challenge (or open it from the ☰ Menu).',
-  '🌞 Longer days: everything takes half as much time, so you can do more before bed.',
-  '🔁 Fewer repeat questions, and math problems about YOUR job and business.'
+  '⬆️ Businesses keep growing! A lemonade stand can become a franchise, a woodcraft workshop a furniture factory, and there is no top level.',
+  '🚜 Can\'t find the countryside? The World Map now shows you how to get there.',
+  '🧮 The calculator is on every Money Challenge (or in the ☰ Menu).'
 ];
 
 /* ==== src/core/rng.js ==== */
@@ -633,6 +638,46 @@ window.FN = window.FN || {};
       levels: [{ name: 'One Rental Unit', mult: 1 }, { name: 'Two Rental Units', cost: 3000, mult: 2 }, { name: 'Small Apartment Building', cost: 9000, mult: 4.5 }],
       lesson: 'Property can earn rent, but repairs and empty months are real risks.'
     }
+  };
+
+  /* 1.5.0: businesses keep growing. Levels 1-3 are the originals above; after that each business follows its own
+     path of names (lemonade stand -> franchise, workshop -> factory ...), then keeps going with numbered levels.
+     Each step costs about 1.45x the last and adds the same boost as the last original upgrade, so it never caps out. */
+  C.BIZ_GROWTH = {
+    lemonade: ['Lemonade Shack', 'Two Lemonade Carts', 'Lemonade Kiosk at the Mall', 'Lemonade Shop', 'Lemonade Franchise (3 shops)', 'Lemonade Brand in Stores'],
+    dogwalk: ['Dog Daycare', 'Pet Care Company', 'Pet Hotel & Daycare', 'Pet Care Franchise'],
+    veg_stand: ['Two Market Stalls', 'Farm Stand Store', 'Fresh Food Market', 'Grocery Store Chain'],
+    chickens: ['Egg Farm', 'Big Egg Farm', 'Egg Company'],
+    bike_repair: ['Bike Shop & Rentals', 'Big Bike Store', 'Two Bike Stores', 'Bike Store Chain'],
+    crafts: ['Furniture Store', 'Furniture Factory', 'Big Furniture Factory', 'Furniture Brand'],
+    corner_store: ['Mini Market', 'Supermarket', 'Supermarket Chain'],
+    market_farm: ['Farm with Orchard', 'Large Farm', 'Farming Company'],
+    rental: ['Two Apartment Buildings', 'Apartment Complex', 'Real Estate Company']
+  };
+  // level n (1-based) of business id -> { name, cost (to reach it), mult }
+  C.bizLevel = function (id, n) {
+    var c = C.BUSINESSES[id]; if (!c) return null;
+    n = Math.max(1, Math.floor(n || 1));
+    if (n <= c.levels.length) return c.levels[n - 1];
+    var cache = c._more || (c._more = []);
+    var base = c.levels.length;
+    for (var k = cache.length + base + 1; k <= n; k++) {
+      var prev = k - 1 <= base ? c.levels[k - 2] : cache[k - 2 - base];
+      var last = c.levels[base - 1], before = c.levels[base - 2];
+      var step = Math.max(0.15, Math.round((last.mult - before.mult) * 100) / 100);
+      var names = C.BIZ_GROWTH[id] || [];
+      var i = k - base - 1;
+      var name = i < names.length ? names[i] : (names[names.length - 1] || last.name) + ' · Level ' + k;
+      cache.push({ name: name, cost: Math.round(prev.cost * 1.45 / 5) * 5, mult: Math.round((prev.mult + step) * 100) / 100 });
+    }
+    return cache[n - 1 - base];
+  };
+  // capacity lists (hens, service jobs) keep growing past the original three levels
+  C.bizCap = function (list, n) {
+    n = Math.max(1, n || 1);
+    if (n <= list.length) return list[n - 1];
+    var a = list[list.length - 1], b = list[list.length - 2];
+    return a + (n - list.length) * Math.max(1, Math.round((a - b) * 0.6));
   };
 
   // Goods held in inventory: market sell price key in economy.prices
@@ -1241,7 +1286,7 @@ window.FN = window.FN || {};
   };
 
   /* ---------- businesses ---------- */
-  E.bizMult = function (s, id) { var b = s.businesses[id], c = C.BUSINESSES[id]; return c.levels[(b.level || 1) - 1].mult; };
+  E.bizMult = function (s, id) { var b = s.businesses[id]; return C.bizLevel(id, b.level || 1).mult; };
   E.startBusiness = function (s, id, free) {
     var c = C.BUSINESSES[id]; if (!c || s.businesses[id]) return false;
     if (!free && !E.spend(s, c.startCost, 'Started a ' + c.name)) return false;
@@ -1252,15 +1297,15 @@ window.FN = window.FN || {};
     E.log(s, 'Opened: ' + c.name + '!');
     return true;
   };
-  E.upgradeCost = function (s, id) { var b = s.businesses[id], c = C.BUSINESSES[id]; var nx = c.levels[b.level]; return nx ? nx.cost : null; };
+  E.upgradeCost = function (s, id) { var b = s.businesses[id]; var nx = C.bizLevel(id, (b.level || 1) + 1); return nx ? nx.cost : null; };
   E.upgradeBusiness = function (s, id, free) {
     var b = s.businesses[id], c = C.BUSINESSES[id]; if (!b) return false;
-    var nx = c.levels[b.level]; if (!nx) return false;
+    var nx = C.bizLevel(id, (b.level || 1) + 1); if (!nx) return false;
     if (!free && !E.spend(s, nx.cost, 'Upgraded ' + c.name + ' to ' + nx.name)) return false;
     b.level++; if (!free) b.invested = E.r2((b.invested || 0) + nx.cost);
     return true;
   };
-  E.maxUnits = function (s, id) { var c = C.BUSINESSES[id], b = s.businesses[id]; return c.maxUnits ? c.maxUnits[(b ? b.level : 1) - 1] : 0; };
+  E.maxUnits = function (s, id) { var c = C.BUSINESSES[id], b = s.businesses[id]; return c.maxUnits ? C.bizCap(c.maxUnits, b ? b.level : 1) : 0; };
   E.addUnits = function (s, id, n, free) {
     var b = s.businesses[id], c = C.BUSINESSES[id]; if (!b || !c.perUnit) return 0;
     n = Math.min(n, E.maxUnits(s, id) - b.units); if (n <= 0) return 0;
@@ -1339,7 +1384,7 @@ window.FN = window.FN || {};
       res.kept = left - spoiled; res.keptValue = s.inventory[c.good] ? s.inventory[c.good].cost : 0;
       res.expenses = cogs;
     } else {
-      var jobs = Math.min(Math.max(0, Math.round(raw)), c.maxJobs[b.level - 1]);
+      var jobs = Math.min(Math.max(0, Math.round(raw)), C.bizCap(c.maxJobs, b.level));
       var supplies = E.r2(jobs * c.supplyCost);
       var redo = 0;
       if (id === 'bike_repair') { for (var i = 0; i < jobs; i++) if (rng() < Math.max(0.03, 0.18 - s.skills.trades / 300)) redo++; }
@@ -2527,7 +2572,7 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
       text: 'Farmers call out prices for apples, carrots, and fresh bread.',
       choices: [
         { label: 'Help pack up stands', detail: 'Earn a little · 2 hours', hours: 2, energy: 10,
-          effects: function (s) { return [{ cash: pay(s, 3) }, { rel: 'miller', add: 1 }]; },
+          effects: function (s) { return [{ cash: pay(s, 3) }, { rel: 'miller', add: 1 }, { flag: 'met_miller' }]; },
           lesson: 'Farmers appreciate a strong helper.' },
         { label: 'Compare prices', detail: '+Business · 1 hour', hours: 1, energy: 2,
           effects: [{ skill: 'business', add: 1 }, { skill: 'money', add: 1 }],
@@ -2648,7 +2693,7 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
       text: 'Sellers are marking things down before they pack up. Leftover bread is going cheap.',
       choices: [
         { label: 'Sweep up for a farmer', detail: 'Earn a little · 2 hours', hours: 2, energy: 10,
-          effects: function (s) { return [{ cash: pay(s, 3) }, { rel: 'miller', add: 1 }]; },
+          effects: function (s) { return [{ cash: pay(s, 3) }, { rel: 'miller', add: 1 }, { flag: 'met_miller' }]; },
           lesson: 'Showing up at the end of the day gets noticed.' },
         { label: 'Watch how sellers mark down prices', detail: '+Business · 1 hour', hours: 1, energy: 2,
           effects: [{ skill: 'business', add: 1 }, { skill: 'money', add: 1 }],
@@ -2787,7 +2832,7 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
       ]
     },
     {
-      id: 's1_miller_invite_again', stage: 1, title: 'Farm Invitation', places: ['market'], cooldown: 4, weight: 14,
+      id: 's1_miller_invite_again', stage: 1, title: 'Farm Invitation', places: ['market'], cooldown: 1, weight: 60,
       requires: { flags: ['met_miller'], notFlags: ['country_unlocked'], rel: { miller: 4 } },
       text: 'Mr. Miller waves from his truck at the Greenmarket. "Still want to see Maple Hollow? I\'m heading back now."',
       choices: [
@@ -4874,7 +4919,7 @@ window.FN = window.FN || {};
   function myBiz(s, types) {
     return Object.keys(s.businesses || {}).filter(function (id) { var c = C().BUSINESSES[id]; return c && (!types || types.indexOf(c.type) >= 0); });
   }
-  function lvlMult(s, id) { var c = C().BUSINESSES[id], b = s.businesses[id]; var L = c.levels && c.levels[(b.level || 1) - 1]; return L ? L.mult : 1; }
+  function lvlMult(s, id) { var L = C().bizLevel(id, s.businesses[id].level || 1); return L ? L.mult : 1; }
   function plural(u) { return /(ch|sh|s|x)$/.test(u) ? u + 'es' : u + 's'; }
   function nameOf(id) { return C().BUSINESSES[id].name; }
   // things the player could realistically save up for from their job (unlocked, not owned, under ~25 shifts away)
@@ -4949,7 +4994,7 @@ window.FN = window.FN || {};
     { id: 'q_my_service', topic: 'My service business', personal: true, fits: function (s) { return myBiz(s, ['service']).length > 0; },
       gen: function (rng, level, s) {
         var id = pick(rng, myBiz(s, ['service'])), c = C().BUSINESSES[id];
-        var price = c.prices.fair, sup = c.supplyCost, n = ri(rng, 2, c.maxJobs[(s.businesses[id].level || 1) - 1]);
+        var price = c.prices.fair, sup = c.supplyCost, n = ri(rng, 2, C().bizCap(c.maxJobs, s.businesses[id].level || 1));
         if (level === 'younger') {
           return build(rng, {
             question: 'Your ' + c.name + ' charges ' + money(price) + ' per ' + c.unit + '. You do ' + n + ' today. How much money comes in?',
@@ -9182,9 +9227,9 @@ window.FN = window.FN || {};
     var mine = Object.keys(s.businesses);
     if (!mine.length) h += '<p class="muted">You don\'t own a business yet. Start one below — it can earn more than a job, but it\'s riskier.</p>';
     mine.forEach(function (id) {
-      var b = s.businesses[id], c = C.BUSINESSES[id], lvl = c.levels[b.level - 1];
+      var b = s.businesses[id], c = C.BUSINESSES[id], lvl = C.bizLevel(id, b.level);
       var profit = E.r2(b.totalRevenue - b.totalExpenses);
-      h += '<div class="card owned"><div class="spread"><h4>' + c.icon + ' ' + esc(c.name) + ' <small class="muted">· ' + esc(lvl.name) + '</small></h4><span>' + (profit >= 0 ? '<b class="good">Profit ' + fmt(profit) + '</b>' : '<b class="bad">Loss ' + fmt(-profit) + '</b>') + '</span></div>';
+      h += '<div class="card owned"><div class="spread"><h4>' + c.icon + ' ' + esc(c.name) + ' <small class="muted">· ' + esc(lvl.name) + ' (Level ' + b.level + ')</small></h4><span>' + (profit >= 0 ? '<b class="good">Profit ' + fmt(profit) + '</b>' : '<b class="bad">Loss ' + fmt(-profit) + '</b>') + '</span></div>';
       h += '<div class="muted">Total sales ' + fmt(b.totalRevenue) + ' − total costs ' + fmt(b.totalExpenses) + ' = ' + fmt(profit) + ' · Days run: ' + b.daysRun + (c.fixed ? ' · Daily operating cost ' + fmt(c.fixed) : '') + ' · Location: ' + esc(C.PLACES[c.place].name) + '</div>';
       if (b.recent.length) { var mx = 1; b.recent.forEach(function (p) { mx = Math.max(mx, Math.abs(p)); }); h += '<div class="minibars" title="Recent daily profit">' + b.recent.map(function (p) { return '<i style="height:' + Math.max(3, Math.round(Math.abs(p) / mx * 34)) + 'px;background:' + (p >= 0 ? 'var(--green)' : 'var(--red)') + '"></i>'; }).join('') + '</div>'; }
       if (id === 'chickens') h += '<div>🐔 Hens: <b>' + b.units + '</b> / ' + E.maxUnits(s, id) + ' · Feed costs ' + fmt(s.economy.prices.feed) + ' per hen per day · Eggs in storage: ' + (s.inventory.eggs ? s.inventory.eggs.qty : 0) + ' · Egg price ' + fmt(s.economy.prices.eggs) + '</div>';
@@ -9198,7 +9243,7 @@ window.FN = window.FN || {};
       if (id === 'chickens') { var room = E.maxUnits(s, id) - b.units; h += btn('addHens', 1, 'Buy 1 hen ($5)', 'small', room < 1 || s.cash < 5) + btn('addHens', 3, 'Buy 3 hens ($15)', 'small', room < 3 || s.cash < 15); }
       if (c.good && s.inventory[c.good] && sellPrice(s, c.good) > 0) h += btn('sellGoods', c.good, 'Sell ' + s.inventory[c.good].qty + ' ' + c.unit + 's for ' + fmt(sellPrice(s, c.good) * s.inventory[c.good].qty), 'small green');
       var up = E.upgradeCost(s, id);
-      if (up !== null) h += btn('upgrade', id, 'Upgrade to ' + esc(c.levels[b.level].name) + ' (' + fmt(up) + ')', 'small primary', s.cash < up);
+      if (up !== null) { var nxl = C.bizLevel(id, b.level + 1); h += btn('upgrade', id, '⬆️ Grow to ' + esc(nxl.name) + ' (' + fmt(up) + ', +' + Math.round((nxl.mult / lvl.mult - 1) * 100) + '% customers)', 'small primary', s.cash < up); }
       h += btn('sellBiz', id, 'Sell business (' + fmt(E.bizValue(s, id)) + ')', 'small');
       h += '</div>';
       if (b.helper) h += '<div class="muted">👔 A helper runs this business every day you don\'t open it yourself.</div>';
@@ -9215,8 +9260,20 @@ window.FN = window.FN || {};
     return h;
   };
 
+  // 1.5.0: tell players how to reach the countryside (it unlocks through Mr. Miller at the Greenmarket)
+  function countryHint(s) {
+    if (s.flags.country_unlocked) return '';
+    var met = !!s.flags.met_miller, rel = Math.max(0, Math.round(s.rel.miller || 0)), need = 4, step;
+    if (!met) step = 'Go to the <b>Greenmarket</b> and help the farmers (pick <b>Unload crates</b> or <b>Help pack up stands</b>). That\'s how you meet <b>Mr. Miller</b>, the farmer.';
+    else if (rel < need) step = 'You know <b>Mr. Miller</b>! Keep helping him at the <b>Greenmarket</b> so you become friends (friendship ' + rel + ' of ' + need + ').';
+    else step = '<b>Mr. Miller</b> wants to show you his farm! Go to the <b>Greenmarket</b> and say yes when he invites you.';
+    var r = s.place === 'market' ? 'You are here' : G.travelReason(s, 'market');
+    return '<div class="country-hint"><div class="ch-title">🚜 How to visit the countryside</div><p>' + step + '</p>' +
+      (s.place === 'market' ? '<div class="gold"><b>📍 You are at the Greenmarket</b></div>' : btn('goto', 'market', '🧺 Go to the Greenmarket', 'small gold', !!r, r)) + '</div>';
+  }
   PANELS.map = function (s) {
     var h = '<h2>🗺️ World Map</h2><p class="muted">Tap a place to travel there. Different places have different opportunities. Travel takes time' + (s.items.bicycle ? ' (your bike makes it faster!)' : '') + '. The countryside bus costs ' + fmt(C.BUS_FARE) + '.</p>';
+    h += countryHint(s);
     h += '<div class="mapbox" id="mapbox">' + safe(function () { return FN.Scenes.renderMap(s); }) + '</div><div class="grid" style="margin-top:12px">';
     Object.keys(C.PLACES).forEach(function (id) {
       var p = C.PLACES[id], r = G.travelReason(s, id), t = G.travelCost(s, id);
@@ -9673,7 +9730,7 @@ window.FN = window.FN || {};
       FN.Milestones.money(A.s, 'start:' + id, C.BUSINESSES[id].startCost); FN.Milestones.decision(A.s, 'startbiz');
       var r = {}; G.afterAction(A.s, r); announce(r); A.sceneKey = ''; after();
     },
-    upgrade: function (id) { var cost = E.upgradeCost(A.s, id); if (E.upgradeBusiness(A.s, id)) { toast('⬆️ Upgraded!'); track('upgrade:' + id, cost); } G.afterAction(A.s, {}); A.sceneKey = ''; after(); },
+    upgrade: function (id) { var cost = E.upgradeCost(A.s, id); if (E.upgradeBusiness(A.s, id)) { toast('⬆️ Your business grew: ' + C.bizLevel(id, A.s.businesses[id].level).name + '!'); track('upgrade:' + id, cost); } G.afterAction(A.s, {}); A.sceneKey = ''; after(); },
     hire: function (id) { if (A.s.stage < 3) return; A.s.businesses[id].helper = true; E.log(A.s, 'Hired a helper for the ' + C.BUSINESSES[id].name); FN.Milestones.money(A.s, 'hire:' + id); var r = {}; G.afterAction(A.s, r); announce(r); toast('👔 Helper hired! They run it on days you don\'t.'); after(); },
     mute: function () { A.muted = !A.muted; try { localStorage.setItem('fromnothing_muted', A.muted ? '1' : '0'); } catch (e) { } renderTop(); },
     allJobs: function () { A.allJobs = !A.allJobs; renderGame(); },
