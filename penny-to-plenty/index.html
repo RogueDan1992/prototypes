@@ -337,7 +337,37 @@ button, .btn, .choice, .navbtn { touch-action: manipulation; -webkit-tap-highlig
   .drawer { bottom: calc(70px + env(safe-area-inset-bottom)); }
   .navbtn { min-height: 56px; }
 }
-.update-banner { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 90; padding: 12px 18px; border-radius: 14px; background: #1b2a44f2; border: 1px solid var(--gold); color: #ffe7b0; font-weight: 800; box-shadow: var(--shadow); min-height: 44px; }
+/* 1.4.0: update banner is big, gold and pulsing at the top of every screen */
+.update-banner { position: fixed; left: 50%; transform: translateX(-50%); top: calc(10px + env(safe-area-inset-top)); z-index: 90; width: max-content; max-width: calc(100vw - 24px); padding: 14px 22px; border-radius: 16px; background: linear-gradient(180deg, #ffd978, var(--gold2)); color: #2a1a00; font-size: 17px; font-weight: 700; box-shadow: 0 0 0 4px rgba(246, 196, 83, .35), var(--shadow); min-height: 52px; animation: newsPulse 1.6s ease-in-out infinite; }
+body.on-title .update-banner { display: none; }
+@keyframes newsPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(246, 196, 83, .35), var(--shadow); } 50% { box-shadow: 0 0 0 10px rgba(246, 196, 83, .12), var(--shadow); } }
+#title-news { width: min(760px, 100%); margin: 0 auto 10px; }
+#title-news:empty { display: none; }
+.news-update { display: block; width: 100%; padding: 16px 20px; border-radius: 18px; background: linear-gradient(180deg, #ffd978, var(--gold2)); color: #2a1a00; font-size: clamp(18px, 4.4vw, 26px); font-weight: 900; letter-spacing: .02em; line-height: 1.25; animation: newsPulse 1.6s ease-in-out infinite; }
+.news-update span { display: block; font-size: .7em; font-weight: 700; letter-spacing: 0; }
+.news-card { position: relative; text-align: left; padding: 14px 48px 12px 18px; border-radius: 18px; background: rgba(18, 28, 45, .94); border: 2px solid var(--gold); box-shadow: var(--shadow); }
+.news-kicker { color: var(--gold); font-weight: 900; letter-spacing: .06em; font-size: 15px; margin-bottom: 4px; }
+.news-card ul { margin: 0; padding-left: 18px; font-size: 15px; line-height: 1.45; }
+.news-x { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 12px; background: var(--card2); font-size: 18px; font-weight: 800; }
+/* 1.4.0: pop-up calculator */
+.calc-hint { margin: 2px 0 10px; }
+.calc-q { font-size: 14px; line-height: 1.35; color: #ffe7b0; background: rgba(246, 196, 83, .1); border-radius: 10px; padding: 6px 9px; margin-bottom: 8px; max-height: 5.6em; overflow-y: auto; }
+.btn.calc-open { width: 100%; min-height: 44px; border: 2px dashed var(--gold); background: rgba(246, 196, 83, .12); color: #ffe7b0; font-weight: 800; border-radius: 14px; }
+.calc { position: fixed; z-index: 70; top: calc(70px + env(safe-area-inset-top)); right: 12px; width: 280px; padding: 12px; border-radius: 20px; background: #182540f7; border: 2px solid var(--gold); box-shadow: 0 16px 40px rgba(0, 0, 0, .55); animation: pop .15s ease-out; user-select: none; -webkit-user-select: none; }
+.calc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 17px; }
+.calc-x { width: 44px; height: 44px; border-radius: 12px; background: #ff6b6b; color: #fff; font-size: 22px; font-weight: 900; line-height: 1; }
+.calc-screen { background: #0a1220; border-radius: 12px; padding: 8px 12px; text-align: right; margin-bottom: 10px; border: 1px solid var(--line); }
+.calc-expr { color: var(--muted); font-size: 14px; min-height: 18px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.calc-disp { font-size: 34px; font-weight: 800; letter-spacing: .02em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ck { height: 52px; border-radius: 12px; background: var(--card2); font-size: 22px; font-weight: 800; touch-action: manipulation; }
+.ck:active { transform: scale(.96); }
+.ck.op { background: rgba(78, 161, 255, .25); color: #cfe6ff; }
+.ck.op.on { background: var(--blue); color: #fff; }
+.ck.fn { background: rgba(255, 255, 255, .16); }
+.ck.eq { grid-row: span 2; height: auto; background: linear-gradient(180deg, #ffd978, var(--gold2)); color: #2a1a00; }
+.ck.zero { grid-column: span 2; }
+@media (max-width: 600px) { .calc { top: calc(58px + env(safe-area-inset-top)); right: 8px; width: min(270px, calc(100vw - 16px)); padding: 10px; } .ck { height: 46px; } .calc-disp { font-size: 30px; } }
 @media (max-width: 820px) { .sidenav { top: auto; left: 0; } }
 .logo { font-size: clamp(26px, 7.4vw, 112px); white-space: nowrap; }
 .title-wrap > * { max-width: 100%; }
@@ -350,6 +380,7 @@ button, .btn, .choice, .navbtn { touch-action: manipulation; -webkit-tap-highlig
   <section id="screen-title" class="screen">
     <div class="bgscene" id="title-bg"></div>
     <div class="title-wrap">
+      <div id="title-news"></div>
       <h1 class="logo">PENNY TO PLENTY</h1>
       <div class="tagline">Every Decision Builds Your Future</div>
       <div class="player-cards" id="title-cards"></div>
@@ -373,6 +404,7 @@ button, .btn, .choice, .navbtn { touch-action: manipulation; -webkit-tap-highlig
   </section>
   <section id="screen-future" class="screen"><div class="page" id="future-page"></div></section>
   <section id="screen-compare" class="screen"><div class="page" id="compare-page"></div></section>
+  <div id="calc" class="calc hidden" role="dialog" aria-label="Calculator"></div>
   <div id="modal" class="hidden"></div>
   <div class="toasts" id="toasts"></div>
 </div>
@@ -383,7 +415,13 @@ button, .btn, .choice, .navbtn { touch-action: manipulation; -webkit-tap-highlig
    GAME_VERSION: bump for every release (also names the offline cache in site/sw.js).
    FEEDBACK_URL: tester feedback form; empty hides the button. "{version}" is replaced with GAME_VERSION. */
 window.FN = window.FN || {};
-FN.Config = { GAME_VERSION: '1.3.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
+FN.Config = { GAME_VERSION: '1.4.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
+// Shown once as a headline on the title screen after an update (keep it short and kid-friendly).
+FN.Config.WHATS_NEW = [
+  '🧮 New calculator! Tap "Use the calculator" on any Money Challenge (or open it from the ☰ Menu).',
+  '🌞 Longer days: everything takes half as much time, so you can do more before bed.',
+  '🔁 Fewer repeat questions, and math problems about YOUR job and business.'
+];
 
 /* ==== src/core/rng.js ==== */
 /* FN.RNG — seeded randomness. Player state keeps its own integer RNG state (s.rng) so
@@ -8799,6 +8837,8 @@ window.FN = window.FN || {};
   function show(name) {
     A.screen = name;
     ['title', 'game', 'future', 'compare'].forEach(function (n) { $('screen-' + n).classList.toggle('active', n === name); });
+    document.body.classList.toggle('on-title', name === 'title');
+    if (name !== 'game') calcClose();
   }
   A.show = show;
 
@@ -8815,7 +8855,25 @@ window.FN = window.FN || {};
     $('title-cards').innerHTML = cards;
     var fb = $('title-feedback'); if (fb) fb.innerHTML = feedbackUrl() ? btn('feedback', null, '💬 Send feedback', 'small') : '';
     var tv = $('title-version'); if (tv) tv.textContent = 'Version ' + FN.Config.GAME_VERSION;
+    renderNews();
   }
+  /* 1.4.0: update headline on the title screen + "what's new" once after an update */
+  var SEEN_KEY = 'fromnothing_v1_seenVersion';
+  function seenVersion(v) { try { if (v) localStorage.setItem(SEEN_KEY, v); return localStorage.getItem(SEEN_KEY); } catch (e) { return FN.Config.GAME_VERSION; } }
+  function renderNews() {
+    var el = $('title-news'); if (!el) return;
+    var ver = FN.Config.GAME_VERSION, h = '';
+    if (window.FN_UPDATE_WAITING) {
+      h = '<button class="news-update" data-act="applyUpdate">✨ A NEW VERSION IS READY! <span>Tap here to update</span></button>';
+    } else if (seenVersion() !== ver) {
+      if (!S.profiles().length) seenVersion(ver);            // brand-new device: nothing to announce
+      else h = '<div class="news-card"><button class="news-x" data-act="newsClose" aria-label="Close">✕</button>' +
+        '<div class="news-kicker">✨ NEW IN VERSION ' + esc(ver) + '</div><ul>' +
+        (FN.Config.WHATS_NEW || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+    }
+    el.innerHTML = h;
+  }
+  window.addEventListener('fn-update', function () { if (A.screen === 'title') renderNews(); });
   // profiles, most recently played first
   function byRecent() {
     return S.profiles().map(function (p) { var s = S.load(p.id); return { p: p, t: s ? (s.updated || 0) : (p.created || 0) }; })
@@ -8964,7 +9022,8 @@ window.FN = window.FN || {};
     if (!cur) { box.innerHTML = '<h2>A quiet moment</h2><p class="story">Nothing new is happening here. Try another place on the World Map or rest.</p>' + quickActions(); return; }
     if (cur.kind === 'quiz') {
       var q = cur.quiz;
-      box.innerHTML = '<h2>🧠 Money Challenge</h2><p class="story">' + esc(q.question) + '</p><div class="choices">' +
+      box.innerHTML = '<h2>🧠 Money Challenge</h2><p class="story">' + esc(q.question) + '</p>' +
+        '<div class="calc-hint">' + btn('calcOpen', null, '🧮 Use the calculator', 'calc-open') + '</div><div class="choices">' +
         q.answers.map(function (a, i) { return '<button class="choice" data-act="answer" data-arg="' + i + '"><span class="lbl"><span class="key">' + (i + 1) + '</span>' + esc(a) + '</span></button>'; }).join('') + '</div>' + quickActions();
       return;
     }
@@ -9435,6 +9494,7 @@ window.FN = window.FN || {};
       '<div class="gm-row"><div><b>💾 Save Game</b><div class="muted">Saves ' + esc(s.name) + '\'s progress <b>' + (FN.Cloud && FN.Cloud.ready ? 'to your account (online)' : 'on this device') + '</b> right now. (The game also saves automatically after every action.)' + (A.lastSaved ? ' Last saved at ' + A.lastSaved + '.' : '') + '</div></div>' + btn('saveGame', null, '💾 Save Game', 'green') + '</div>' +
       '<div class="gm-row"><div><b>⬇️ Export Backup</b><div class="muted">Downloads a <b>portable backup file</b> of ' + esc(s.name) + '\'s game, to keep safe or move to another computer.</div></div>' + btn('exportPlayer', null, '⬇️ Export Backup', 'primary') + '</div>' +
       '<div class="gm-row"><div><b>⬆️ Load Backup</b><div class="muted">Restores a backup file. It replaces only the player(s) inside that file.</div></div>' + btn('importInGame', null, '⬆️ Load Backup', '') + '</div>' +
+      '<div class="gm-row"><div><b>🧮 Calculator</b><div class="muted">A pop-up calculator for money math. Close it any time with the ✕.</div></div>' + btn('calcOpen', null, '🧮 Open', 'gold') + '</div>' +
       '<input type="file" id="importFile" accept=".json,application/json" class="hidden">' +
       '<div class="row" style="margin-top:14px">' + btn('help', null, '❓ How to play', 'small') + btn('muteMenu', null, A.muted ? '🔇 Sound: off' : '🔊 Sound: on', 'small') + btn('menu', null, '🏠 Back to title screen', 'small') + (feedbackUrl() ? btn('feedback', null, '💬 Send feedback', 'small') : '') + btn('closeModal', null, '▶ Keep playing', 'small gold') + '</div><p class="muted gm-version">Version ' + esc(FN.Config.GAME_VERSION) + '</p></div>');
   }
@@ -9511,6 +9571,11 @@ window.FN = window.FN || {};
       return r;
     },
     gameMenu: function () { gameMenu(); },
+    calcOpen: function () { closeModal(); calcOpen(); },
+    calcClose: function () { calcClose(); },
+    calcKey: function (k) { calcKey(k); },
+    applyUpdate: function (arg, el) { if (window.FN_UPDATE_WAITING) { if (el) el.innerHTML = 'Updating…'; window.FN_UPDATE_WAITING.postMessage('skipWaiting'); } },
+    newsClose: function () { seenVersion(FN.Config.GAME_VERSION); renderNews(); },
     muteMenu: function () { ACTIONS.mute(); gameMenu(); },
     exportPlayer: function () {
       var r = S.saveChecked(A.s); // save first so the backup matches the game
@@ -9531,8 +9596,8 @@ window.FN = window.FN || {};
     journey: function () { journeyModal(); },
     backToGame: function () { show('game'); A.sceneKey = ''; renderGame(); },
     choose: function (i) { handleResult(G.choose(A.s, +i)); },
-    answer: function (i) { handleResult(G.answerQuiz(A.s, +i)); },
-    continue: function () { A.result = null; renderGame(); },
+    answer: function (i) { handleResult(G.answerQuiz(A.s, +i)); calcRender(); },
+    continue: function () { A.result = null; renderGame(); calcRender(); },
     skip: function () { G.skip(A.s); renderGame(); },
     work: function () { handleResult(G.work(A.s)); },
     rest: function () { var r = G.rest(A.s); if (r.ok) toast('😌 You rested. +20 energy'); after(r); },
@@ -9664,7 +9729,71 @@ window.FN = window.FN || {};
     if (!fn) { if (window.console) console.warn('No action', act); return; }
     try { fn(el.getAttribute('data-arg'), el, ev); } catch (e) { if (window.console) console.error(e); toast('Oops — something went wrong. Your game is safe.'); }
   }
+
+  /* ---------------- 1.4.0: pop-up calculator ---------------- */
+  // Works like a pocket calculator. Floats over the game so the question stays visible.
+  var CALC = { disp: '0', acc: null, op: null, fresh: true, expr: '' };
+  function calcNum(x) { return parseFloat(String(x).replace(/,/g, '')) || 0; }
+  function calcFmt(n) {
+    if (!isFinite(n)) return 'Oops';
+    var r = +(+n).toFixed(8);
+    var parts = String(r).split('.');
+    if (Math.abs(r) >= 1e12) return String(r);
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  }
+  function calcDo(a, op, b) { return op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : op === '÷' ? (b === 0 ? NaN : a / b) : b; }
+  function calcKey(k) {
+    k = String(k || ''); if (!k) return;
+    var c = CALC;
+    if (c.disp === 'Oops' && k !== 'C') { c.disp = '0'; c.fresh = true; }
+    if (/^[0-9]$/.test(k) || k === '.') {
+      if (c.fresh) { c.disp = k === '.' ? '0.' : k; c.fresh = false; if (!c.op) c.expr = ''; }
+      else {
+        if (k === '.' && c.disp.indexOf('.') >= 0) return;
+        if (c.disp.replace(/[^0-9]/g, '').length >= 12) return;
+        c.disp = c.disp === '0' && k !== '.' ? k : c.disp + k;
+      }
+    } else if (k === 'C') { CALC = { disp: '0', acc: null, op: null, fresh: true, expr: '' }; }
+    else if (k === '⌫') { if (!c.fresh) { c.disp = c.disp.length > 1 ? c.disp.slice(0, -1) : '0'; if (c.disp === '-') c.disp = '0'; } }
+    else if (k === '=') {
+      if (c.op === null) return;
+      var b = calcNum(c.disp), r = calcDo(c.acc, c.op, b);
+      c.expr = calcFmt(c.acc) + ' ' + c.op + ' ' + calcFmt(b) + ' =';
+      c.disp = calcFmt(r); c.acc = null; c.op = null; c.fresh = true;
+    } else if ('+−×÷'.indexOf(k) >= 0) {
+      if (c.op !== null && !c.fresh) { var r2 = calcDo(c.acc, c.op, calcNum(c.disp)); c.disp = calcFmt(r2); }
+      if (c.disp === 'Oops') { c.acc = null; c.op = null; c.fresh = true; c.expr = ''; }
+      else { c.acc = calcNum(c.disp); c.op = k; c.fresh = true; c.expr = calcFmt(c.acc) + ' ' + k; }
+    }
+    calcRender();
+  }
+  function calcRender() {
+    var el = $('calc'); if (!el || !A.calcOpen) return;
+    var keys = ['C', '⌫', '÷', '×', '7', '8', '9', '−', '4', '5', '6', '+', '1', '2', '3', '=', '0', '.'];
+    el.innerHTML = '<div class="calc-head"><b>🧮 Calculator</b><button class="calc-x" data-act="calcClose" aria-label="Close calculator">✕</button></div>' +
+      calcQuestion() +
+      '<div class="calc-screen"><div class="calc-expr">' + esc(CALC.expr || ' ') + '</div><div class="calc-disp">' + esc(CALC.disp) + '</div></div>' +
+      '<div class="calc-keys">' + keys.map(function (k) {
+        var cls = k === '=' ? 'eq' : '+−×÷'.indexOf(k) >= 0 ? 'op' + (CALC.op === k && CALC.fresh ? ' on' : '') : (k === 'C' || k === '⌫') ? 'fn' : k === '0' ? 'zero' : '';
+        return '<button class="ck ' + cls + '" data-act="calcKey" data-arg="' + esc(k) + '">' + esc(k) + '</button>';
+      }).join('') + '</div>';
+  }
+  // show the Money Challenge question inside the calculator so it can't be covered up
+  function calcQuestion() {
+    var cur = A.s && A.s.current;
+    return cur && cur.kind === 'quiz' && cur.quiz && !A.result ? '<div class="calc-q">' + esc(cur.quiz.question) + '</div>' : '';
+  }
+  function calcOpen() { A.calcOpen = true; $('calc').classList.remove('hidden'); calcRender(); }
+  function calcClose() { A.calcOpen = false; var el = $('calc'); if (el) { el.classList.add('hidden'); el.innerHTML = ''; } }
+  A.calc = { open: calcOpen, close: calcClose, key: calcKey, state: function () { return CALC; } };
+
   function onKey(ev) {
+    if (A.calcOpen && !(ev.target && /input|textarea|select/i.test(ev.target.tagName))) {
+      var map = { '*': '×', 'x': '×', 'X': '×', '/': '÷', '-': '−', '+': '+', 'Enter': '=', '=': '=', 'Backspace': '⌫', 'Escape': 'close', 'c': 'C', 'C': 'C', 'Delete': 'C', '.': '.', ',': '.' };
+      var k = /^[0-9]$/.test(ev.key) ? ev.key : map[ev.key];
+      if (k) { ev.preventDefault(); if (k === 'close') calcClose(); else calcKey(k); return; }
+    }
     if (A.screen !== 'game' || !$('modal').classList.contains('hidden')) {
       if (ev.key === 'Enter' && !$('modal').classList.contains('hidden')) { var b = $('modal').querySelector('.btn.primary,.btn.gold'); if (b && !b.disabled) b.click(); }
       return;
@@ -9721,10 +9850,12 @@ FN.App.init();
   if (!/^http/.test(location.protocol) || !('serviceWorker' in navigator)) return;
   var reloading = false;
   function offer(worker) {
+    window.FN_UPDATE_WAITING = worker;
+    try { window.dispatchEvent(new Event('fn-update')); } catch (e) { }
     if (document.getElementById('updateBanner')) return;
     var b = document.createElement('button');
     b.id = 'updateBanner'; b.className = 'update-banner';
-    b.textContent = '✨ New version available - Tap to update';
+    b.innerHTML = '✨ <b>New version available!</b> Tap here to update';
     b.onclick = function () { b.textContent = 'Updating…'; worker.postMessage('skipWaiting'); };
     document.body.appendChild(b);
   }
