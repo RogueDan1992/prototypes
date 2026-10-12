@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta name="robots" content="noindex, nofollow">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Penny to Plenty">
@@ -382,7 +383,7 @@ button, .btn, .choice, .navbtn { touch-action: manipulation; -webkit-tap-highlig
    GAME_VERSION: bump for every release (also names the offline cache in site/sw.js).
    FEEDBACK_URL: tester feedback form; empty hides the button. "{version}" is replaced with GAME_VERSION. */
 window.FN = window.FN || {};
-FN.Config = { GAME_VERSION: '1.2.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
+FN.Config = { GAME_VERSION: '1.3.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
 
 /* ==== src/core/rng.js ==== */
 /* FN.RNG — seeded randomness. Player state keeps its own integer RNG state (s.rng) so
@@ -445,6 +446,7 @@ window.FN = window.FN || {};
   var C = {};
   C.START_HOUR = 7;
   C.END_HOUR = 21;
+  C.TIME_SCALE = 0.5;   // each action uses half its listed hours (1.3.0: longer days)
   C.SAVE_PREFIX = 'fromnothing_v1_';
 
   // Players are open profiles now: see FN.State.profiles() (src/core/state.js).
@@ -1539,6 +1541,12 @@ window.FN = window.FN || {};
     return { weather: s.weather.today, forecast: s.weather.tomorrow, phase: s.economy.phase, level: s.level, rng: function () { return R.next(s); } };
   };
   G.hoursLeft = function (s) { return Math.max(0, C.END_HOUR - s.hour); };
+  // 1.3.0: actions use TIME_SCALE of their listed hours, so a day holds more play.
+  G.hrs = function (h) { return (+h || 0) * (C.TIME_SCALE || 1); };
+  G.hrsText = function (h, long) {
+    if (h > 0 && h < 1) return Math.round(h * 60) + ' min';
+    return h + (long ? (h === 1 ? ' hour' : ' hours') : 'h');
+  };
   G.clockText = function (h) {
     var hh = Math.floor(h), mm = Math.round((h - hh) * 60);
     var ap = hh >= 12 ? 'PM' : 'AM'; var h12 = hh % 12 === 0 ? 12 : hh % 12;
@@ -1672,9 +1680,29 @@ window.FN = window.FN || {};
     if ((sc.stage || 1) === s.stage) w *= 1.4;                        // favor current-stage content
     var log = s.scenarioLog[sc.id];
     if (log && log.count) w /= (1 + log.count * 0.6);                 // avoid repetition
+    if (log && log.lastDay === s.day && log.count) w *= 0.08;          // 1.3.0: already seen today
     if (sc.filler) w *= 0.35;
     return w;
   };
+  // 1.3.0: remember the last few scenarios shown so the same card doesn't come right back
+  G.remember = function (s, id) {
+    var r = s.recentSc || (s.recentSc = []);
+    var i = r.indexOf(id); if (i >= 0) r.splice(i, 1);
+    r.push(id); if (r.length > 4) r.shift();
+  };
+  G.stale = function (s, sc) {
+    var l = s.scenarioLog[sc.id];
+    return (s.recentSc || []).indexOf(sc.id) >= 0 || !!(l && l.lastDay === s.day && l.count && (!FN.Milestones.isFiller(sc) || (l.todayCount || 0) >= 1));
+  };
+  function freshPool(s, pool) {
+    var recent = s.recentSc || [];
+    var today = pool.filter(function (sc) { var l = s.scenarioLog[sc.id]; return recent.indexOf(sc.id) < 0 && !(FN.Milestones.isFiller(sc) && l && l.lastDay === s.day && (l.todayCount || 0) >= 1); });
+    if (today.length) return today;
+    var older = pool.filter(function (sc) { return recent.indexOf(sc.id) < 0; });
+    if (older.length) return older;
+    var last = recent[recent.length - 1];
+    return pool.filter(function (sc) { return sc.id !== last; });   // never the same card twice in a row
+  }
   G.pickScenario = function (s) {
     var rng = function () { return R.next(s); };
     // delayed consequences first
@@ -1684,15 +1712,17 @@ window.FN = window.FN || {};
       if (p.day <= s.day) {
         var sc = G.byId(p.scenario);
         s.pending.splice(i, 1); i--;
-        if (sc && G.req(s, sc.requires) && !(sc.once && s.scenarioLog[sc.id] && s.scenarioLog[sc.id].count)) { G._forcedBy = p.event || null; return sc; }
+        if (sc && G.req(s, sc.requires) && !(sc.once && s.scenarioLog[sc.id] && s.scenarioLog[sc.id].count)) { G._forcedBy = p.event || null; G._forced = true; return sc; }
       }
     }
-    G._forcedBy = null;
+    G._forcedBy = null; G._forced = false;
     var pool = (FN.Scenarios || []).filter(function (sc) { return G.eligible(s, sc) && (sc.weight !== 0 || false); });
-    var pick = R.weighted(rng, pool, function (sc) { return G.weightOf(s, sc); });
+    var fresh = freshPool(s, pool);
+    var pick = R.weighted(rng, fresh.length ? fresh : pool, function (sc) { return G.weightOf(s, sc); });
     if (!pick) {
       pool = (FN.Scenarios || []).filter(function (sc) { return FN.Milestones.isFiller(sc) && G.eligible(s, sc, true); });
-      pick = R.weighted(rng, pool, function () { return 1; });
+      fresh = freshPool(s, pool);
+      pick = R.weighted(rng, fresh.length ? fresh : pool, function (sc) { return G.weightOf(s, sc) || 1; });
     }
     return pick || null;
   };
@@ -1703,14 +1733,18 @@ window.FN = window.FN || {};
     return R.next(s) < 0.45;
   };
   G.makeQuiz = function (s) {
-    var pool = FN.Quizzes.filter(function (q) { return !q.levels || q.levels.indexOf(s.level) >= 0; });
+    var all = FN.Quizzes.filter(function (q) { return (!q.levels || q.levels.indexOf(s.level) >= 0) && q.id !== s.lastQuizId; });
+    var general = all.filter(function (q) { return !q.personal; });
+    // 1.3.0: questions about the player's own job, businesses, home and loans come first
+    var mine = all.filter(function (q) { if (!q.personal) return false; try { return !!q.fits(s); } catch (e) { return false; } });
     var seed = R.hash(s.seed, s.day, s.stats.decisions, s.stats.quizTotal);
     var rng = R.stream(seed);
     for (var tries = 0; tries < 6; tries++) {
+      var pool = mine.length && (rng() < 0.7 || !general.length) ? mine : general;
       var q = R.pick(rng, pool);
       try {
         var out = q.gen(rng, s.level, s);
-        if (out && out.answers && out.answers.length >= 2 && out.correct >= 0 && out.correct < out.answers.length) { out.topic = q.topic || q.id; out.id = q.id; return out; }
+        if (out && out.answers && out.answers.length >= 2 && out.correct >= 0 && out.correct < out.answers.length) { out.topic = q.topic || q.id; out.id = q.id; s.lastQuizId = q.id; return out; }
       } catch (e) { }
     }
     return null;
@@ -1727,13 +1761,21 @@ window.FN = window.FN || {};
       if (q) { s.current = { kind: 'quiz', quiz: q }; s.lastQuizDecision = s.stats.decisions; return s.current; }
     }
     var sc = G.pickScenario(s);
+    // 1.3.0: if the only thing left here is a card seen recently, offer a math challenge instead
+    // (never two quizzes in a row; the card shown then is never the one just seen).
+    if (sc && !G._forced && G.stale(s, sc)) {
+      if (s.lastQuizDecision === undefined || s.stats.decisions - s.lastQuizDecision >= 2) {
+        var q2 = G.makeQuiz(s);
+        if (q2) { s.current = { kind: 'quiz', quiz: q2 }; s.lastQuizDecision = s.stats.decisions; return s.current; }
+      }
+    }
     s.current = sc ? { kind: 'scenario', id: sc.id } : null;
     if (sc && G._forcedBy) s.current.event = G._forcedBy;
     return s.current;
   };
   // A view model of a choice: enabled + reason
   G.choiceState = function (s, ch) {
-    var hours = ch.hours === undefined ? 1 : ch.hours, energy = ch.energy === undefined ? 5 : ch.energy;
+    var hours = G.hrs(ch.hours === undefined ? 1 : ch.hours), energy = ch.energy === undefined ? 5 : ch.energy;
     var cost = ch.cost || 0;
     var reason = G.reqReason(s, ch.requires);
     if (reason && ch.reason) reason = ch.reason;
@@ -1762,7 +1804,9 @@ window.FN = window.FN || {};
   };
   G.markSeen = function (s, sc) {
     var log = s.scenarioLog[sc.id] || (s.scenarioLog[sc.id] = { count: 0, lastDay: s.day });
+    log.todayCount = log.lastDay === s.day ? (log.todayCount || 0) + 1 : 1;
     log.count++; log.lastDay = s.day;
+    G.remember(s, sc.id);
   };
   // Make a choice on the current scenario. Returns a result view model or {ok:false,msg}.
   G.choose = function (s, idx) {
@@ -1812,7 +1856,7 @@ window.FN = window.FN || {};
   };
   G.skip = function (s) {
     var cur = s.current;
-    if (cur && cur.kind === 'scenario') { var sc = G.byId(cur.id); if (sc) { var log = s.scenarioLog[sc.id] || (s.scenarioLog[sc.id] = { count: 0 }); log.lastDay = s.day; } }
+    if (cur && cur.kind === 'scenario') { var sc = G.byId(cur.id); if (sc) { var log = s.scenarioLog[sc.id] || (s.scenarioLog[sc.id] = { count: 0 }); log.lastDay = s.day; G.remember(s, sc.id); } }
     if (cur && cur.kind === 'quiz') { s.stats.decisions++; }
     s.current = null;
     G.current(s);
@@ -1849,7 +1893,7 @@ window.FN = window.FN || {};
     var fare = 0;
     if (region !== hereRegion) { hours = 2; fare = C.BUS_FARE; if (s.items.truck) { fare = 3; hours = 1.5; } }
     if (place === s.place) hours = 0;
-    return { hours: hours, fare: fare, region: region };
+    return { hours: G.hrs(hours), fare: fare, region: region };
   };
   G.travelReason = function (s, place) {
     var p = C.PLACES[place]; if (!p) return 'Unknown place';
@@ -1876,7 +1920,7 @@ window.FN = window.FN || {};
     var j = C.JOBS[s.job]; if (!j) return 'No job yet';
     if (s.place !== j.place) return 'Go to ' + C.PLACES[j.place].name + ' to work';
     if (s.workedToday >= 2) return 'Max 2 shifts a day';
-    if (G.hoursLeft(s) < j.hours) return 'Not enough time left today';
+    if (G.hoursLeft(s) < G.hrs(j.hours)) return 'Not enough time left today';
     if (s.energy < j.energy) return 'Too tired to work';
     return '';
   };
@@ -1885,7 +1929,7 @@ window.FN = window.FN || {};
     var j = C.JOBS[s.job];
     var before = G.snapshot(s);
     var r = E.workShift(s, function () { return R.next(s); });
-    G.useTime(s, j.hours, j.energy);
+    G.useTime(s, G.hrs(j.hours), j.energy);
     s.workedToday++;
     FN.Milestones.earn(s); FN.Milestones.decision(s, 'work');
     var res = { ok: true, kind: 'work', title: 'Shift complete!', text: 'You worked as a ' + j.title + ' and earned ' + E.fmt(r.pay) + (r.bonus ? ' plus a ' + E.fmt(r.bonus) + ' bonus for great work!' : '.'), lesson: 'A steady paycheck is reliable income — you know what you\'ll earn.', deltas: G.diff(before, G.snapshot(s)), mood: 'good' };
@@ -1911,8 +1955,8 @@ window.FN = window.FN || {};
     return res;
   };
   G.rest = function (s) {
-    if (G.hoursLeft(s) < 2) return { ok: false, msg: 'Not enough time — sleep instead (Next Day).' };
-    G.useTime(s, 2, 0);
+    if (G.hoursLeft(s) < G.hrs(2)) return { ok: false, msg: 'Not enough time — sleep instead (Next Day).' };
+    G.useTime(s, G.hrs(2), 0);
     s.energy = E.clamp(s.energy + 20, 0, 100); s.happiness = E.clamp(s.happiness + 3, 0, 100);
     FN.State.save(s);
     return { ok: true };
@@ -1931,7 +1975,7 @@ window.FN = window.FN || {};
     if (b.lastRunDay === s.day) return 'Already open today';
     var place = c.place === 'home' ? 'home' : c.place;
     if (s.place !== place) return 'Go to ' + C.PLACES[place].name;
-    if (G.hoursLeft(s) < c.hours) return 'Not enough time left today';
+    if (G.hoursLeft(s) < G.hrs(c.hours)) return 'Not enough time left today';
     if (s.energy < c.energy) return 'Too tired';
     return '';
   };
@@ -1940,7 +1984,7 @@ window.FN = window.FN || {};
     var c = C.BUSINESSES[id];
     var r = E.runBusiness(s, id, opts, function () { return R.next(s); });
     if (!r.ok) return r;
-    G.useTime(s, c.hours, c.energy);
+    G.useTime(s, G.hrs(c.hours), c.energy);
     FN.Milestones.decision(s, 'business');
     FN.Milestones.money(s, 'run:' + id);
     if (r.revenue > 0) FN.Milestones.earn(s);
@@ -2513,6 +2557,157 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
         { label: 'Sit on a bench', detail: '+12 energy · 1 hour', hours: 1, energy: 0,
           effects: [{ energy: 12 }, { happiness: 2 }],
           lesson: 'Slowing down is good for you.' }
+      ]
+    },
+    /* 1.3.0: a second everyday card per place (plus two anywhere) so longer days repeat less */
+    {
+      id: 'f_home2', stage: 1, title: 'A Slow Morning', places: ['home'], weight: 3, cooldown: 0,
+      text: 'Nobody needs you for a little while. A good time to get things in order.',
+      choices: [
+        { label: 'Count and sort your money', detail: '+Money Smarts · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'money', add: 1 }, { happiness: 1 }],
+          lesson: 'Knowing exactly what you have is the first step to a budget.' },
+        { label: 'Fix something that broke', detail: '+Fixing · 2 hours', hours: 2, energy: 6,
+          effects: [{ skill: 'trades', add: 2 }],
+          lesson: 'Fixing beats buying new when you can do it yourself.' },
+        { label: 'Read a book', detail: '+12 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 12 }, { happiness: 2 }],
+          lesson: 'Reading is a free way to learn and relax.' }
+      ]
+    },
+    {
+      id: 'f_streets2', stage: 1, title: 'Busy Corner', places: ['streets'], weight: 3, cooldown: 0,
+      text: 'A delivery truck is unloading and a street musician is playing for tips.',
+      choices: [
+        { label: 'Help unload the truck', detail: 'Earn a little · 2 hours', hours: 2, energy: 12,
+          effects: function (s) { return [{ cash: pay(s, 3) }, { skill: 'work', add: 1 }]; },
+          lesson: 'Hard work is always in demand.' },
+        { label: 'Tip the musician $1', detail: '+Happiness · 1 hour', hours: 1, energy: 1, requires: { minCash: 1 },
+          effects: [{ donate: 1, why: 'Tipped a street musician $1' }, { happiness: 4 }, { reputation: 1 }],
+          lesson: 'Supporting other people\'s hard work feels good.' },
+        { label: 'Grab a bench', detail: '+10 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 10 }],
+          lesson: 'Short breaks keep your energy up.' }
+      ]
+    },
+    {
+      id: 'f_park2', stage: 1, title: 'Park Pond', places: ['park'], weight: 3, cooldown: 0,
+      text: 'Kids are sailing toy boats on the pond. A family is having trouble with a picnic table.',
+      choices: [
+        { label: 'Help carry the picnic table', detail: '+Friendship · 1 hour', hours: 1, energy: 5,
+          effects: [{ reputation: 2 }, { skill: 'people', add: 1 }],
+          lesson: 'Small favors build a good name.' },
+        { label: 'Pick up litter by the pond', detail: '+Reputation · 2 hours', hours: 2, energy: 6,
+          effects: [{ reputation: 3 }, { happiness: 2 }],
+          lesson: 'Taking care of shared places is everyone\'s job.' },
+        { label: 'Feed the ducks', detail: '+12 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 12 }, { happiness: 3 }],
+          lesson: 'Simple fun doesn\'t have to cost much.' }
+      ]
+    },
+    {
+      id: 'f_market2', stage: 1, title: 'Closing Time at the Market', places: ['market'], weight: 3, cooldown: 0,
+      text: 'Sellers are marking things down before they pack up. Leftover bread is going cheap.',
+      choices: [
+        { label: 'Sweep up for a farmer', detail: 'Earn a little · 2 hours', hours: 2, energy: 10,
+          effects: function (s) { return [{ cash: pay(s, 3) }, { rel: 'miller', add: 1 }]; },
+          lesson: 'Showing up at the end of the day gets noticed.' },
+        { label: 'Watch how sellers mark down prices', detail: '+Business · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'business', add: 1 }, { skill: 'money', add: 1 }],
+          lesson: 'Selling for less beats throwing food away.' },
+        { label: 'Take a break by the fountain', detail: '+10 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 10 }, { happiness: 1 }],
+          lesson: 'Rest is part of working well.' }
+      ]
+    },
+    {
+      id: 'f_grocery2', stage: 1, title: 'Delivery Day', places: ['grocery'], weight: 3, cooldown: 0,
+      text: 'Boxes are stacked at Rosa\'s back door. Some cans are dented.',
+      choices: [
+        { label: 'Stock the new boxes', detail: 'Earn a little · 2 hours', hours: 2, energy: 10,
+          effects: function (s) { return [{ cash: pay(s, 3) }, { rel: 'rosa', add: 1 }]; },
+          lesson: 'Stores can\'t sell what isn\'t on the shelf.' },
+        { label: 'Help Rosa check the order', detail: '+Money Smarts · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'money', add: 1 }, { rel: 'rosa', add: 1 }],
+          lesson: 'Always check you got what you paid for.' },
+        { label: 'Sit on a crate and rest', detail: '+10 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 10 }],
+          lesson: 'Even busy days need a breather.' }
+      ]
+    },
+    {
+      id: 'f_downtown2', stage: 1, title: 'Lunch Rush Downtown', places: ['downtown'], weight: 3, cooldown: 0,
+      text: 'Food carts have long lines. Office workers hurry back with their lunches.',
+      choices: [
+        { label: 'Help a food cart serve', detail: 'Earn a little · 2 hours', hours: 2, energy: 10,
+          effects: function (s) { return [{ cash: pay(s, 4) }, { skill: 'people', add: 1 }]; },
+          lesson: 'Fast, friendly service brings customers back.' },
+        { label: 'Count the line and do the math', detail: '+Business · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'business', add: 1 }],
+          lesson: 'Customers × price = sales. Busy spots make more.' },
+        { label: 'Eat lunch on the steps', detail: '+12 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 12 }, { happiness: 1 }],
+          lesson: 'Fuel up so you can keep going.' }
+      ]
+    },
+    {
+      id: 'f_farm2', stage: 1, title: 'Chores in the Barn', places: ['farm'], weight: 3, cooldown: 0,
+      text: 'The animals need water and the barn needs sweeping.',
+      choices: [
+        { label: 'Water and feed the animals', detail: 'Earn a little · 2 hours', hours: 2, energy: 12,
+          effects: function (s) { return [{ cash: pay(s, 3) }, { skill: 'farming', add: 1 }]; },
+          lesson: 'Animals need care every day, even holidays.' },
+        { label: 'Fix a loose fence board', detail: '+Fixing · 1 hour', hours: 1, energy: 4,
+          effects: [{ skill: 'trades', add: 1 }, { rel: 'miller', add: 1 }],
+          lesson: 'A small fix now stops a big problem later.' },
+        { label: 'Rest in the shade', detail: '+15 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 15 }],
+          lesson: 'Farm work is hard. Rest when you can.' }
+      ]
+    },
+    {
+      id: 'f_town2', stage: 1, title: 'Town Bake Sale', places: ['town'], weight: 3, cooldown: 0,
+      text: 'The church is holding a bake sale to raise money for a family in need.',
+      choices: [
+        { label: 'Help run the table', detail: '+Reputation · 2 hours', hours: 2, energy: 6,
+          effects: [{ reputation: 3 }, { skill: 'people', add: 1 }],
+          lesson: 'Giving your time is a real way to give.' },
+        { label: 'Buy a cookie and give $2', detail: '+Happiness · 1 hour', hours: 1, energy: 0, requires: { minCash: 2 },
+          effects: [{ donate: 2, why: 'Gave $2 at the town bake sale' }, { happiness: 5 }, { reputation: 1 }],
+          lesson: 'A little money given at the right time helps a lot.' },
+        { label: 'Chat with neighbors', detail: '+10 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 10 }, { happiness: 2 }],
+          lesson: 'Knowing your neighbors makes a town feel like home.' }
+      ]
+    },
+    {
+      id: 'f_errands', stage: 1, title: 'Running Errands', weight: 2, cooldown: 0,
+      text: 'A neighbor asks if you can pick up a few things for them.',
+      choices: [
+        { label: 'Run the errand', detail: 'Earn a little · 1 hour', hours: 1, energy: 6,
+          effects: function (s) { return [{ cash: pay(s, 2) }, { reputation: 1 }]; },
+          lesson: 'Being dependable is worth money.' },
+        { label: 'Do it for free', detail: '+Reputation · 1 hour', hours: 1, energy: 6,
+          effects: [{ reputation: 3 }, { happiness: 2 }],
+          lesson: 'Helping without being paid builds trust.' },
+        { label: 'Say you\'re busy and rest', detail: '+10 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 10 }],
+          lesson: 'It\'s OK to say no when you need rest.' }
+      ]
+    },
+    {
+      id: 'f_learn', stage: 1, title: 'Something to Learn', weight: 2, cooldown: 0,
+      text: 'You find a free class flyer: "Money Basics" and "Fix It Yourself."',
+      choices: [
+        { label: 'Go to Money Basics', detail: '+Money Smarts · 2 hours', hours: 2, energy: 4,
+          effects: [{ skill: 'money', add: 2 }],
+          lesson: 'Learning about money pays you back for life.' },
+        { label: 'Go to Fix It Yourself', detail: '+Fixing · 2 hours', hours: 2, energy: 6,
+          effects: [{ skill: 'trades', add: 2 }],
+          lesson: 'Skills are something nobody can take from you.' },
+        { label: 'Skip it and rest', detail: '+10 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 10 }],
+          lesson: 'Rest now, learn next time.' }
       ]
     }
   );
@@ -4632,7 +4827,200 @@ window.FN = window.FN || {};
           lesson: 'Unsold inventory still has value until it is sold or spoils.'
         });
       } }
+    ];
+
+  /* ---------- 1.3.0: "my life" questions built from the player's own job, businesses, home and loans.
+     Each has fits(s); Engine.makeQuiz prefers these when any fit. Numbers come from the catalog and
+     the save, so the math matches what the player is dealing with right now. ---------- */
+  var C = function () { return FN.Catalog; };
+  function myBiz(s, types) {
+    return Object.keys(s.businesses || {}).filter(function (id) { var c = C().BUSINESSES[id]; return c && (!types || types.indexOf(c.type) >= 0); });
+  }
+  function lvlMult(s, id) { var c = C().BUSINESSES[id], b = s.businesses[id]; var L = c.levels && c.levels[(b.level || 1) - 1]; return L ? L.mult : 1; }
+  function plural(u) { return /(ch|sh|s|x)$/.test(u) ? u + 'es' : u + 's'; }
+  function nameOf(id) { return C().BUSINESSES[id].name; }
+  // things the player could realistically save up for from their job (unlocked, not owned, under ~25 shifts away)
+  function goalItems(s) {
+    var j = C().JOBS[s.job]; if (!j) return [];
+    return Object.keys(C().ITEMS).filter(function (k) {
+      var it = C().ITEMS[k];
+      return !s.items[k] && it.price > s.cash && it.price - s.cash <= j.wage * 25 && (!it.requires || FN.Engine.req(s, it.requires));
+    }).sort(function (a, b) { return C().ITEMS[a].price - C().ITEMS[b].price; });
+  }
+
+  var LIFE = [
+    { id: 'q_my_shifts', topic: 'My paycheck', personal: true, fits: function (s) { return !!s.job; },
+      gen: function (rng, level, s) {
+        var j = C().JOBS[s.job], n = level === 'younger' ? ri(rng, 2, 5) : ri(rng, 4, 10);
+        return build(rng, {
+          question: 'You work as a ' + j.title + ' and earn ' + money(j.wage) + ' per shift. If you work ' + n + ' shifts, how much do you earn?',
+          answer: n * j.wage,
+          right: n + ' shifts × ' + money(j.wage) + ' = ' + money(n * j.wage) + '.',
+          wrongs: [{ v: n + j.wage, why: 'That adds the numbers. Every shift pays the same, so multiply.' },
+                   { v: (n - 1) * j.wage, why: 'That is one shift short. Count all ' + n + ' shifts.' }],
+          step: j.wage,
+          lesson: 'A steady job makes it easy to plan: pay per shift × number of shifts.'
+        });
+      } },
+
+    { id: 'q_my_goal', topic: 'Saving from my job', personal: true,
+      fits: function (s) { return !!s.job && goalItems(s).length > 0; },
+      gen: function (rng, level, s) {
+        var j = C().JOBS[s.job];
+        var want = goalItems(s)[0];
+        var it = C().ITEMS[want], have = Math.floor(s.cash), need = Math.max(1, it.price - have);
+        var shifts = Math.ceil(need / j.wage);
+        return build(rng, {
+          question: 'You want a ' + it.name + ' for ' + money(it.price) + '. You have ' + money(have) + '. Your ' + j.title + ' job pays ' + money(j.wage) + ' a shift. How many shifts until you can buy it?',
+          answer: shifts, fmt: function (v) { return v + (v === 1 ? ' shift' : ' shifts'); },
+          right: 'You still need ' + money(it.price) + ' − ' + money(have) + ' = ' + money(need) + '. ' + money(need) + ' ÷ ' + money(j.wage) + ' is about ' + (Math.round(need / j.wage * 10) / 10) + ', so you need ' + shifts + ' whole shifts.',
+          wrongs: [{ v: Math.ceil(it.price / j.wage), why: 'That ignores the ' + money(have) + ' you already have. Subtract it first.' },
+                   { v: Math.max(1, shifts - 1), why: 'Close! But that leaves you a little short. Round UP to a whole shift.' }],
+          lesson: 'Goal − what you have = what you still need. Then divide by what you earn each time.'
+        });
+      } },
+
+    { id: 'q_my_stand', topic: 'My business profit', personal: true, fits: function (s) { return myBiz(s, ['stock']).length > 0; },
+      gen: function (rng, level, s) {
+        var id = pick(rng, myBiz(s, ['stock'])), c = C().BUSINESSES[id];
+        var price = c.prices.fair, cost = c.unitCost, n = level === 'younger' ? ri(rng, 5, Math.min(20, c.stock[0])) : ri(rng, Math.ceil(c.stock[0] / 2), c.stock[1]);
+        if (level === 'younger') {
+          var each = round2(price - cost);
+          return build(rng, {
+            question: 'At your ' + c.name + ', each ' + c.unit + ' costs you ' + money(cost) + ' to make and you sell it for ' + money(price) + '. You sell ' + n + '. What is your profit?',
+            answer: round2(n * each), step: each,
+            right: 'Each ' + c.unit + ' makes ' + money(price) + ' − ' + money(cost) + ' = ' + money(each) + '. Then ' + n + ' × ' + money(each) + ' = ' + money(n * each) + '.',
+            wrongs: [{ v: round2(n * price), why: 'That is all your sales money. You still have to pay for what you made.' },
+                     { v: each, why: 'That is the profit on just ONE. Multiply by how many you sold.' }],
+            lesson: c.lesson
+          });
+        }
+        var helper = s.businesses[id].helper ? c.helperWage : 0, fixed = c.fixed || 0;
+        var sales = round2(n * price), goods = round2(n * cost), prof = round2(sales - goods - helper - fixed);
+        var extra = (helper ? ' Your helper costs ' + money(helper) + ' today.' : '') + (fixed ? ' Rent and bills for the day are ' + money(fixed) + '.' : '');
+        return build(rng, {
+          question: 'Your ' + c.name + ' sells ' + n + ' ' + plural(c.unit) + ' at ' + money(price) + ' each. Each one cost you ' + money(cost) + '.' + extra + ' What is your profit for the day?',
+          answer: prof, allowNeg: true, step: price,
+          right: 'Sales ' + money(sales) + ' − goods ' + money(goods) + (helper ? ' − helper ' + money(helper) : '') + (fixed ? ' − bills ' + money(fixed) : '') + ' = ' + money(prof) + '.',
+          wrongs: [{ v: sales, why: 'That is just the money that came in. Take away every cost.' },
+                   { v: round2(sales - goods), why: (helper || fixed) ? 'You subtracted the goods but forgot the other costs of the day.' : 'Close, check your multiplication.' }],
+          lesson: 'Real profit counts EVERY cost: goods, helpers and bills.'
+        });
+      } },
+
+    { id: 'q_my_service', topic: 'My service business', personal: true, fits: function (s) { return myBiz(s, ['service']).length > 0; },
+      gen: function (rng, level, s) {
+        var id = pick(rng, myBiz(s, ['service'])), c = C().BUSINESSES[id];
+        var price = c.prices.fair, sup = c.supplyCost, n = ri(rng, 2, c.maxJobs[(s.businesses[id].level || 1) - 1]);
+        if (level === 'younger') {
+          return build(rng, {
+            question: 'Your ' + c.name + ' charges ' + money(price) + ' per ' + c.unit + '. You do ' + n + ' today. How much money comes in?',
+            answer: n * price, step: price,
+            right: n + ' × ' + money(price) + ' = ' + money(n * price) + '.',
+            wrongs: [{ v: n + price, why: 'That adds them. Each ' + c.unit + ' pays the same, so multiply.' },
+                     { v: (n + 1) * price, why: 'That counts one extra ' + c.unit + '.' }],
+            lesson: c.lesson
+          });
+        }
+        var each = round2(price - sup);
+        return build(rng, {
+          question: 'Your ' + c.name + ' charges ' + money(price) + ' per ' + c.unit + ' and supplies cost ' + money(sup) + ' each time. You do ' + n + ' ' + plural(c.unit) + '. What is your profit?',
+          answer: round2(n * each), step: each,
+          right: 'Each ' + c.unit + ' earns ' + money(price) + ' − ' + money(sup) + ' = ' + money(each) + '. ' + n + ' × ' + money(each) + ' = ' + money(n * each) + '.',
+          wrongs: [{ v: round2(n * price), why: 'That forgot the supplies you used.' },
+                   { v: round2(n * price - sup), why: 'You only subtracted supplies once. Every job uses supplies.' }],
+          lesson: 'A service sells your time, but supplies still cost money every job.'
+        });
+      } },
+
+    { id: 'q_my_spoil', topic: 'Leftover stock', personal: true, levels: ['older'],
+      fits: function (s) { return myBiz(s, ['stock']).some(function (id) { return C().BUSINESSES[id].perish > 0.2; }); },
+      gen: function (rng, level, s) {
+        var id = pick(rng, myBiz(s, ['stock']).filter(function (k) { return C().BUSINESSES[k].perish > 0.2; })), c = C().BUSINESSES[id];
+        var stock = c.stock[1], sold = ri(rng, Math.floor(stock * 0.5), stock - 3), left = stock - sold;
+        var lost = round2(left * c.perish), loss = round2(Math.round(lost) * c.unitCost);
+        return build(rng, {
+          question: 'You stocked ' + stock + ' ' + plural(c.unit) + ' at your ' + c.name + ' and sold ' + sold + '. ' + (c.perish >= 1 ? 'All of the leftovers' : 'About half of the leftovers') + ' go bad overnight. Each cost you ' + money(c.unitCost) + '. How much money is lost to spoiling?',
+          answer: loss, step: c.unitCost,
+          right: stock + ' − ' + sold + ' = ' + left + ' left over' + (c.perish < 1 ? ', and half of that is ' + Math.round(lost) : '') + '. ' + Math.round(lost) + ' × ' + money(c.unitCost) + ' = ' + money(loss) + '.',
+          wrongs: [{ v: round2(left * c.unitCost * (c.perish < 1 ? 1 : 2)), why: c.perish < 1 ? 'Only about half of the leftovers spoil, not all of them.' : 'Check how many were left over.' },
+                   { v: round2(sold * c.unitCost), why: 'That is the cost of what you SOLD. The loss is the leftovers.' }],
+          lesson: 'Buying too much fresh stock turns into a loss. Watch the weather and buy smart.'
+        });
+      } },
+
+    { id: 'q_my_hens', topic: 'My chickens', personal: true, fits: function (s) { return !!(s.businesses.chickens && s.businesses.chickens.units > 0); },
+      gen: function (rng, level, s) {
+        var hens = s.businesses.chickens.units, feed = round2(s.economy.prices.feed || C().BASE_PRICES.feed);
+        if (level === 'younger') {
+          return build(rng, {
+            question: 'You have ' + hens + ' hens. Each hen eats ' + money(feed) + ' of feed a day. What is your feed bill for one day?',
+            answer: round2(hens * feed), step: feed,
+            right: hens + ' × ' + money(feed) + ' = ' + money(hens * feed) + '.',
+            wrongs: [{ v: round2(feed), why: 'That is the feed for ONE hen.' }, { v: round2(hens + feed), why: 'Multiply, don\'t add: every hen eats.' }],
+            lesson: 'Animals cost money every single day, even on days you don\'t sell.'
+          });
+        }
+        var eggs = Math.round(hens * 0.75), ep = round2(s.economy.prices.eggs || C().BASE_PRICES.eggs), prof = round2(eggs * ep - hens * feed);
+        return build(rng, {
+          question: 'Your ' + hens + ' hens lay about ' + eggs + ' eggs a day. Eggs sell for ' + money(ep) + ' each and feed costs ' + money(feed) + ' per hen per day. What do the hens earn you in a day after feed?',
+          answer: prof, allowNeg: true, step: 0.25,
+          right: 'Eggs: ' + eggs + ' × ' + money(ep) + ' = ' + money(eggs * ep) + '. Feed: ' + hens + ' × ' + money(feed) + ' = ' + money(hens * feed) + '. ' + money(eggs * ep) + ' − ' + money(hens * feed) + ' = ' + money(prof) + '.',
+          wrongs: [{ v: round2(eggs * ep), why: 'That forgot the feed bill.' }, { v: round2(hens * ep - hens * feed), why: 'Not every hen lays every day. Use ' + eggs + ' eggs.' }],
+          lesson: 'Income − daily costs tells you if animals are worth it. Prices change, so check often.'
+        });
+      } },
+
+    { id: 'q_my_rent', topic: 'My living costs', personal: true, fits: function (s) { var h = C().HOMES[s.home]; return !!(h && (h.rent || h.food)); },
+      gen: function (rng, level, s) {
+        var h = C().HOMES[s.home], per = (h.rent || 0) + (h.food || 0) + (h.upkeep || 0), days = level === 'younger' ? ri(rng, 2, 5) : 7;
+        if (level === 'younger' || !s.job) {
+          return build(rng, {
+            question: 'Living in your ' + h.short.toLowerCase() + ' costs ' + money(per) + ' every night for rent and food. How much is that for ' + days + ' nights?',
+            answer: per * days, step: per,
+            right: days + ' × ' + money(per) + ' = ' + money(per * days) + '.',
+            wrongs: [{ v: per + days, why: 'You pay every night, so multiply.' }, { v: per * (days - 1), why: 'That is one night short.' }],
+            lesson: 'Rent and food come first. Know your costs before you spend.'
+          });
+        }
+        var j = C().JOBS[s.job], shifts = ri(rng, 3, 7), left = shifts * j.wage - per * 7;
+        return build(rng, {
+          question: 'This week you work ' + shifts + ' shifts as a ' + j.title + ' at ' + money(j.wage) + ' each. Your ' + h.short.toLowerCase() + ' costs ' + money(per) + ' a night for rent and food. After 7 nights, how much is left?',
+          answer: left, allowNeg: true, step: j.wage,
+          right: 'Earned ' + shifts + ' × ' + money(j.wage) + ' = ' + money(shifts * j.wage) + '. Costs 7 × ' + money(per) + ' = ' + money(per * 7) + '. Left: ' + money(left) + '.',
+          wrongs: [{ v: shifts * j.wage, why: 'That is what you earned. Living costs come out of it.' }, { v: shifts * j.wage - per, why: 'You pay every night, not just once. Multiply by 7.' }],
+          lesson: 'What you keep = what you earn − what it costs to live.'
+        });
+      } },
+
+    { id: 'q_my_loan', topic: 'My loan', personal: true, fits: function (s) { return s.loans && s.loans.length > 0; },
+      gen: function (rng, level, s) {
+        var l = s.loans[0], bal = Math.round(l.balance), pay = Math.max(1, Math.round(l.payment)), w = Math.ceil(bal / pay);
+        return build(rng, {
+          question: 'You owe ' + money(bal) + ' on your ' + l.name + ' and pay ' + money(pay) + ' a week. About how many more weeks until it is paid off?',
+          answer: w, fmt: function (v) { return v + (v === 1 ? ' week' : ' weeks'); },
+          right: money(bal) + ' ÷ ' + money(pay) + ' is about ' + (Math.round(bal / pay * 10) / 10) + ', so about ' + w + ' weeks (rounding up).' + (level === 'older' ? ' Interest adds a little more, so paying extra helps.' : ''),
+          wrongs: [{ v: Math.max(1, w - 1), why: 'Close, but round UP: a part-week payment still counts.' }, { v: w * 2, why: 'Divide what you owe by the weekly payment.' }],
+          lesson: 'Debt takes a bite out of every week until it is gone. Paying extra finishes it faster.'
+        });
+      } },
+
+    { id: 'q_my_rental', topic: 'My property', personal: true, levels: ['older'],
+      fits: function (s) { return !!(s.businesses.rental || s.businesses.market_farm || s.businesses.corner_store); },
+      gen: function (rng, level, s) {
+        var id = pick(rng, ['rental', 'market_farm', 'corner_store'].filter(function (k) { return s.businesses[k]; })), c = C().BUSINESSES[id];
+        var m = lvlMult(s, id), gross = id === 'rental' ? round2(c.rent * m) : id === 'market_farm' ? round2(c.perDay * m * (s.economy.prices.produce || 1.6)) : round2(ri(rng, 40, 90) * (c.prices.fair - c.unitCost));
+        var weekly = round2((gross - c.fixed) * 7);
+        return build(rng, {
+          question: 'Your ' + c.name + ' brings in about ' + money(gross) + ' a day and costs ' + money(c.fixed) + ' a day to keep running. About how much does it earn in a week?',
+          answer: weekly, allowNeg: true, step: c.fixed || 1,
+          right: '(' + money(gross) + ' − ' + money(c.fixed) + ') × 7 = ' + money(weekly) + '.',
+          wrongs: [{ v: round2(gross * 7), why: 'That forgot the daily cost of running it.' }, { v: round2(gross - c.fixed), why: 'That is just ONE day. Multiply by 7.' }],
+          lesson: 'Big businesses pay off over time, but their daily costs never take a day off.'
+        });
+      } }
   ];
+  LIFE.forEach(function (q) { if (!q.levels) q.levels = ['younger', 'older']; FN.Quizzes.push(q); });
 })();
 
 /* ==== src/ui/characters.js ==== */
@@ -8515,10 +8903,14 @@ window.FN = window.FN || {};
       : '<button class="navbtn future locked" data-act="future" title="Complete 5 milestones to unlock"><span class="ic">🔒</span>My Future <small>' + FN.Milestones.count(A.s) + '/5</small></button>');
   }
 
+  // choice details say e.g. "· 2 hours"; show the real (scaled) time
+  function scaleHours(str) {
+    return String(str).replace(/(\d+(?:\.\d+)?)\s*(hours?|hrs?)\b/g, function (m, n) { return G.hrsText(G.hrs(+n), true); });
+  }
   function chipsForChoice(ch, st) {
     var t = [];
     if (st.cost) t.push('<span class="tag">💵 ' + fmt(st.cost) + '</span>');
-    t.push('<span class="tag">⏱ ' + st.hours + 'h</span>');
+    t.push('<span class="tag">⏱ ' + G.hrsText(st.hours) + '</span>');
     if (ch.outcomes && ch.outcomes.length > 1) t.push('<span class="tag risk">🎲 Risky</span>');
     return t.join('');
   }
@@ -8536,7 +8928,7 @@ window.FN = window.FN || {};
       if (s.place !== j.place) {
         var tr = G.travelReason(s, j.place);
         out.push(btn('goto', j.place, '🚶 Go to work (' + esc(C.PLACES[j.place].name) + ')', 'small', !!tr, tr));
-      } else out.push(btn('work', null, '💼 Work shift: +' + fmt(j.wage) + ' · ' + j.hours + 'h', 'small green', !!why, why));
+      } else out.push(btn('work', null, '💼 Work shift: +' + fmt(j.wage) + ' · ' + G.hrsText(G.hrs(j.hours)) + '', 'small green', !!why, why));
     }
     Object.keys(s.businesses).forEach(function (id) {
       var c = C.BUSINESSES[id];
@@ -8544,7 +8936,7 @@ window.FN = window.FN || {};
       var place = c.place;
       if (s.place === place) { var r = G.runReason(s, id); out.push(btn('runDialog', id, c.icon + ' Open ' + esc(c.name), 'small gold', !!r, r)); }
     });
-    out.push(btn('rest', null, '😌 Rest (2h)', 'small', G.hoursLeft(s) < 2));
+    out.push(btn('rest', null, '😌 Rest (' + G.hrsText(G.hrs(2)) + ')', 'small', G.hoursLeft(s) < G.hrs(2)));
     if (A.s.current) out.push(btn('skip', null, '🔀 Something else', 'small'));
     return '<div class="quick">' + out.join('') + '</div>';
   }
@@ -8564,7 +8956,7 @@ window.FN = window.FN || {};
       h += '<div class="row" style="margin-top:12px">' + btn('continue', null, 'Continue ➜', 'big primary') + '</div>';
       box.innerHTML = h; return;
     }
-    if (G.hoursLeft(s) < 1) {
+    if (G.hoursLeft(s) < 0.5) {
       box.innerHTML = '<h2>🌙 The day is over</h2><p class="story">It\'s getting late. Time to sleep and get ready for tomorrow. Tomorrow\'s forecast: <b>' + esc((C.WEATHER[s.weather.tomorrow] || {}).name) + '</b>.</p>' + btn('nextDay', null, '🌙 Go to sleep — Next Day', 'big primary');
       return;
     }
@@ -8582,7 +8974,7 @@ window.FN = window.FN || {};
       var st = G.choiceState(s, ch);
       html += '<button class="choice" data-act="choose" data-arg="' + i + '"' + (st.ok ? '' : ' disabled') + '>' +
         '<span class="lbl"><span class="key">' + (i + 1) + '</span>' + esc(G.text(ch.label, s, ctx)) + '</span>' +
-        (ch.detail ? '<span class="det">' + esc(G.text(ch.detail, s, ctx)) + '</span>' : '') +
+        (ch.detail ? '<span class="det">' + esc(scaleHours(G.text(ch.detail, s, ctx))) + '</span>' : '') +
         (st.ok ? '' : '<span class="why">🔒 ' + esc(st.reason) + '</span>') +
         '<span class="tags">' + chipsForChoice(ch, st) + '</span></button>';
     });
@@ -8712,7 +9104,7 @@ window.FN = window.FN || {};
     h += '<h3>💼 My Job</h3>';
     if (s.job) {
       var j = C.JOBS[s.job], why = G.workReason(s);
-      h += '<div class="card owned"><div class="spread"><b>' + esc(j.title) + ' — ' + fmt(j.wage) + ' per ' + j.hours + '-hour shift</b>' +
+      h += '<div class="card owned"><div class="spread"><b>' + esc(j.title) + ' — ' + fmt(j.wage) + ' per ' + G.hrsText(G.hrs(j.hours), true) + ' shift</b>' +
         (s.place === j.place ? btn('work', null, 'Work a shift', 'small green', !!why, why) : btn('goto', j.place, 'Go to ' + esc(C.PLACES[j.place].name), 'small', !!G.travelReason(s, j.place), G.travelReason(s, j.place))) + '</div><div class="muted">Path: ' + esc(j.path) + ' · Shifts worked: ' + s.jobShifts + (why && s.place === j.place ? ' · ' + esc(why) : '') + '</div>' + btn('quitJob', null, 'Quit job', 'small') + '</div>';
     } else h += '<p class="muted">No job yet. Jobs pay the same every shift — steady and safe.</p>';
     h += '<h3>📋 Job Board</h3>';
@@ -8771,7 +9163,7 @@ window.FN = window.FN || {};
       var p = C.PLACES[id], r = G.travelReason(s, id), t = G.travelCost(s, id);
       var name = id === 'home' ? 'Home (' + C.HOMES[s.home].short + ')' : p.name;
       h += '<div class="stat"><div><b>' + p.icon + ' ' + esc(name) + '</b></div><div class="muted"><small>' + esc(p.desc) + '</small></div>' +
-        (id === s.place ? '<div class="gold"><b>📍 You are here</b></div>' : btn('goto', id, 'Go (' + t.hours + 'h' + (t.fare ? ', ' + fmt(t.fare) : '') + ')', 'small block', !!r, r) + (r ? '<div class="req">' + esc(r) + '</div>' : '')) + '</div>';
+        (id === s.place ? '<div class="gold"><b>📍 You are here</b></div>' : btn('goto', id, 'Go (' + G.hrsText(t.hours) + (t.fare ? ', ' + fmt(t.fare) : '') + ')', 'small block', !!r, r) + (r ? '<div class="req">' + esc(r) + '</div>' : '')) + '</div>';
     });
     return h + '</div>';
   };
