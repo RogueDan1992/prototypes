@@ -1,6 +1,13 @@
 <!doctype html><html lang="en"><head><meta name="robots" content="noindex, nofollow"><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="NEI Projects"><meta name="theme-color" content="#0d0d0d"></head><body>
 <title>NEI Office and Customer Projects</title>
 <meta name="description" content="Northeast International office and customer projects, test version">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="NEI Hub">
+<meta name="theme-color" content="#0d0d0d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
@@ -214,6 +221,15 @@ textarea{min-height:70px;resize:vertical}
 .nitem .nb{font-size:14px;color:var(--muted);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .nitem .ntime{font-size:12px;color:var(--muted);white-space:nowrap;font-family:var(--f-mono)}
 .nempty{padding:40px 20px;text-align:center;color:var(--muted)}
+.nalert{margin:12px 16px 4px;padding:12px 14px;border-radius:12px;background:var(--note);border:1px solid var(--line);font-size:14px;display:grid;gap:10px}
+.nalert b{font-weight:600}
+.nalert p{margin:0;color:var(--muted)}
+.nalert ol{margin:0;padding-left:20px;color:var(--ink);display:grid;gap:4px}
+.nalert .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.nalert .go{border:0;background:var(--red);color:#fff;font-weight:600;border-radius:10px;padding:0 16px;min-height:44px}
+.nalert .ghost{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:0 14px;min-height:40px;font-weight:500;font-size:14px}
+.nalert.on{grid-template-columns:1fr auto;align-items:center;background:var(--ok-soft);border-color:transparent}
+.nalert.on b{color:var(--ok)}
 @media (max-width:640px){.npanel{left:0;right:0;bottom:0;top:auto;width:auto;max-height:85vh;border-radius:18px 18px 0 0;border:0;padding-bottom:env(safe-area-inset-bottom,0px)}}
 .ai{position:fixed;z-index:12;right:0;top:0;bottom:0;width:min(440px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.18);display:grid;grid-template-rows:auto 1fr auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .ai-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
@@ -896,7 +912,9 @@ state.notifs=[];
 const ago=t=>{ const s=(Date.now()-new Date(t))/1000; if(s<60) return "now"; if(s<3600) return Math.floor(s/60)+"m"; if(s<86400) return Math.floor(s/3600)+"h"; if(s<604800) return Math.floor(s/86400)+"d"; const d=new Date(t); return (d.getMonth()+1)+"/"+d.getDate(); };
 function addInApp(n){
   const rows=[...new Set(n.to)].filter(x=>x&&x!==state.me&&TEAM.includes(x)).map(r=>({recipient:r,actor:state.me,kind:n.kind||"tag",title:n.heading,where_txt:n.where||"",body:String(n.text||"").slice(0,400),anchor:n.anchor||""}));
-  if(rows.length) sb.from("notifications").insert(rows).then(({error})=>{ if(error) console.error(error); });
+  if(!rows.length) return;
+  sb.from("notifications").insert(rows).select("id").then(({data,error})=>{ if(error){ console.error(error); return; }
+    const ids=(data||[]).map(r=>r.id); if(ids.length) sb.functions.invoke("push",{body:{ids}}).catch(()=>{}); });
 }
 async function loadNotifs(){
   if(!state.me) return;
@@ -909,12 +927,14 @@ function renderBell(){
   const n=state.notifs.filter(x=>!x.read).length, badge=$("#bellBadge");
   badge.hidden=!n; badge.textContent=n>9?"9+":n;
   b.setAttribute("aria-label",n?`Notifications, ${n} unread`:"Notifications");
+  try{ if("setAppBadge" in navigator){ n?navigator.setAppBadge(n).catch(()=>{}):navigator.clearAppBadge().catch(()=>{}); } }catch(e){}
 }
 function drawNotifs(){
   const list=$("#nlist"); if(!list) return;
-  list.innerHTML=state.notifs.length?state.notifs.map(x=>`<button type="button" class="nitem${x.read?"":" unread"}" data-nid="${esc(x.id)}"><span class="dot"></span><span><div class="nt">${esc(x.title)}</div>${x.where_txt?`<div class="nw">${esc(x.where_txt)}</div>`:""}${x.body?`<div class="nb">${esc(x.body)}</div>`:""}</span><span class="ntime">${esc(ago(x.created_at))}</span></button>`).join("")
-    :`<div class="nempty">Nothing new. When someone tags you, assigns you something, or finishes a request you made, it shows up here.</div>`;
+  list.innerHTML=`<div id="nAlert"></div>`+(state.notifs.length?state.notifs.map(x=>`<button type="button" class="nitem${x.read?"":" unread"}" data-nid="${esc(x.id)}"><span class="dot"></span><span><div class="nt">${esc(x.title)}</div>${x.where_txt?`<div class="nw">${esc(x.where_txt)}</div>`:""}${x.body?`<div class="nb">${esc(x.body)}</div>`:""}</span><span class="ntime">${esc(ago(x.created_at))}</span></button>`).join("")
+    :`<div class="nempty">Nothing new. When someone tags you, assigns you something, or finishes a request you made, it shows up here.</div>`);
   $("#nAll").hidden=!state.notifs.some(x=>!x.read);
+  drawAlerts();
 }
 function closeNotifs(){ $("#notifHost").innerHTML=""; }
 function openNotifs(){
@@ -922,7 +942,7 @@ function openNotifs(){
   <div class="npanel" id="npanel" role="dialog" aria-modal="true" aria-label="Notifications">
     <div class="nhead"><h3>Notifications</h3><div class="acts"><button type="button" class="linkbtn" id="nAll">Mark all read</button><button type="button" class="x" id="nClose" aria-label="Close">×</button></div></div>
     <div class="nlist" id="nlist"></div></div>`;
-  drawNotifs();
+  drawNotifs(); drawAlerts();
   $("#nScrim").onclick=closeNotifs; $("#nClose").onclick=closeNotifs;
   $("#nAll").onclick=async()=>{ const ids=state.notifs.filter(x=>!x.read).map(x=>x.id); state.notifs.forEach(x=>x.read=true); renderBell(); drawNotifs();
     if(ids.length){ const {error}=await sb.from("notifications").update({read:true}).in("id",ids); if(error) console.error(error); } };
@@ -935,6 +955,66 @@ document.addEventListener("click",e=>{ if(e.target.closest("#bell")) $("#npanel"
 function onNotifInsert(row){
   if(!row||row.recipient!==state.me||state.notifs.some(x=>x.id===row.id)) return;
   state.notifs.unshift(row); renderBell(); if($("#npanel")) drawNotifs(); else toast(row.title);
+}
+/* ---------- phone / desktop alerts (web push) ---------- */
+const VAPID="BIb58h-K1fi9q-j40I7HxGGbTcGjopk73yaI3hFc426Kl1l3P6hwlpVS2UumXX-RYE0jOc6PI1KIqH4Y_4zzQPM";
+const IS_IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const IS_STANDALONE=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const PUSH_OK="serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+let swReg=null, pushSub=null, pushBusy=false;
+const b64u=s=>{ const p="=".repeat((4-s.length%4)%4); const r=atob((s+p).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(r,c=>c.charCodeAt(0)); };
+const deviceName=()=>{ const u=navigator.userAgent; const os=/iPhone/.test(u)?"iPhone":/iPad/.test(u)||IS_IOS?"iPad":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":"Device";
+  const br=/Edg\//.test(u)?"Edge":/CriOS|Chrome\//.test(u)?"Chrome":/Firefox|FxiOS/.test(u)?"Firefox":/Safari/.test(u)?"Safari":""; return (os+(br&&!IS_STANDALONE?" "+br:IS_STANDALONE?" app":"")).trim(); };
+async function initPush(){
+  if(!("serviceWorker" in navigator)) return;
+  try{ swReg=await navigator.serviceWorker.register("sw.js"); }catch(e){ console.error(e); return; }
+  navigator.serviceWorker.addEventListener("message",e=>{ const d=e.data||{}; if(d.type==="push") loadNotifs(); if(d.type==="open"){ loadNotifs(); if(d.anchor&&!openAnchor(d.anchor)) loadAll().then(()=>openAnchor(d.anchor)); } });
+  if(PUSH_OK){ try{ pushSub=await swReg.pushManager.getSubscription(); }catch(e){} }
+}
+async function saveSub(sub){
+  const j=sub.toJSON();
+  const {error}=await sb.from("push_subs").upsert({endpoint:j.endpoint,member:state.me,p256dh:j.keys.p256dh,auth:j.keys.auth,device:deviceName()},{onConflict:"endpoint"});
+  if(error) throw error;
+}
+async function syncPushOnLogin(){ await initPush(); if(pushSub&&Notification.permission==="granted"){ try{ await saveSub(pushSub); }catch(e){ console.error(e); } } drawAlerts(); }
+async function turnOnAlerts(){
+  if(pushBusy) return; pushBusy=true; drawAlerts();
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){ toast(perm==="denied"?"Alerts are blocked. Turn them on in settings.":"No problem. You can turn alerts on any time."); return; }
+    if(!swReg) await initPush(); const reg=await navigator.serviceWorker.ready;
+    pushSub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID)});
+    await saveSub(pushSub);
+    const {data}=await sb.functions.invoke("push",{body:{test:true}});
+    toast(data&&data.sent?"Alerts are on. A test alert is on its way.":"Alerts are on for this device.");
+  }catch(e){ console.error(e); toast("Couldn't turn on alerts. Try again."); }
+  finally{ pushBusy=false; drawAlerts(); }
+}
+async function turnOffAlerts(){
+  if(!pushSub) return; pushBusy=true; drawAlerts();
+  try{ const ep=pushSub.endpoint; await pushSub.unsubscribe(); await sb.from("push_subs").delete().eq("endpoint",ep); pushSub=null; toast("Alerts are off for this device."); }
+  catch(e){ console.error(e); toast("Couldn't turn off alerts. Try again."); }
+  finally{ pushBusy=false; drawAlerts(); }
+}
+async function testAlert(){ const {data}=await sb.functions.invoke("push",{body:{test:true}}).catch(()=>({})); toast(data&&data.sent?"Test alert sent.":"Couldn't reach this device. Try turning alerts off and on."); }
+function drawAlerts(){
+  const host=$("#nAlert"); if(!host) return;
+  let h="";
+  if(PUSH_OK&&pushSub&&Notification.permission==="granted"){
+    h=`<div class="nalert on"><span><b>Alerts are on</b> for this ${IS_IOS||/Android/.test(navigator.userAgent)?"phone":"device"}</span><span class="row"><button type="button" class="ghost" id="aTest">Test</button><button type="button" class="ghost" id="aOff">Turn off</button></span></div>`;
+  } else if(IS_IOS&&!IS_STANDALONE){
+    h=`<div class="nalert"><b>Get alerts on your iPhone</b><ol><li>Tap the Share button <span aria-hidden="true">(square with the arrow)</span> at the bottom of Safari</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b></li><li>Open <b>NEI Hub</b> from your home screen, sign in, and tap the bell again</li></ol><p>iPhones only allow alerts for apps on the home screen.</p></div>`;
+  } else if(!PUSH_OK){
+    h=`<div class="nalert"><b>Alerts aren't available in this browser</b><p>Open the hub in Chrome, Edge or Safari to get alerts.</p></div>`;
+  } else if(Notification.permission==="denied"){
+    h=`<div class="nalert"><b>Alerts are blocked on this device</b><p>${IS_IOS?"Go to Settings, Notifications, NEI Hub and turn on Allow Notifications.":"Click the lock or settings icon next to the web address, allow notifications for this site, then reload."}</p></div>`;
+  } else {
+    h=`<div class="nalert"><b>Get an alert when someone needs you</b><p>Tags, assignments and finished requests will pop up on this ${IS_IOS||/Android/.test(navigator.userAgent)?"phone":"computer"} even when the hub is closed.</p><div class="row"><button type="button" class="go" id="aOn"${pushBusy?" disabled":""}>${pushBusy?"Turning on...":"Turn on alerts"}</button></div></div>`;
+  }
+  host.innerHTML=h;
+  const on=$("#aOn"); if(on) on.onclick=turnOnAlerts;
+  const off=$("#aOff"); if(off) off.onclick=turnOffAlerts;
+  const t=$("#aTest"); if(t) t.onclick=testAlert;
 }
 /* ---------- AI assistant through the company key ---------- */
 async function claudeFn(turns,opts={}){
@@ -1022,9 +1102,9 @@ async function afterLogin(){
   state.me=me; $("#login").hidden=true;
   if(AI_ON){ sampleFn=claudeFn; $("#aiOpen").hidden=false; }
   try{ await loadAll(); }catch(e){ console.error(e); toast("Couldn't load the projects. Check your connection."); }
-  loadNotifs(); subscribe();
+  loadNotifs(); subscribe(); syncPushOnLogin();
 }
-document.addEventListener("click",async e=>{ if(e.target.id==="signOut"){ await sb.auth.signOut(); location.reload(); } });
+document.addEventListener("click",async e=>{ if(e.target.id==="signOut"){ try{ if(pushSub){ const ep=pushSub.endpoint; await pushSub.unsubscribe(); await sb.from("push_subs").delete().eq("endpoint",ep); } }catch(err){} await sb.auth.signOut(); location.reload(); } });
 (async()=>{ render(); const {data:{session}}=await sb.auth.getSession(); if(session) await afterLogin(); else showLogin(); })();
 </script>
 
