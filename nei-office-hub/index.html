@@ -545,7 +545,7 @@ function openReq(t,isNew){
 
     save(); close(); render();
     const newly=(isNew||prev.to!==t.to||isNew)&&d.to!==state.me&&d.to!=="Anyone";
-    toast(newly?`Assigned to ${TEAM_LABEL[d.to]}. They'd get an email in the live version.`:isNew?"Request added":"Saved"); };
+    toast(newly?`Assigned to ${TEAM_LABEL[d.to]}`:isNew?"Request added":"Saved"); };
 }
 function openSup(x){
   $("#sheetHost").innerHTML=`<div class="scrim" id="scrim"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Supply item">
@@ -598,7 +598,7 @@ function openSheet(p,isNew){
   // opening the project marks your tags as seen
   if(!isNew){ live().notes.forEach(m=>{ if(m.mentions.includes(state.me)&&!m.seen.includes(state.me)) m.seen.push(state.me); }); save(); render(); }
   const drawNotes=()=>{ const th=$("#thread"); const ms=live().notes;
-    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${m.img?`<img class="mimg" src="${m.img}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">✉ Email to ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")} <span style="opacity:.7">(sends in the real version)</span></div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:14px">No messages yet. Start the conversation below.</span>`;
+    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${m.img?`<img class="mimg" src="${m.img}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">✉ Email to ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:14px">No messages yet. Start the conversation below.</span>`;
     th.scrollTop=th.scrollHeight; };
   drawNotes();
   const box=$("#fNote"), sug=$("#suggest");
@@ -696,7 +696,7 @@ const AI_TOOLS=[
     save(); render(); const [,n]=split(p.name);
     aiLogChange(`${n} (${p.customer}): ${ch.join(", ")}`,()=>{ const i=state.projects.findIndex(x=>x.id===p.id); state.projects[i]=before; });
     return {changed:ch,nowIn:TABS.find(t=>t[0]===tabOf(p.status))[1]}; }},
- {name:"post_message",description:"Post a message in a project's conversation as the person you are talking with. To tag teammates pass their names in tag (Lapp D, Daniel G, Kristin, Patty); tagged people get emailed in the live version.",
+ {name:"post_message",description:"Post a message in a project's conversation as the person you are talking with. To tag teammates pass their names in tag (Lapp D, Daniel G, Kristin, Patty); tagged people get emailed.",
   inputSchema:{type:"object",properties:{id:{type:"string"},text:{type:"string"},tag:{type:"array",items:{type:"string"}}},required:["id","text"]},
   execute:({id,text,tag})=>{ const p=findP(id); const names=(Array.isArray(tag)?tag:[]).map(t=>TEAM.find(n=>n.toLowerCase()===String(t).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(t).toLowerCase())).filter(Boolean);
     const body=(names.map(n=>"@"+n).join(" ")+" "+String(text)).trim(); const m={id:uid(),at:new Date().toISOString(),by:state.me,text:body,mentions:names,seen:[]};
@@ -740,7 +740,7 @@ function openAI(){
     <div class="ai-head"><div><h3>Ask AI</h3><small>Reads and updates the tracker for you</small></div><button class="x" id="aiClose" aria-label="Close">×</button></div>
     <div class="ai-log" id="aiLog"></div>
     <div class="ai-foot"><div class="cbox"><textarea id="aiBox" placeholder="Ask about projects or tell it what to change"></textarea><button type="button" class="send" id="aiSend">Send</button></div>
-    <div class="ai-note">Uses your Claude account. Changes it makes show here with an Undo.</div></div></aside>`;
+    <div class="ai-note">Runs on the company Claude account. Changes it makes show here with an Undo.</div></div></aside>`;
   drawAI();
   $("#aiClose").onclick=()=>{ aiBusy?.abort(); $("#aiPanel").remove(); };
   $("#aiSend").onclick=()=>askAI($("#aiBox").value);
@@ -766,7 +766,7 @@ async function askAI(q){
       onText:({text})=>{ const el=$("#aiLive"); if(el){ el.classList.remove("thinking"); el.textContent=text; $("#aiLog").scrollTop=1e9; } }});
     aiTurns.push({role:"assistant",content:text});
   }catch(e){
-    const msg={cancelled:"Stopped.",not_granted:"The assistant needs your OK to use your Claude account. Close and reopen it to try again.",rate_limited:"Too many requests right now. Try again in a minute.",session_expired:"Please sign in to Claude again.",tools_unavailable:"This app version can't let the assistant make changes. Questions still work if you ask again."}[e?.code]||"Something went wrong. Try asking again.";
+    const msg={not_configured:"The assistant isn't switched on yet. Lapp D still needs to add the company Claude key.",cancelled:"Stopped.",not_granted:"Your login isn't allowed to use the assistant. Sign out and back in, then try again.",rate_limited:"Too many requests right now. Try again in a minute.",session_expired:"Please sign in to Claude again.",tools_unavailable:"This app version can't let the assistant make changes. Questions still work if you ask again."}[e?.code]||"Something went wrong. Try asking again.";
     if(e?.text) aiTurns.push({role:"assistant",content:e.text});
     aiTurns.push({role:"assistant",content:msg});
     if(e?.code==="not_granted"||e?.code==="sampling_disabled"){ $("#aiOpen").hidden=true; }
@@ -838,12 +838,70 @@ async function doSync(){
   if(!last) return;
   const cur=toRows(); setDot("busy");
   for(const t of TABLES){ const k=PK[t]||"id"; const ups=cur[t].filter(r=>last[t].get(r[k])!==JSON.stringify(r));
-    if(ups.length){ const {error}=await sb.from(t).upsert(ups,{onConflict:k}); if(error) throw error; ups.forEach(r=>last[t].set(r[k],JSON.stringify(r))); } }
+    if(ups.length){ const outgoing=ups.flatMap(r=>notices(t,r,last[t].get(r[k]))); const {error}=await sb.from(t).upsert(ups,{onConflict:k}); if(error) throw error; ups.forEach(r=>last[t].set(r[k],JSON.stringify(r))); outgoing.forEach(sendNotice); } }
   for(const t of [...TABLES].reverse()){ const k=PK[t]||"id"; const ids=new Set(cur[t].map(r=>r[k])); const del=[...last[t].keys()].filter(x=>!ids.has(x));
     if(del.length){ const {error}=await sb.from(t).delete().in(k,del); if(error) throw error; del.forEach(x=>last[t].delete(x)); } }
   setDot("");
 }
 function queueSync(){ syncChain=syncChain.then(doSync).catch(e=>{ console.error(e); setDot("off"); toast("Couldn't save that change. Check your connection and try again."); }); return syncChain; }
+/* ---------- email notices: tags, assignments, board mentions ---------- */
+const labelTags=txt=>String(txt||"").replace(/@(D Lapp|D Glick|Kristen|Patty)/g,(m,k)=>"@"+TEAM_LABEL[k]);
+function notices(t,row,prevJson){
+  const me=state.me, L=n=>TEAM_LABEL[n]||n, out=[]; if(!me) return out;
+  if(t==="messages"&&!prevJson&&row.mentions&&row.mentions.length){
+    const p=state.projects.find(x=>x.id===row.project_id); const n=p?split(p.name)[1]:"a project";
+    out.push({to:row.mentions,subject:`${L(me)} tagged you on ${n}`,heading:`${L(me)} tagged you on ${n}`,where:p?`Customer project · ${p.customer} · ${p.status}`:"",text:labelTags(row.body)||(row.img?"(sent a photo)":""),anchor:"p-"+row.project_id});
+  }
+  if(t==="posts"&&!prevJson&&row.mentions&&row.mentions.length)
+    out.push({to:row.mentions,subject:`${L(me)} mentioned you on the office board`,heading:`${L(me)} mentioned you on the office board`,where:"Office board",text:labelTags(row.body),anchor:"board"});
+  if(t==="office_tasks"){
+    const pv=prevJson?JSON.parse(prevJson):null;
+    if(row.assigned_to!=="Anyone"&&row.assigned_to!==me&&(!pv||pv.assigned_to!==row.assigned_to)&&row.status!=="Done")
+      out.push({to:[row.assigned_to],subject:`${L(me)} assigned you: ${row.title}`,heading:`${L(me)} assigned you: ${row.title}`,where:`Office request · ${row.cat}${row.due?" · due "+fmt(row.due):""}`,text:row.details,anchor:"r-"+row.id});
+    const before=pv?(pv.comments||[]).length:0;
+    (row.comments||[]).slice(before).forEach(c=>{ if(c.mentions&&c.mentions.length) out.push({to:c.mentions,subject:`${L(me)} tagged you on ${row.title}`,heading:`${L(me)} tagged you on ${row.title}`,where:`Office request · ${row.cat}`,text:labelTags(c.text),anchor:"r-"+row.id}); });
+  }
+  return out;
+}
+function sendNotice(n){
+  sb.functions.invoke("notify",{body:n}).then(({data})=>{ if(data&&data.sent) toast("Emailed "+n.to.filter(x=>x!==state.me).map(x=>TEAM_LABEL[x]||x).join(", ")); }).catch(()=>{});
+}
+/* ---------- AI assistant through the company key ---------- */
+async function claudeFn(turns,opts={}){
+  const system=turns[0].content; const msgs=[];
+  for(const t of turns.slice(1)){ const last=msgs[msgs.length-1]; if(last&&last.role===t.role&&typeof last.content==="string") last.content+="\n\n"+t.content; else msgs.push({role:t.role,content:t.content}); }
+  if(!msgs.length||msgs[0].role!=="user") throw {code:"invalid_request"};
+  const tools=(opts.tools||[]).map(t=>({name:t.name,description:t.description,input_schema:t.inputSchema||{type:"object",properties:{}}}));
+  let text="";
+  for(let round=0;round<8;round++){
+    if(opts.signal&&opts.signal.aborted) throw {code:"cancelled",text};
+    const {data,error}=await sb.functions.invoke("ai",{body:{system,messages:msgs,tools}});
+    if(opts.signal&&opts.signal.aborted) throw {code:"cancelled",text};
+    if(error){ let code="upstream_error"; try{ const st=error.context&&error.context.status; const j=await error.context.json(); if(j.error==="not_configured") code="not_configured"; else if(j.error==="not_on_team") code="not_granted"; else if(st===429) code="rate_limited"; }catch(e){} throw {code,text}; }
+    const blocks=(data&&data.content)||[];
+    const t=blocks.filter(b=>b.type==="text").map(b=>b.text).join("");
+    if(t){ text=text?text+"\n\n"+t:t; if(opts.onText) opts.onText({text,delta:t}); }
+    const uses=blocks.filter(b=>b.type==="tool_use");
+    if(data.stop_reason!=="tool_use"||!uses.length) return {text:text||"Done."};
+    msgs.push({role:"assistant",content:blocks});
+    const results=[];
+    for(const u of uses){ const tool=(opts.tools||[]).find(x=>x.name===u.name); let out, isErr=false;
+      try{ if(!tool) throw new Error("Unknown tool"); out=await tool.execute(u.input||{},{signal:opts.signal}); }catch(e){ out="Error: "+(e&&e.message||e); isErr=true; }
+      results.push({type:"tool_result",tool_use_id:u.id,content:typeof out==="string"?out:JSON.stringify(out),is_error:isErr}); }
+    msgs.push({role:"user",content:results});
+  }
+  return {text:text||"Done."};
+}
+/* ---------- links from emails open the right item ---------- */
+const AI_ON=false; // AI assistant tabled for now; flip on once the company Claude key is added
+let deepDone=false;
+function openDeepLink(){
+  if(deepDone) return; deepDone=true; const h=location.hash.slice(1); if(!h) return;
+  try{ history.replaceState(null,"",location.pathname); }catch(e){}
+  if(h.startsWith("p-")){ const p=state.projects.find(x=>x.id===h.slice(2)); if(p){ state.view="projects"; render(); openSheet(p); } }
+  else if(h.startsWith("r-")){ const t=state.office.tasks.find(x=>x.id===h.slice(2)); if(t){ state.view="office"; render(); openReq(t,false); } }
+  else if(h==="board"){ state.view="office"; render(); }
+}
 async function loadAll(){
   const res=await Promise.all(TABLES.map(t=>sb.from(t).select("*").order(t==="customers"||t==="messages"||t==="supplies"||t==="office_tasks"?"created_at":t==="posts"?"at":"name")));
   const bad=res.find(r=>r.error); if(bad) throw bad.error;
@@ -857,6 +915,7 @@ async function loadAll(){
   state.office.posts=po.map(r=>({id:r.id,by:r.author,at:r.at,text:r.body,mentions:r.mentions||[]}));
   last=snap(toRows());
   safeRender();
+  openDeepLink();
 }
 function safeRender(){ const a=document.activeElement; if(a&&/INPUT|TEXTAREA/.test(a.tagName)&&a.closest("main")){ pendingRender=true; return; } pendingRender=false; render(); }
 document.addEventListener("focusout",()=>{ if(pendingRender) setTimeout(()=>{ if(pendingRender) safeRender(); },50); });
@@ -885,6 +944,7 @@ async function afterLogin(){
   const {data:me,error}=await sb.rpc("my_member");
   if(error||!me){ await sb.auth.signOut(); showLogin("That email isn't on the team list yet. Ask Lapp D to add you.",true); return; }
   state.me=me; $("#login").hidden=true;
+  if(AI_ON){ sampleFn=claudeFn; $("#aiOpen").hidden=false; }
   try{ await loadAll(); }catch(e){ console.error(e); toast("Couldn't load the projects. Check your connection."); }
   subscribe();
 }
