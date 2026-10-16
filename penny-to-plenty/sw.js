@@ -1,5 +1,5 @@
 /* From Nothing — offline service worker (web build only). Cache-first; one cache per game version. */
-var CACHE = 'from-nothing-1.6.0';
+var CACHE = 'from-nothing-1.7.0';
 var FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', function (e) {

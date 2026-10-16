@@ -379,6 +379,13 @@ body.on-title .update-banner { display: none; }
 .country-hint p { margin: 0 0 8px; line-height: 1.4; }
 .btn.bed-later { opacity: .7; }
 
+/* 1.7.0: grown business names, Big Goals */
+.biz-title b { font-size: 1.12em; color: #ffe08a; }
+.goal-banner { background: linear-gradient(90deg, rgba(246, 196, 83, .35), rgba(255, 222, 122, .18)); border-color: rgba(246, 196, 83, .8); }
+.rank-card { border-color: rgba(246, 196, 83, .7); }
+.goal { margin: 10px 0; }
+.rank-chip { border-color: rgba(246, 196, 83, .8); color: #ffe08a; font-weight: 700; }
+
 </style>
 </head>
 <body>
@@ -421,12 +428,12 @@ body.on-title .update-banner { display: none; }
    GAME_VERSION: bump for every release (also names the offline cache in site/sw.js).
    FEEDBACK_URL: tester feedback form; empty hides the button. "{version}" is replaced with GAME_VERSION. */
 window.FN = window.FN || {};
-FN.Config = { GAME_VERSION: '1.6.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
+FN.Config = { GAME_VERSION: '1.7.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
 // Shown once as a headline on the title screen after an update (keep it short and kid-friendly).
 FN.Config.WHATS_NEW = [
-  '📊 The Index Fund now grows every night and stays invested. Open My Money to see what it earned last night.',
-  '🌙 Bedtime is 5 PM or later (or when you run out of energy), so no skipping ahead to collect extra days.',
-  '⬆️ Businesses keep growing: a lemonade stand can become a franchise, a workshop a furniture factory.'
+  '🎯 Big Goals: new goals that never run out (net worth, business empire, giving, investing and more). Each one pays a cash reward and raises your Rank, from Penny Pincher to Tycoon to Legend.',
+  '🏷️ Grown businesses go by their new name: once your Lemonade Stand becomes a Lemonade Franchise, that\'s what it\'s called, in bold.',
+  '🃏 Over 80 new cards, most of them for the start of the game, plus 14 new kinds of money challenges. Cards and questions you already saw today stay away.'
 ];
 
 /* ==== src/core/rng.js ==== */
@@ -578,7 +585,7 @@ window.FN = window.FN || {};
       good: 'lemonade', unit: 'cup', unitCost: 0.4, prices: { low: 1, fair: 1.5, high: 2.25 }, demand: 24,
       stock: [20, 35, 50], perish: 1, hours: 4, energy: 20, helperWage: 6,
       weather: { sunny: 1.25, hot: 1.7, cloudy: 0.8, rainy: 0.3, cold: 0.45 },
-      levels: [{ name: 'Folding Table Stand', mult: 1 }, { name: 'Painted Stand & Umbrella', cost: 40, mult: 1.3 }, { name: 'Lemonade Cart', cost: 120, mult: 1.7 }],
+      levels: [{ name: 'Folding Table Stand', mult: 1 }, { name: 'Painted Stand & Umbrella', cost: 40, mult: 1.3 }, { name: 'Lemonade Cart', title: 'Lemonade Cart', cost: 120, mult: 1.7 }],
       lesson: 'Profit = money from sales minus the cost of lemons, cups and sugar.'
     },
     dogwalk: {
@@ -586,7 +593,7 @@ window.FN = window.FN || {};
       unit: 'walk', supplyCost: 0.5, prices: { low: 3, fair: 5, high: 7 }, demand: 5, maxJobs: [5, 8, 12],
       hours: 3, energy: 20, helperWage: 8, needs: { rel: { jamal: 5 } },
       weather: { sunny: 1.1, hot: 0.8, cloudy: 1, rainy: 0.6, cold: 0.8 },
-      levels: [{ name: 'One Leash', mult: 1 }, { name: 'Leash Set & Flyers', cost: 25, mult: 1.4 }, { name: 'Dog Walking Crew', cost: 90, mult: 1.9 }],
+      levels: [{ name: 'One Leash', mult: 1 }, { name: 'Leash Set & Flyers', cost: 25, mult: 1.4 }, { name: 'Dog Walking Crew', title: 'Dog Walking Crew', cost: 90, mult: 1.9 }],
       lesson: 'A service business sells your time and skill instead of products.'
     },
     veg_stand: {
@@ -594,14 +601,14 @@ window.FN = window.FN || {};
       good: 'veggies', unit: 'bunch', unitCost: 0.6, prices: { low: 1.2, fair: 1.8, high: 2.6 }, demand: 32,
       stock: [25, 40, 60], perish: 0.5, hours: 5, energy: 25, helperWage: 9, needs: { rel: { miller: 10 } },
       weather: { sunny: 1.15, hot: 0.9, cloudy: 1, rainy: 0.55, cold: 0.8 },
-      levels: [{ name: 'Market Table', mult: 1 }, { name: 'Canopy Stand', cost: 80, mult: 1.35 }, { name: 'Market Stall with Sign', cost: 220, mult: 1.8 }],
+      levels: [{ name: 'Market Table', mult: 1 }, { name: 'Canopy Stand', cost: 80, mult: 1.35 }, { name: 'Market Stall with Sign', title: 'Vegetable Market Stall', cost: 220, mult: 1.8 }],
       lesson: 'Fresh food spoils — buying too much stock can turn into a loss.'
     },
     chickens: {
       name: 'Chicken Coop', icon: '🐔', type: 'passive', place: 'home', startCost: 15, fixed: 0,
       good: 'eggs', unit: 'egg', perUnit: 5, // hens cost $5 each; feed per hen per day uses economy price
       eggsPerHen: 0.75, maxUnits: [6, 14, 30], helperWage: 0,
-      levels: [{ name: 'Small Coop', mult: 1 }, { name: 'Bigger Coop', cost: 60, mult: 1.1 }, { name: 'Poultry Barn', cost: 260, mult: 1.2 }],
+      levels: [{ name: 'Small Coop', mult: 1 }, { name: 'Bigger Coop', cost: 60, mult: 1.1 }, { name: 'Poultry Barn', title: 'Poultry Barn', cost: 260, mult: 1.2 }],
       lesson: 'Animals produce income but cost money to feed every single day.'
     },
     bike_repair: {
@@ -609,7 +616,7 @@ window.FN = window.FN || {};
       unit: 'repair', supplyCost: 1.5, prices: { low: 4, fair: 7, high: 10 }, demand: 5, maxJobs: [4, 7, 11],
       hours: 4, energy: 20, helperWage: 12, needs: { items: ['tools'] },
       weather: { sunny: 1.2, hot: 1, cloudy: 1, rainy: 0.6, cold: 0.7 },
-      levels: [{ name: 'Sidewalk Repair Spot', mult: 1 }, { name: 'Repair Stand & Parts', cost: 70, mult: 1.4 }, { name: 'Small Bike Shop', cost: 300, mult: 2 }],
+      levels: [{ name: 'Sidewalk Repair Spot', mult: 1 }, { name: 'Repair Stand & Parts', cost: 70, mult: 1.4 }, { name: 'Small Bike Shop', title: 'Bike Shop', cost: 300, mult: 2 }],
       lesson: 'Skill matters: better repairs bring repeat customers.'
     },
     crafts: {
@@ -617,7 +624,7 @@ window.FN = window.FN || {};
       good: 'crafts', unit: 'item', unitCost: 4, prices: { low: 8, fair: 12, high: 17 }, demand: 9,
       stock: [6, 10, 16], perish: 0, hours: 5, energy: 25, helperWage: 15, needs: { items: ['tools'], skill: { trades: 15 } },
       weather: { sunny: 1, hot: 1, cloudy: 1, rainy: 0.85, cold: 1 },
-      levels: [{ name: 'Rented Workbench', mult: 1 }, { name: 'Workshop with Machines', cost: 300, mult: 1.5 }, { name: 'Furniture Workshop', cost: 900, mult: 2.2 }],
+      levels: [{ name: 'Rented Workbench', mult: 1 }, { name: 'Workshop with Machines', cost: 300, mult: 1.5 }, { name: 'Furniture Workshop', title: 'Furniture Workshop', cost: 900, mult: 2.2 }],
       lesson: 'Unsold items are still inventory — they keep their value until sold.'
     },
     corner_store: {
@@ -625,19 +632,19 @@ window.FN = window.FN || {};
       good: 'goods', unit: 'item', unitCost: 1, prices: { low: 1.4, fair: 1.8, high: 2.4 }, demand: 70,
       stock: [50, 80, 120], perish: 0.05, hours: 6, energy: 30, helperWage: 18, needs: { minStage: 3, skill: { business: 20 } },
       weather: { sunny: 1.05, hot: 1.1, cloudy: 1, rainy: 0.9, cold: 0.95 },
-      levels: [{ name: 'Corner Store', mult: 1 }, { name: 'Store + Warehouse', cost: 1200, mult: 1.6 }, { name: 'Two Store Locations', cost: 4000, mult: 2.6 }],
+      levels: [{ name: 'Corner Store', mult: 1 }, { name: 'Store + Warehouse', cost: 1200, mult: 1.6 }, { name: 'Two Store Locations', title: 'Two Corner Stores', cost: 4000, mult: 2.6 }],
       lesson: 'Stores have big daily costs (rent, power), so they need many customers.'
     },
     market_farm: {
       name: 'Market Farm', icon: '🌽', type: 'passive', place: 'farm', startCost: 1500, fixed: 10,
       good: 'produce', unit: 'basket', perDay: 12, helperWage: 0, needs: { flags: ['country_unlocked'], skill: { farming: 20 } },
-      levels: [{ name: 'Two Acres of Crops', mult: 1 }, { name: 'Greenhouse Added', cost: 900, mult: 1.6 }, { name: 'Big Family Farm', cost: 3000, mult: 2.5 }],
+      levels: [{ name: 'Two Acres of Crops', mult: 1 }, { name: 'Greenhouse Added', cost: 900, mult: 1.6 }, { name: 'Big Family Farm', title: 'Big Family Farm', cost: 3000, mult: 2.5 }],
       lesson: 'Farms take a big investment up front and pay back slowly over time.'
     },
     rental: {
       name: 'Rental Apartment', icon: '🏢', type: 'passive', place: 'downtown', startCost: 3000, fixed: 4,
       rent: 16, helperWage: 0, needs: { minStage: 4 },
-      levels: [{ name: 'One Rental Unit', mult: 1 }, { name: 'Two Rental Units', cost: 3000, mult: 2 }, { name: 'Small Apartment Building', cost: 9000, mult: 4.5 }],
+      levels: [{ name: 'One Rental Unit', mult: 1 }, { name: 'Two Rental Units', title: 'Two Rental Apartments', cost: 3000, mult: 2 }, { name: 'Small Apartment Building', title: 'Apartment Building', cost: 9000, mult: 4.5 }],
       lesson: 'Property can earn rent, but repairs and empty months are real risks.'
     }
   };
@@ -646,16 +653,17 @@ window.FN = window.FN || {};
      path of names (lemonade stand -> franchise, workshop -> factory ...), then keeps going with numbered levels.
      Each step costs about 1.45x the last and adds the same boost as the last original upgrade, so it never caps out. */
   C.BIZ_GROWTH = {
-    lemonade: ['Lemonade Shack', 'Two Lemonade Carts', 'Lemonade Kiosk at the Mall', 'Lemonade Shop', 'Lemonade Franchise (3 shops)', 'Lemonade Brand in Stores'],
-    dogwalk: ['Dog Daycare', 'Pet Care Company', 'Pet Hotel & Daycare', 'Pet Care Franchise'],
-    veg_stand: ['Two Market Stalls', 'Farm Stand Store', 'Fresh Food Market', 'Grocery Store Chain'],
-    chickens: ['Egg Farm', 'Big Egg Farm', 'Egg Company'],
-    bike_repair: ['Bike Shop & Rentals', 'Big Bike Store', 'Two Bike Stores', 'Bike Store Chain'],
-    crafts: ['Furniture Store', 'Furniture Factory', 'Big Furniture Factory', 'Furniture Brand'],
-    corner_store: ['Mini Market', 'Supermarket', 'Supermarket Chain'],
-    market_farm: ['Farm with Orchard', 'Large Farm', 'Farming Company'],
-    rental: ['Two Apartment Buildings', 'Apartment Complex', 'Real Estate Company']
+    lemonade: ['Lemonade Shack', 'Two Lemonade Carts', 'Lemonade Kiosk at the Mall', 'Lemonade Shop', 'Lemonade Franchise', 'Lemonade Brand in Stores', 'Lemonade Factory', 'National Lemonade Brand', 'Worldwide Lemonade Company'],
+    dogwalk: ['Dog Daycare', 'Pet Care Company', 'Pet Hotel & Daycare', 'Pet Care Franchise', 'Pet Resort Chain', 'National Pet Care Company'],
+    veg_stand: ['Two Market Stalls', 'Farm Stand Store', 'Fresh Food Market', 'Grocery Store', 'Grocery Store Chain', 'Regional Grocery Company'],
+    chickens: ['Egg Farm', 'Big Egg Farm', 'Egg Company', 'Egg & Poultry Company', 'National Egg Brand'],
+    bike_repair: ['Bike Shop & Rentals', 'Big Bike Store', 'Two Bike Stores', 'Bike Store Chain', 'Bike Brand', 'Bike Factory'],
+    crafts: ['Furniture Store', 'Furniture Factory', 'Big Furniture Factory', 'Furniture Brand', 'Furniture Store Chain', 'National Furniture Company'],
+    corner_store: ['Mini Market', 'Supermarket', 'Two Supermarkets', 'Supermarket Chain', 'Regional Supermarket Company'],
+    market_farm: ['Farm with Orchard', 'Large Farm', 'Farming Company', 'Farm & Food Company', 'Agriculture Company'],
+    rental: ['Two Apartment Buildings', 'Apartment Complex', 'Real Estate Company', 'City Real Estate Company', 'Real Estate Empire']
   };
+
   // level n (1-based) of business id -> { name, cost (to reach it), mult }
   C.bizLevel = function (id, n) {
     var c = C.BUSINESSES[id]; if (!c) return null;
@@ -673,6 +681,25 @@ window.FN = window.FN || {};
       cache.push({ name: name, cost: Math.round(prev.cost * 1.45 / 5) * 5, mult: Math.round((prev.mult + step) * 100) / 100 });
     }
     return cache[n - 1 - base];
+  };
+  /* 1.7.0: the name a business goes by right now. A grown business is called by what it has become
+     (Lemonade Stand -> Lemonade Cart -> ... -> Lemonade Franchise). Levels without a business-style name keep the
+     original name. Numbered levels past the named path keep the last name (the level number shows separately). */
+  C.bizTitle = function (id, n) {
+    var c = C.BUSINESSES[id]; if (!c) return '';
+    n = Math.max(1, Math.floor(n || 1));
+    var lv = C.bizLevel(id, n);
+    if (n <= c.levels.length) {
+      for (var k = n; k >= 1; k--) { if (c.levels[k - 1].title) return c.levels[k - 1].title; }
+      return c.name;
+    }
+    var names = C.BIZ_GROWTH[id] || [], i = n - c.levels.length - 1;
+    return i < names.length ? names[i] : (names[names.length - 1] || lv.name);
+  };
+  // name of a business the player owns (falls back to the catalog name)
+  C.bizName = function (s, id) {
+    var b = s && s.businesses && s.businesses[id];
+    return b ? C.bizTitle(id, b.level) : ((C.BUSINESSES[id] || {}).name || '');
   };
   // capacity lists (hens, service jobs) keep growing past the original three levels
   C.bizCap = function (list, n) {
@@ -1303,7 +1330,7 @@ window.FN = window.FN || {};
   E.upgradeBusiness = function (s, id, free) {
     var b = s.businesses[id], c = C.BUSINESSES[id]; if (!b) return false;
     var nx = C.bizLevel(id, (b.level || 1) + 1); if (!nx) return false;
-    if (!free && !E.spend(s, nx.cost, 'Upgraded ' + c.name + ' to ' + nx.name)) return false;
+    if (!free && !E.spend(s, nx.cost, 'Upgraded ' + C.bizName(s, id) + ' to ' + nx.name)) return false;
     b.level++; if (!free) b.invested = E.r2((b.invested || 0) + nx.cost);
     return true;
   };
@@ -1312,17 +1339,17 @@ window.FN = window.FN || {};
     var b = s.businesses[id], c = C.BUSINESSES[id]; if (!b || !c.perUnit) return 0;
     n = Math.min(n, E.maxUnits(s, id) - b.units); if (n <= 0) return 0;
     var cost = n * c.perUnit;
-    if (!free && !E.spend(s, cost, 'Bought ' + n + ' more for the ' + c.name)) return 0;
+    if (!free && !E.spend(s, cost, 'Bought ' + n + ' more for the ' + C.bizName(s, id))) return 0;
     b.units += n; if (!free) b.invested = E.r2((b.invested || 0) + cost);
     return n;
   };
   E.sellBusiness = function (s, id) {
     var b = s.businesses[id]; if (!b) return 0;
     var v = E.bizValue(s, id);
-    var c = C.BUSINESSES[id];
+    var nm = C.bizName(s, id);
     delete s.businesses[id];
     s.cash = E.r2(s.cash + v);
-    E.log(s, 'Sold the ' + c.name + ' for ' + E.fmt(v), v);
+    E.log(s, 'Sold the ' + nm + ' for ' + E.fmt(v), v);
     return v;
   };
   E.stockUnitCost = function (s, id) {
@@ -1362,21 +1389,21 @@ window.FN = window.FN || {};
     var noise = 0.65 + rng() * 0.7;
     if (opts.auto) noise *= 0.85; // helpers aren't quite as good as the owner
     var raw = c.demand * f.level * f.weather * f.economy * f.price * f.reputation * f.skill * f.gear * f.boost * noise;
-    var res = { ok: true, id: id, name: c.name, price: price, priceKey: priceKey, weather: s.weather.today, auto: !!opts.auto, factors: f };
+    var res = { ok: true, id: id, name: C.bizName(s, id), price: price, priceKey: priceKey, weather: s.weather.today, auto: !!opts.auto, factors: f };
     if (c.type === 'stock') {
       var unitCost = E.stockUnitCost(s, id);
       var qty = c.stock[E.clamp(opts.stock === undefined ? 1 : opts.stock, 0, c.stock.length - 1)];
       qty = Math.round(qty * f.level);
       var buyCost = E.r2(qty * unitCost);
       if (s.cash + 1e-9 < buyCost) return { ok: false, msg: 'You need ' + E.fmt(buyCost) + ' for supplies.' };
-      E.spend(s, buyCost, c.name + ': bought ' + qty + ' ' + c.unit + 's of supplies');
+      E.spend(s, buyCost, C.bizName(s, id) + ': bought ' + qty + ' ' + c.unit + 's of supplies');
       E.addInv(s, c.good, qty, buyCost);
       var available = s.inventory[c.good] ? s.inventory[c.good].qty : 0;
       var customers = Math.max(0, Math.round(raw));
       var sold = Math.min(customers, available);
       var sale = E.removeInv(s, c.good, sold);
       var revenue = E.r2(sold * price);
-      if (revenue > 0) E.earn(s, revenue, c.name + ': sold ' + sold + ' ' + c.unit + 's');
+      if (revenue > 0) E.earn(s, revenue, C.bizName(s, id) + ': sold ' + sold + ' ' + c.unit + 's');
       var left = available - sold;
       var spoiled = Math.round(left * c.perish);
       var spoil = E.removeInv(s, c.good, spoiled);
@@ -1391,11 +1418,11 @@ window.FN = window.FN || {};
       var redo = 0;
       if (id === 'bike_repair') { for (var i = 0; i < jobs; i++) if (rng() < Math.max(0.03, 0.18 - s.skills.trades / 300)) redo++; }
       var rev = E.r2((jobs - redo) * price);
-      E.payBill(s, supplies, c.name + ': supplies');
-      if (rev > 0) E.earn(s, rev, c.name + ': ' + (jobs - redo) + ' paying ' + c.unit + 's');
+      E.payBill(s, supplies, C.bizName(s, id) + ': supplies');
+      if (rev > 0) E.earn(s, rev, C.bizName(s, id) + ': ' + (jobs - redo) + ' paying ' + c.unit + 's');
       res.customers = jobs; res.sold = jobs - redo; res.redo = redo; res.revenue = rev; res.expenses = supplies; res.buyCost = supplies; res.missed = Math.max(0, Math.round(raw) - jobs);
     }
-    if (opts.auto && c.helperWage) { E.payBill(s, c.helperWage, c.name + ': helper wage'); res.wage = c.helperWage; res.expenses = E.r2(res.expenses + c.helperWage); }
+    if (opts.auto && c.helperWage) { E.payBill(s, c.helperWage, C.bizName(s, id) + ': helper wage'); res.wage = c.helperWage; res.expenses = E.r2(res.expenses + c.helperWage); }
     res.profit = E.r2(res.revenue - res.expenses);
     b.totalRevenue = E.r2(b.totalRevenue + res.revenue); b.totalExpenses = E.r2(b.totalExpenses + res.expenses);
     b.daysRun++; b.lastRunDay = s.day; b.last = { day: s.day, revenue: res.revenue, expenses: res.expenses, profit: res.profit };
@@ -1478,8 +1505,8 @@ window.FN = window.FN || {};
         var unitCost = c.type === 'stock' ? E.stockUnitCost(s, id) * Math.round(c.stock[1] * E.bizMult(s, id)) : 0;
         if (s.cash >= unitCost) {
           var r = E.runBusiness(s, id, { stock: 1, price: 'fair', auto: true }, rng);
-          if (r.ok) rep.lines.push({ icon: c.icon, text: 'Your helper ran the ' + c.name + ': sales ' + E.fmt(r.revenue) + ', costs ' + E.fmt(r.expenses), amount: r.profit });
-        } else rep.warnings.push('Your helper couldn\'t open the ' + c.name + ' — not enough cash for supplies.');
+          if (r.ok) rep.lines.push({ icon: c.icon, text: 'Your helper ran the ' + C.bizName(s, id) + ': sales ' + E.fmt(r.revenue) + ', costs ' + E.fmt(r.expenses), amount: r.profit });
+        } else rep.warnings.push('Your helper couldn\'t open the ' + C.bizName(s, id) + ' — not enough cash for supplies.');
       }
     });
     // 2. Passive businesses
@@ -1528,10 +1555,10 @@ window.FN = window.FN || {};
       var b = s.businesses[id], c = C.BUSINESSES[id];
       var fixed = E.r2(c.fixed * (id === 'rental' ? E.bizMult(s, id) : 1));
       if (fixed > 0) {
-        var p = E.payBill(s, fixed, c.name + ': daily operating costs');
+        var p = E.payBill(s, fixed, C.bizName(s, id) + ': daily operating costs');
         b.totalExpenses = E.r2(b.totalExpenses + fixed);
         if (p < fixed) unpaid += fixed - p;
-        rep.lines.push({ icon: c.icon, text: c.name + ' rent & utilities', amount: -fixed });
+        rep.lines.push({ icon: c.icon, text: C.bizName(s, id) + ' rent & utilities', amount: -fixed });
       }
     });
     // 4. Living costs
@@ -1780,7 +1807,7 @@ window.FN = window.FN || {};
   G.remember = function (s, id) {
     var r = s.recentSc || (s.recentSc = []);
     var i = r.indexOf(id); if (i >= 0) r.splice(i, 1);
-    r.push(id); if (r.length > 4) r.shift();
+    r.push(id); if (r.length > 8) r.shift();   // 1.7.0: remember 8 (was 4)
   };
   G.stale = function (s, sc) {
     var l = s.scenarioLog[sc.id];
@@ -1788,6 +1815,11 @@ window.FN = window.FN || {};
   };
   function freshPool(s, pool) {
     var recent = s.recentSc || [];
+    // 1.7.0: first choice = cards not seen today at all and not among the last 8 shown
+    var neverToday = pool.filter(function (sc) { var l = s.scenarioLog[sc.id]; return recent.indexOf(sc.id) < 0 && !(l && l.lastDay === s.day && l.count); });
+    var real = neverToday.filter(function (sc) { return !FN.Milestones.isFiller(sc); });
+    if (real.length) return real;
+    if (neverToday.length) return neverToday;
     var today = pool.filter(function (sc) { var l = s.scenarioLog[sc.id]; return recent.indexOf(sc.id) < 0 && !(FN.Milestones.isFiller(sc) && l && l.lastDay === s.day && (l.todayCount || 0) >= 1); });
     if (today.length) return today;
     var older = pool.filter(function (sc) { return recent.indexOf(sc.id) < 0; });
@@ -1824,19 +1856,36 @@ window.FN = window.FN || {};
     if (s.lastQuizDecision !== undefined && s.stats.decisions - s.lastQuizDecision < 5) return false;
     return R.next(s) < 0.45;
   };
+  /* 1.7.0: quizzes remember what was asked. A question type is not repeated on the same day while others are left,
+     the last 8 types are avoided, and types asked least often come up more. Personal questions are ~45% of quizzes. */
+  function quizLog(s) { return s.quizLog || (s.quizLog = {}); }
+  G.quizRecent = function (s) { return s.recentQuiz || (s.recentQuiz = []); };
+  G.noteQuiz = function (s, id) {
+    var l = quizLog(s), e = l[id] || (l[id] = { count: 0, lastDay: 0 });
+    e.count++; e.lastDay = s.day;
+    var r = G.quizRecent(s), i = r.indexOf(id); if (i >= 0) r.splice(i, 1); r.push(id); if (r.length > 8) r.shift();
+  };
   G.makeQuiz = function (s) {
+    var log = quizLog(s), recent = G.quizRecent(s);
     var all = FN.Quizzes.filter(function (q) { return (!q.levels || q.levels.indexOf(s.level) >= 0) && q.id !== s.lastQuizId; });
-    var general = all.filter(function (q) { return !q.personal; });
-    // 1.3.0: questions about the player's own job, businesses, home and loans come first
-    var mine = all.filter(function (q) { if (!q.personal) return false; try { return !!q.fits(s); } catch (e) { return false; } });
+    function fresh(list) {
+      var a = list.filter(function (q) { var e = log[q.id]; return recent.indexOf(q.id) < 0 && !(e && e.lastDay === s.day); });
+      if (a.length) return a;
+      a = list.filter(function (q) { var e = log[q.id]; return !(e && e.lastDay === s.day); });
+      return a.length ? a : list;
+    }
+    var general = fresh(all.filter(function (q) { return !q.personal; }));
+    // 1.3.0: questions about the player's own job, businesses, home and loans
+    var mine = fresh(all.filter(function (q) { if (!q.personal) return false; try { return !!q.fits(s); } catch (e) { return false; } }));
     var seed = R.hash(s.seed, s.day, s.stats.decisions, s.stats.quizTotal);
     var rng = R.stream(seed);
-    for (var tries = 0; tries < 6; tries++) {
-      var pool = mine.length && (rng() < 0.7 || !general.length) ? mine : general;
-      var q = R.pick(rng, pool);
+    function weightQ(q) { var e = log[q.id]; return 1 / (1 + (e ? e.count : 0) * 0.5); }
+    for (var tries = 0; tries < 8; tries++) {
+      var pool = mine.length && (rng() < 0.45 || !general.length) ? mine : general;
+      var q = R.weighted(rng, pool, weightQ) || R.pick(rng, pool);
       try {
         var out = q.gen(rng, s.level, s);
-        if (out && out.answers && out.answers.length >= 2 && out.correct >= 0 && out.correct < out.answers.length) { out.topic = q.topic || q.id; out.id = q.id; s.lastQuizId = q.id; return out; }
+        if (out && out.answers && out.answers.length >= 2 && out.correct >= 0 && out.correct < out.answers.length) { out.topic = q.topic || q.id; out.id = q.id; s.lastQuizId = q.id; G.noteQuiz(s, q.id); return out; }
       } catch (e) { }
     }
     return null;
@@ -1934,6 +1983,7 @@ window.FN = window.FN || {};
     if (s.stats.earned > earned0 + 0.001) MS.earn(s);
     var moneyMove = Math.max(st.cost || 0, Math.abs(after.savings - before.savings), Math.abs(after.debt - before.debt), s.stats.donated - donated0);
     if (moneyMove >= 1) MS.money(s, 'sc:' + sc.id, moneyMove);
+    else if (ch.budget) MS.money(s, 'sc:' + sc.id, 1);   // 1.7.0: deciding NOT to spend is a money decision too
     if (outcome && ch.outcomes.length > 1 && after.nw < before.nw - 0.01) MS.challenge(s, 'risk');
     if (cur.event) MS.challenge(s, 'event:' + cur.event);
     var res = {
@@ -1972,6 +2022,7 @@ window.FN = window.FN || {};
     var st = E.computeStage(s);
     if (st > s.stage) { s.stage = st; res.stageUp = st; }
     res.achievements = E.checkAchievements(s);
+    res.goals = FN.Goals ? FN.Goals.check(s) : [];
     res.milestones = FN.Milestones.refresh(s);
     FN.State.save(s);
   };
@@ -2120,6 +2171,7 @@ window.FN = window.FN || {};
     var st = E.computeStage(s);
     if (st > s.stage) { s.stage = st; rep.stageUp = st; }
     rep.achievements = E.checkAchievements(s);
+    rep.goals = FN.Goals ? FN.Goals.check(s) : [];
     rep.milestones = FN.Milestones.refresh(s);
     if (s.current && s.current.kind === 'scenario') { var sc = G.byId(s.current.id); if (!sc || !G.eligible(s, sc, false)) s.current = null; }
     s.morning = rep;
@@ -2299,6 +2351,106 @@ window.FN = window.FN || {};
   };
 
   FN.Milestones = M;
+})();
+
+/* ==== src/core/goals.js ==== */
+/* FN.Goals (1.7.0) — Big Goals: long-term things to chase after the five stages and the achievements are done.
+   Each track is an endless ladder of targets (net worth, business empire, giving, investing...). Every step reached
+   pays a cash reward, and the number of steps reached sets your Rank (Penny Pincher -> Tycoon -> Legend ★n, a new star every 10 goals).
+   Progress lives in s.goals = {tiers:{trackId:n}, total, backfilled}. Created lazily; old saves are backfilled
+   silently (no rewards for the past) so nobody gets a flood of payouts after the update. */
+window.FN = window.FN || {};
+(function () {
+  var C = function () { return FN.Catalog; };
+  var E = function () { return FN.Economy; };
+  function ladder(list, grow) {
+    // targets past the list keep growing: grow(prevTarget, index)
+    return function (i) {
+      if (i < list.length) return list[i];
+      var v = list[list.length - 1];
+      for (var k = list.length; k <= i; k++) v = grow(v, k);
+      return v;
+    };
+  }
+  function money(n) { return E() ? E().fmt(n) : '$' + n; }
+  function bizLevels(s) { return Object.keys(s.businesses || {}).reduce(function (a, id) { return a + (s.businesses[id].level || 1); }, 0); }
+  function indexValue(s) { return (s.investments && s.investments.index && s.investments.index.value) || 0; }
+
+  var G = {};
+  G.TRACKS = [
+    { id: 'wealth', icon: '💰', name: 'Net Worth', value: function (s) { return E().netWorth(s); },
+      target: ladder([2500, 10000, 25000, 50000, 100000, 250000, 500000, 1000000], function (v) { return v * 2; }),
+      label: function (t) { return 'Reach ' + money(t) + ' net worth'; }, show: money },
+    { id: 'empire', icon: '🏗️', name: 'Business Empire', value: bizLevels,
+      target: ladder([4, 8, 12, 16, 20, 25, 30, 40, 50], function (v) { return v + 10; }),
+      label: function (t) { return 'Grow your businesses to ' + t + ' total levels'; }, show: function (v) { return v + ' levels'; } },
+    { id: 'owner', icon: '🧩', name: 'Business Owner', value: function (s) { return Object.keys(s.businesses || {}).length; },
+      target: function (i) { return i < 7 ? i + 3 : Infinity; }, max: 7,
+      label: function (t) { return 'Own ' + t + ' different businesses at once'; }, show: function (v) { return v + ' owned'; } },
+    { id: 'giving', icon: '💝', name: 'Giving Back', value: function (s) { return s.stats.donated || 0; },
+      target: ladder([50, 150, 500, 1000, 2500, 5000], function (v) { return v * 2; }),
+      label: function (t) { return 'Give ' + money(t) + ' in total to help others'; }, show: money },
+    { id: 'investor', icon: '📊', name: 'Investor', value: indexValue,
+      target: ladder([250, 1000, 5000, 15000, 50000], function (v) { return v * 3; }),
+      label: function (t) { return 'Grow your Index Fund to ' + money(t); }, show: money },
+    { id: 'brains', icon: '🧠', name: 'Money Brain', value: function (s) { return s.stats.quizRight || 0; },
+      target: ladder([25, 50, 100, 150, 200], function (v) { return v + 100; }),
+      label: function (t) { return 'Get ' + t + ' money challenges right'; }, show: function (v) { return v + ' right'; } },
+    { id: 'safety', icon: '🛡️', name: 'Safety Net', value: function (s) { return s.savings || 0; },
+      target: ladder([100, 500, 2000, 5000, 15000], function (v) { return v * 2; }),
+      label: function (t) { return 'Keep ' + money(t) + ' in savings'; }, show: money }
+  ];
+  G.RANKS = [
+    { at: 0, name: 'Penny Pincher', icon: '🪙' }, { at: 2, name: 'Go-Getter', icon: '🚀' }, { at: 6, name: 'Business Builder', icon: '🧱' },
+    { at: 12, name: 'Boss', icon: '👔' }, { at: 20, name: 'Tycoon', icon: '🎩' }, { at: 30, name: 'Mogul', icon: '🏙️' }, { at: 42, name: 'Legend', icon: '👑' }
+  ];
+  G.reward = function (tier) { return Math.round(50 * Math.pow(tier + 1, 1.5) / 10) * 10; };
+
+  G.ensure = function (s) {
+    if (!s.goals) {
+      s.goals = { tiers: {}, total: 0 };
+      // backfill: count steps already reached, without rewards
+      G.TRACKS.forEach(function (t) { var n = 0, v = t.value(s); while (n < (t.max || 999) && v >= t.target(n)) n++; s.goals.tiers[t.id] = n; s.goals.total += n; });
+      s.goals.backfilled = true;
+    }
+    return s.goals;
+  };
+  G.rank = function (s) {
+    var tot = G.ensure(s).total, r = G.RANKS[0];
+    G.RANKS.forEach(function (x) { if (tot >= x.at) r = x; });
+    var last = G.RANKS[G.RANKS.length - 1];
+    if (tot >= last.at + 10) { var stars = Math.floor((tot - last.at) / 10); return { name: last.name + ' ★' + stars, icon: last.icon, total: tot, next: last.at + (stars + 1) * 10, nextName: last.name + ' ★' + (stars + 1) }; }
+    var i = G.RANKS.indexOf(r), nx = G.RANKS[i + 1];
+    return { name: r.name, icon: r.icon, total: tot, next: nx ? nx.at : last.at + 10, nextName: nx ? nx.name : last.name + ' ★1' };
+  };
+  // progress view for the panel
+  G.view = function (s) {
+    var g = G.ensure(s);
+    return G.TRACKS.map(function (t) {
+      var n = g.tiers[t.id] || 0, done = t.max && n >= t.max, tgt = done ? null : t.target(n), v = t.value(s);
+      var prev = n > 0 ? t.target(n - 1) : 0;
+      var pct = done ? 100 : Math.max(0, Math.min(100, Math.round((v - prev) / Math.max(1e-9, tgt - prev) * 100)));
+      return { id: t.id, icon: t.icon, name: t.name, steps: n, done: !!done, goal: done ? 'All done!' : t.label(tgt), now: t.show(Math.floor(v * 100) / 100), pct: pct, reward: done ? 0 : G.reward(n) };
+    });
+  };
+  // Called after every action and every night. Returns newly reached goals [{icon, name, text, reward}].
+  G.check = function (s) {
+    var g = G.ensure(s), got = [], before = G.rank(s).name;
+    G.TRACKS.forEach(function (t) {
+      var n = g.tiers[t.id] || 0, v = t.value(s), guard = 0;
+      while ((!t.max || n < t.max) && v >= t.target(n) && guard++ < 20) {
+        var r = G.reward(n);
+        got.push({ icon: t.icon, name: t.name, text: t.label(t.target(n)), reward: r });
+        if (r > 0) E().earn(s, r, 'Big Goal reward: ' + t.label(t.target(n)));
+        n++; g.total++;
+        E().log(s, t.icon + ' Big Goal reached: ' + t.label(t.target(n - 1)) + ' (+' + money(r) + ')', r);
+      }
+      g.tiers[t.id] = n;
+    });
+    if (got.length) { var after = G.rank(s).name; if (after !== before) got.rankUp = after; }
+    return got;
+  };
+  FN.Goals = G;
 })();
 
 /* ==== src/core/future.js ==== */
@@ -2803,6 +2955,119 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
           lesson: 'Rest now, learn next time.' }
       ]
     }
+  );
+})();
+
+/* ==== src/data/scenarios_filler2.js ==== */
+/* 1.7.0: more everyday filler cards, so a busy day spent in one place doesn't keep showing the same few fillers.
+   Like the originals: always eligible, small rewards, and every card has a free, zero-energy rest choice. */
+window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
+(function () {
+  function pay(s, base) { return base + Math.max(0, (s.stage || 1) - 1) * Math.ceil(base * 0.75); }
+  function rest(label, e, lesson) { return { label: label, detail: '+' + e + ' energy · 1 hour', hours: 1, energy: 0, effects: [{ energy: e }, { happiness: 1 }], lesson: lesson }; }
+  function F(id, title, places, text, a, b, c) {
+    var sc = { id: id, stage: 1, title: title, weight: 3, cooldown: 1, text: text, choices: [a, b, c] };
+    if (places) sc.places = places;
+    return sc;
+  }
+  function earn(label, base, hours, energy, extra, lesson) {
+    return { label: label, detail: 'Earn a little · ' + hours + ' hour' + (hours > 1 ? 's' : ''), hours: hours, energy: energy,
+      effects: function (s) { return [{ cash: pay(s, base) }].concat(extra || []); }, lesson: lesson };
+  }
+  function learn(label, skill, hours, extra, lesson) {
+    return { label: label, detail: '+' + skill.charAt(0).toUpperCase() + skill.slice(1) + ' · ' + hours + ' hour' + (hours > 1 ? 's' : ''), hours: hours, energy: 3,
+      effects: [{ skill: skill, add: 1 }].concat(extra || []), lesson: lesson };
+  }
+
+  FN.Scenarios.push(
+    F('f_x_neighbor_couch', 'Heavy Lifting', null, 'A neighbor is struggling to move a couch up the stairs.',
+      earn('Help carry it', 2, 1, 12, [{ reputation: 1 }], 'Helping with heavy jobs earns thanks and sometimes a tip.'),
+      learn('Plan the best way up', 'trades', 1, [], 'Thinking before lifting saves backs and furniture.'),
+      rest('Take a breather', 10, 'Lift with your legs, rest when you need to.')),
+    F('f_x_tutor', 'Homework Helper', null, 'A younger kid is stuck on a math worksheet and looks frustrated.',
+      earn('Tutor them for a bit', 2, 1, 4, [{ skill: 'people', add: 1 }], 'Teaching something is the best way to really learn it.'),
+      learn('Make flash cards together', 'money', 1, [{ happiness: 1 }], 'Practice tools help learning stick.'),
+      rest('Cheer them on', 6, 'Encouragement is free and powerful.')),
+    F('f_x_money_jar', 'Count Your Money', ['home'], function (s) { return 'You dump out your money and count it: ' + FN.Economy.fmt(s.cash) + ' in cash. What now?'; },
+      learn('Set a savings goal', 'money', 1, [{ happiness: 1 }], 'A goal with a number and a date is easier to reach.'),
+      learn('Write down where it went', 'money', 1, [], 'Tracking spending shows where money leaks out.'),
+      rest('Put it away and relax', 8, 'Knowing your numbers brings peace of mind.')),
+    F('f_x_news', 'Reading the Business News', null, function (s) { var p = s.economy.phase; return p === 'boom' ? 'The newspaper says the economy is booming: lots of hiring and spending.' : p === 'slow' ? 'The newspaper says the economy is slow: shops are quieter and people are saving.' : 'The newspaper says the economy is steady this week.'; },
+      learn('Read about local businesses', 'business', 1, [], 'Knowing the economy helps you time big decisions.'),
+      learn('Read the money tips column', 'money', 1, [], 'A few minutes of reading can save real dollars.'),
+      rest('Do the crossword', 8, 'Puzzles are a cheap way to relax.')),
+    F('f_x_squeaky_door', 'Squeaky Door', ['home', 'grocery'], 'A door keeps squeaking and sticking.',
+      earn('Fix it for the owner', 2, 1, 6, [{ skill: 'trades', add: 1 }], 'Small repairs are a skill people will pay for.'),
+      learn('Watch how a hinge works', 'trades', 1, [], 'Understanding how things work makes fixing them easy.'),
+      rest('Ignore the squeak', 8, 'Not every problem is yours to solve today.')),
+    F('f_x_recycling_sort', 'Sorting the Recycling', ['home', 'streets'], 'The building\'s recycling bins are a mess.',
+      earn('Sort it for the super', 2, 1, 8, [], 'Dirty jobs often pay because few want them.'),
+      learn('Learn what\'s recyclable', 'work', 1, [{ reputation: 1 }], 'Doing it right the first time saves time later.'),
+      rest('Leave it for later', 8, 'Pace yourself through the day.')),
+    F('f_x_price_walk', 'Window Shopping', ['streets', 'downtown'], 'You walk past shop windows and notice the prices.',
+      learn('Compare prices between stores', 'money', 1, [], 'The same thing can cost very different amounts at different stores.'),
+      learn('Notice which shops are busy', 'business', 1, [], 'Busy shops are doing something right. What is it?'),
+      rest('Just enjoy the walk', 8, 'Looking is free. Buying is a choice.')),
+    F('f_x_taste_test', 'Free Samples', ['grocery', 'market'], 'A worker is handing out free samples of a new snack.',
+      learn('Ask how they pick products', 'business', 1, [{ skill: 'people', add: 1 }], 'Stores test products before buying lots of them.'),
+      earn('Help hand out samples', 2, 1, 4, [], 'Friendly helpers get noticed.'),
+      rest('Enjoy a sample', 8, 'Free samples are a way to get customers to try things.')),
+    F('f_x_sam_tools', 'Sam\'s Messy Workbench', ['streets', 'downtown'], 'Sam\'s tools are scattered all over his bench.',
+      earn('Organize them for Sam', 2, 1, 6, [{ rel: 'sam', add: 2 }], 'An organized workspace saves time and money.'),
+      learn('Ask Sam about a tool', 'trades', 1, [{ rel: 'sam', add: 1 }], 'Asking experts is a free education.'),
+      rest('Chat with Sam', 6, 'Friendships make work better.')),
+    F('f_x_farm_booth', 'At the Farm Booth', ['market', 'farm', 'town'], 'A farm booth has a line of customers and only one person working.',
+      earn('Bag produce for them', 2, 1, 8, [{ rel: 'miller', add: 1 }], 'Jumping in to help builds trust.'),
+      learn('Watch how they make change', 'money', 1, [], 'Fast, accurate change keeps customers happy.'),
+      rest('Buy nothing, just watch', 8, 'Watching a busy business teaches a lot.')),
+    F('f_x_idea_book', 'Business Idea Notebook', null, 'You have a notebook and a few free minutes.',
+      learn('Sketch a business idea', 'business', 1, [{ happiness: 1 }], 'Every business starts as an idea on paper.'),
+      learn('Plan a budget for next week', 'money', 1, [], 'Budgets work best when written down.'),
+      rest('Doodle and daydream', 8, 'Creativity needs downtime.')),
+    F('f_x_litter', 'Litter in the Park', ['park', 'streets'], 'Wrappers and cans are blowing around the sidewalk.',
+      learn('Pick it up', 'work', 1, [{ reputation: 1 }, { happiness: 1 }], 'Taking care of shared places builds a good reputation.'),
+      earn('Collect the cans for deposit', 1, 1, 6, [], 'One person\'s trash can be another\'s nickel.'),
+      rest('Find a clean bench', 8, 'Rest when you can.')),
+    F('f_x_library', 'At the Library', null, 'The library is quiet, warm, and free.',
+      learn('Read a book about money', 'money', 1, [], 'Libraries are full of free knowledge.'),
+      learn('Use a computer to look up jobs', 'work', 1, [], 'Knowing what jobs exist helps you plan.'),
+      rest('Read a fun story', 10, 'Reading for fun is great rest.')),
+    F('f_x_rosa_inventory', 'Counting Shelves', ['grocery'], 'Rosa is counting how many cans are left on each shelf.',
+      earn('Help her count', 2, 1, 5, [{ rel: 'rosa', add: 1 }], 'Stores count inventory to know what to reorder.'),
+      learn('Ask how she decides what to order', 'business', 1, [{ rel: 'rosa', add: 1 }], 'Ordering too much wastes money; too little loses sales.'),
+      rest('Grab a drink and rest', 8, 'Hydration is a need.')),
+    F('f_x_office_errands', 'Office Errands', ['downtown'], 'An office manager needs packages taken to the post office.',
+      earn('Run the errand', 2, 1, 8, [], 'Reliable people get asked again.'),
+      learn('Ask what her job is like', 'people', 1, [], 'Learning about jobs helps you choose a career.'),
+      rest('Sit in the plaza', 8, 'City benches are free.')),
+    F('f_x_bank_lobby', 'Bank Lobby Brochures', ['downtown'], 'The Community Bank lobby has brochures about savings, loans and credit.',
+      learn('Read about savings accounts', 'money', 1, [{ rel: 'lee', add: 1 }], 'Interest is the bank paying you to keep money there.'),
+      learn('Read about loans', 'money', 1, [], 'Loans cost interest. Read the fine print.'),
+      rest('Rest in the air conditioning', 8, 'Free comfort is still comfort.')),
+    F('f_x_food_cart_line', 'Lunch Rush', ['downtown', 'park'], 'A food cart has a huge line at lunchtime.',
+      earn('Help hand out orders', 2, 1, 8, [{ skill: 'people', add: 1 }], 'Rush hours are when businesses need help most.'),
+      learn('Count customers per minute', 'business', 1, [], 'Counting customers helps owners plan staff.'),
+      rest('Eat a packed lunch', 10, 'Packing lunch saves money every day.')),
+    F('f_x_bike_ride', 'Nice Day for a Ride', null, function (s) { return 'It\'s ' + (FN.Catalog.WEATHER[s.weather.today] || {}).name.toLowerCase() + ' out. Time to get some fresh air?'; },
+      learn('Explore a new street', 'people', 1, [{ happiness: 2 }], 'Exploring shows you new opportunities.'),
+      earn('Deliver a flyer stack for a shop', 2, 1, 8, [], 'Shops pay people to spread the word.'),
+      rest('Sit and watch the clouds', 10, 'Doing nothing for a bit is good for you.')),
+    F('f_x_cook', 'Cheap and Tasty', ['home'], 'You have rice, beans and an onion.',
+      learn('Cook a big pot', 'money', 1, [{ energy: 6 }], 'Rice and beans: cheap, filling, and healthy.'),
+      learn('Look up a new recipe', 'work', 1, [{ happiness: 1 }], 'Cooking skills save money for life.'),
+      rest('Snack and rest', 10, 'Fuel up before the next thing.')),
+    F('f_x_call_family', 'Write a Letter', ['home'], 'You think about family and friends far away.',
+      learn('Write a thank-you note', 'people', 1, [{ happiness: 3 }], 'Gratitude makes people feel good, including you.'),
+      learn('Plan a cheap visit', 'money', 1, [{ happiness: 1 }], 'Planning ahead makes trips cheaper.'),
+      rest('Look at old photos', 8, 'Memories are free and priceless.')),
+    F('f_x_country_fence', 'Broken Fence', ['farm', 'town'], 'A fence board is loose and a goat is eyeing the gap.',
+      earn('Fix the fence', 3, 1, 10, [{ skill: 'trades', add: 1 }], 'Fixing small problems prevents big ones.'),
+      learn('Ask how farmers plan repairs', 'farming', 1, [], 'Farms budget for repairs every year.'),
+      rest('Pet the goat', 8, 'Animals are great stress relief.')),
+    F('f_x_market_signs', 'Messy Price Signs', ['market', 'grocery'], 'The price signs are hard to read and customers keep asking.',
+      earn('Rewrite the signs neatly', 2, 1, 4, [{ skill: 'business', add: 1 }], 'Clear prices help customers decide faster.'),
+      learn('Notice which prices end in .99', 'business', 1, [], '$1.99 feels cheaper than $2 even though it\'s 1¢ less.'),
+      rest('Rest by the flowers', 8, 'Little breaks keep you going.'))
   );
 })();
 
@@ -3806,7 +4071,7 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
       id: 's3_profit_check', stage: 3, title: 'Check Your Numbers', cooldown: 6,
       requires: { anyBusiness: true },
       text: function (s) {
-        var id = firstBiz(s), b = s.businesses[id], n = FN.Catalog.BUSINESSES[id].name;
+        var id = firstBiz(s), b = s.businesses[id], n = FN.Catalog.bizName(s, id);
         var r = Math.round(b.totalRevenue || 0), e = Math.round(b.totalExpenses || 0);
         return 'Your ' + n + ' has earned $' + r + ' and spent $' + e + ' so far. Profit = $' + (r - e) + '.';
       },
@@ -4046,7 +4311,7 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
 window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
 (function () {
   function indexValue(s) { return (s.investments && s.investments.index && s.investments.index.value) || 0; }
-  function firstBizName(s) { var k = Object.keys(s.businesses || {}); return k.length ? FN.Catalog.BUSINESSES[k[0]].name : 'business'; }
+  function firstBizName(s) { var k = Object.keys(s.businesses || {}); return k.length ? FN.Catalog.bizName(s, k[0]) : 'business'; }
 
   FN.Scenarios.push(
     /* ---------------- STAGE 4: Growth ---------------- */
@@ -4465,6 +4730,1044 @@ window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
         { label: 'Write tips instead', detail: '+Money Smarts · 1 hour', hours: 1, energy: 2,
           effects: [{ skill: 'money', add: 3 }, { reputation: 4 }],
           lesson: 'Sharing knowledge helps others start stronger.' }
+      ]
+    }
+  );
+})();
+
+/* ==== src/data/scenarios_variety.js ==== */
+/* 1.7.0 — more variety. Early-game cards (stage 1-2) so new players don't see the same few cards, every card a real
+   money choice with a real consequence; plus late-game cards (stage 4-5) for players with big businesses.
+   Early amounts stay small ($1-$15). Text reacts to weather and to the economy (normal / boom / slow). */
+window.FN = window.FN || {}; FN.Scenarios = FN.Scenarios || [];
+(function () {
+  function C() { return FN.Catalog; }
+  function econ(ctx) { return (ctx && ctx.phase) || 'normal'; }
+  function econLine(ctx) {
+    var p = econ(ctx);
+    return p === 'boom' ? 'Business is booming in the city this week, and people are spending.' :
+      p === 'slow' ? 'Times are slow in the city this week, and people are holding on to their money.' :
+        'It is a normal week in the city.';
+  }
+  function wx(s) { return (s.weather && s.weather.today) || 'sunny'; }
+  function money(n) { return FN.Economy ? FN.Economy.fmt(n) : '$' + n; }
+  function bizList(s) { return Object.keys(s.businesses || {}); }
+  function topBiz(s) {
+    var best = null, lv = 0;
+    bizList(s).forEach(function (id) { var l = s.businesses[id].level || 1; if (l > lv) { lv = l; best = id; } });
+    return best;
+  }
+  function topBizName(s) { var id = topBiz(s); return id ? C().bizName(s, id) : 'business'; }
+  function totalLevels(s) { return bizList(s).reduce(function (a, id) { return a + (s.businesses[id].level || 1); }, 0); }
+  function nw(s) { return FN.Economy ? FN.Economy.netWorth(s) : 0; }
+  // late-game amounts scale with how big the player has become (never below the floor)
+  function big(s, pct, floor) { return Math.max(floor, Math.round(nw(s) * pct / 10) * 10); }
+
+  FN.Scenarios.push(
+    /* ===================== EARLY GAME (stage 1-2) ===================== */
+    {
+      id: 'e1_rain_umbrellas', stage: 1, title: 'Caught in the Rain', places: ['streets'], cooldown: 4,
+      requires: { maxStage: 2, fn: function (s) { return wx(s) === 'rainy'; } },
+      text: 'Rain is pouring and people are running for cover. A shop owner has a box of cheap umbrellas he can\'t sell fast enough.',
+      choices: [
+        { label: 'Sell umbrellas for him', detail: 'He pays you per umbrella · 2 hours', hours: 2, energy: 12, risky: true,
+          effects: [{ skill: 'business', add: 2 }, { skill: 'people', add: 1 }],
+          outcomes: [
+            { weight: 55, title: 'Rain = customers', text: 'You sold 9 umbrellas in no time. He pays you $6.', effects: [{ cash: 6 }] },
+            { weight: 45, title: 'The rain stopped', text: 'The sun came out after 3 sales. He pays you $2.', effects: [{ cash: 2 }] }
+          ],
+          lesson: 'Demand changes with the weather. Sell what people need right now.' },
+        { label: 'Help him move boxes inside', detail: 'Earn $3 for sure · 1 hour', hours: 1, energy: 8,
+          effects: [{ cash: 3 }, { reputation: 1 }],
+          lesson: 'A sure small paycheck is sometimes better than a maybe.' },
+        { label: 'Wait it out under an awning', detail: '+8 energy · 1 hour', hours: 1, energy: 0,
+          effects: [{ energy: 8 }],
+          lesson: 'Rest is free. Being soaked and sick is not.' }
+      ]
+    },
+    {
+      id: 'e1_cold_water', stage: 1, title: 'Thirsty Joggers', places: ['park'], cooldown: 4,
+      requires: { maxStage: 2, minCash: 2, fn: function (s) { return wx(s) === 'hot' || wx(s) === 'sunny'; } },
+      text: function (s) { return 'It\'s ' + (wx(s) === 'hot' ? 'HOT' : 'sunny') + ' and joggers keep looking for water. Rosa sells a pack of 8 bottles for $2.'; },
+      choices: [
+        { label: 'Buy a pack and resell', detail: 'Pay $2 · sell at $1 each · 2 hours', cost: 2, hours: 2, energy: 10, risky: true,
+          effects: [{ skill: 'business', add: 2 }],
+          outcomes: [
+            { weight: function (s) { return wx(s) === 'hot' ? 80 : 55; }, title: 'Sold out!', text: 'All 8 bottles sold. You made $8 and spent $2. Profit: $6.', effects: [{ cash: 8 }] },
+            { weight: function (s) { return wx(s) === 'hot' ? 20 : 45; }, title: 'Half sold', text: 'Only 4 sold before people left. $4 back for your $2. Profit: $2, and you drink the rest.', effects: [{ cash: 4 }, { energy: 6 }] }
+          ],
+          lesson: 'Profit = what you sell for minus what it cost you.' },
+        { label: 'Ask joggers what they need', detail: '+Business · 1 hour', hours: 1, energy: 3,
+          effects: [{ skill: 'business', add: 3 }, { skill: 'people', add: 1 }],
+          lesson: 'Asking customers what they want is the first step of any business.' },
+        { label: 'Just enjoy the park', detail: '+Happiness · 1 hour', hours: 1, energy: 0,
+          effects: [{ happiness: 4 }, { energy: 5 }],
+          lesson: 'Not every moment has to make money.' }
+      ]
+    },
+    {
+      id: 'e1_lost_dog', stage: 1, title: 'A Lost Dog', places: ['park', 'streets'], cooldown: 8,
+      requires: { maxStage: 2 },
+      text: 'A small dog with a collar is wandering alone. The tag has a phone number but you don\'t have a phone.',
+      choices: [
+        { label: 'Walk it to the address', detail: 'Do the right thing · 2 hours', hours: 2, energy: 10, risky: true,
+          effects: [{ reputation: 3 }, { happiness: 3 }],
+          outcomes: [
+            { weight: 50, title: 'A grateful owner', text: 'The owner hugs her dog and hands you $10. "Thank you so much!"', effects: [{ cash: 10 }, { flag: 'kind_deed' }] },
+            { weight: 50, title: 'A big thank-you', text: 'The owner thanks you over and over. No money, but you feel great, and people saw what you did.', effects: [{ reputation: 3 }, { happiness: 3 }] }
+          ],
+          lesson: 'Do good things because they are right, not for the reward.' },
+        { label: 'Ask Rosa to call the number', detail: 'Quick · 1 hour', hours: 1, energy: 4,
+          effects: [{ rel: 'rosa', add: 3 }, { reputation: 2 }],
+          lesson: 'Knowing who can help you is a skill.' },
+        { label: 'Leave it, it\'s not your problem', detail: 'Keep your time', hours: 0, energy: 0,
+          effects: [{ happiness: -3 }],
+          lesson: 'Walking past a problem can feel bad later.' }
+      ]
+    },
+    {
+      id: 'e1_buy_two_deal', stage: 1, title: 'Buy 2, Get 1 Free', places: ['grocery'], cooldown: 5,
+      requires: { maxStage: 2, minCash: 3 },
+      text: 'Rosa has a sign: "Granola bars $1 each, or buy 2 get 1 FREE." You need food for the next few days.',
+      choices: [
+        { label: 'Take the deal (3 for $2)', detail: 'Pay $2 · food for 3 days', cost: 2, hours: 0, energy: 0,
+          effects: [{ energy: 8 }, { skill: 'money', add: 2 }, { happiness: 1 }],
+          lesson: 'A deal is good only if you will really use all of it. Here, each bar costs about 67¢.' },
+        { budget: true, label: 'Buy just one ($1)', detail: 'Pay $1 · food for today', cost: 1, hours: 0, energy: 0,
+          effects: [{ energy: 4 }],
+          lesson: 'Buying only what you need keeps cash in your pocket.' },
+        { budget: true, label: 'Skip it', detail: 'Save money, stay hungry', hours: 0, energy: 0,
+          effects: [{ energy: -4 }, { happiness: -1 }],
+          lesson: 'Skipping meals saves money but leaves you tired.' }
+      ]
+    },
+    {
+      id: 'e1_food_truck', stage: 1, title: 'The Food Truck', cooldown: 4,
+      requires: { maxStage: 3, minCash: 4 },
+      text: 'A food truck smells amazing. Tacos cost $4. Rosa sells sandwich bread and cheese for $1.50 that would make two lunches.',
+      choices: [
+        { label: 'Buy the tacos', detail: 'Pay $4 · big treat', cost: 4, hours: 0, energy: 0,
+          effects: [{ happiness: 6 }, { energy: 8 }],
+          lesson: 'Treats are fine sometimes. Just know what they really cost you.' },
+        { budget: true, label: 'Make your own lunch', detail: 'Pay $1.50 · two meals', cost: 1.5, hours: 1, energy: 0,
+          effects: [{ energy: 10 }, { skill: 'money', add: 2 }],
+          lesson: 'Making your own food often costs less than half as much.' },
+        { budget: true, label: 'Smell it and walk on', detail: 'Free', hours: 0, energy: 0,
+          effects: [{ happiness: -1 }],
+          lesson: 'Saying no to wants helps you buy needs later.' }
+      ]
+    },
+    {
+      id: 'e1_prices_rising', stage: 1, title: 'Prices Are Going Up', places: ['grocery'], cooldown: 9,
+      requires: { maxStage: 3, minCash: 4 },
+      text: function (s, ctx) { return econLine(ctx) + ' Rosa says: "Rice goes up 50 cents next week. A bag is $4 today."'; },
+      choices: [
+        { label: 'Buy a bag now', detail: 'Pay $4 · beat the price rise', cost: 4, hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 2 }, { schedule: 'e1_prices_rising_after', inDays: 3 }],
+          lesson: 'When prices are about to rise, buying things you need early saves money.' },
+        { budget: true, label: 'Wait and see', detail: 'Keep your $4', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 1 }],
+          lesson: 'Prices don\'t always go up. Waiting keeps your cash flexible.' }
+      ]
+    },
+    {
+      id: 'e1_prices_rising_after', stage: 1, title: 'Good Timing', weight: 0, once: false, cooldown: 0,
+      text: 'Rice at Rosa\'s now costs $4.50. Your bag lasted all week, and you didn\'t have to buy dinner.',
+      choices: [
+        { label: 'Nice!', detail: 'You saved money', hours: 0, energy: 0,
+          effects: [{ cash: 2 }, { log: 'Buying rice early saved money on dinners.' }],
+          lesson: 'Planning ahead is one of the easiest ways to save.' },
+        { label: 'Save the difference', detail: 'Put $2 in savings', hours: 0, energy: 0,
+          effects: [{ savings: 2 }, { skill: 'money', add: 1 }],
+          lesson: 'Money you save by planning can go straight into savings.' }
+      ]
+    },
+    {
+      id: 'e1_lend_jamal', stage: 1, title: 'Can I Borrow $5?', places: ['home'], cooldown: 10,
+      requires: { minCash: 5, maxStage: 3 },
+      text: 'Jamal looks worried. "Can I borrow $5? I need bus fare for a job interview. I\'ll pay you back Friday."',
+      choices: [
+        { label: 'Lend him $5', detail: 'Pay $5 now · he promises to pay back', cost: 5, hours: 0, energy: 0, risky: true,
+          effects: [{ rel: 'jamal', add: 6 }],
+          outcomes: [
+            { weight: 60, title: 'He got the job!', text: 'Jamal will pay you back in a few days, plus a little thank-you.', effects: [{ schedule: 'e1_jamal_pays_back', inDays: 3 }] },
+            { weight: 40, title: 'No job yet', text: 'The interview didn\'t work out. Jamal says he\'ll pay you when he can.', effects: [{ schedule: 'e1_jamal_pays_back', inDays: 6 }] }
+          ],
+          lesson: 'Only lend money you can live without for a while.' },
+        { label: 'Give him $2 as a gift', detail: 'Pay $2 · no paying back', cost: 2, hours: 0, energy: 0,
+          effects: [{ donate: 2, why: 'Helped Jamal with bus fare' }, { rel: 'jamal', add: 4 }],
+          lesson: 'A gift you can afford can be better than a loan you worry about.' },
+        { budget: true, label: 'Say no kindly', detail: 'Keep your money', hours: 0, energy: 0,
+          effects: [{ rel: 'jamal', add: -2 }],
+          lesson: 'It\'s okay to say no. Being honest is better than lending what you need.' }
+      ]
+    },
+    {
+      id: 'e1_jamal_pays_back', stage: 1, title: 'Jamal Pays You Back', weight: 0, cooldown: 0,
+      text: 'Jamal knocks on your tent pole with a grin. "Here\'s your $5, and a dollar extra. Thanks for trusting me."',
+      choices: [
+        { label: 'Thank him', detail: '+$6', hours: 0, energy: 0,
+          effects: [{ cash: 6 }, { rel: 'jamal', add: 4 }, { log: 'Jamal paid back the $5 loan, plus $1.' }],
+          lesson: 'Trust grows when people keep their promises, both ways.' },
+        { label: 'Tell him to keep the extra dollar', detail: '+$5', hours: 0, energy: 0,
+          effects: [{ cash: 5 }, { rel: 'jamal', add: 6 }],
+          lesson: 'A loan between friends doesn\'t need interest. Kindness builds friendships.' }
+      ]
+    },
+    {
+      id: 'e1_free_trial', stage: 1, title: '"FREE for 7 Days!"', cooldown: 12,
+      requires: { maxStage: 3 },
+      text: 'A game app says: "Play FREE for 7 days!" In tiny letters: "Then $3 every week until you cancel."',
+      choices: [
+        { label: 'Sign up, forget about it', detail: 'Free now…', hours: 1, energy: 0,
+          effects: [{ happiness: 5 }, { schedule: 'e1_trial_charge', inDays: 3 }],
+          lesson: 'Free trials turn into payments if you forget to cancel.' },
+        { label: 'Sign up and set a reminder', detail: 'Cancel before day 7', hours: 1, energy: 0,
+          effects: [{ happiness: 5 }, { skill: 'money', add: 3 }],
+          lesson: 'Read the small print, and set a reminder to cancel.' },
+        { budget: true, label: 'Skip it', detail: 'Free', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 1 }],
+          lesson: 'The small print is where the real price hides.' }
+      ]
+    },
+    {
+      id: 'e1_trial_charge', stage: 1, title: 'Surprise Charges', weight: 0, cooldown: 0,
+      text: 'The game app has been charging $3 a week. Two charges have gone through already.',
+      choices: [
+        { label: 'Cancel it now', detail: 'Lose $6 · stop the charges', hours: 0, energy: 0,
+          effects: function (s) { return [{ cash: -Math.min(6, s.cash) }, { skill: 'money', add: 3 }, { log: 'Canceled a game subscription after paying $6.' }]; },
+          lesson: 'Check where your money goes every week. Small charges add up.' },
+        { label: 'Keep playing', detail: '$3 every week', hours: 0, energy: 0,
+          effects: function (s) { return [{ cash: -Math.min(9, s.cash) }, { happiness: 3 }]; },
+          lesson: '$3 a week is $156 a year. Is the game worth that much to you?' }
+      ]
+    },
+    {
+      id: 'e1_garage_sale', stage: 1, title: 'Neighborhood Yard Sale', places: ['streets'], cooldown: 6,
+      requires: { maxStage: 2 },
+      text: function (s, ctx) { return 'A family is selling old things on the sidewalk. A box of toys is just $3. ' + (econ(ctx) === 'slow' ? 'Not many people are buying today.' : 'Lots of people are stopping by.'); },
+      choices: [
+        { label: 'Buy the toy box to resell', detail: 'Pay $3 · sell at the park · 2 hours', cost: 3, hours: 2, energy: 10, risky: true,
+          effects: [{ skill: 'business', add: 2 }],
+          outcomes: [
+            { weight: function (s) { return s.economy.phase === 'slow' ? 35 : 60; }, title: 'Flipped it!', text: 'Kids at the park loved them. You sold everything for $9.', effects: [{ cash: 9 }] },
+            { weight: function (s) { return s.economy.phase === 'slow' ? 65 : 40; }, title: 'Slow sales', text: 'You only sold a few, for $4. Still a tiny profit.', effects: [{ cash: 4 }] }
+          ],
+          lesson: 'Buying low and selling higher is called "flipping." It only works when buyers are around.' },
+        { label: 'Help run their sale', detail: 'Earn $4 · 2 hours', hours: 2, energy: 8,
+          effects: [{ cash: 4 }, { skill: 'people', add: 2 }],
+          lesson: 'Watching how others sell teaches you for free.' },
+        { label: 'Just look around', detail: '+Business · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'business', add: 1 }],
+          lesson: 'Noticing prices is how you spot good deals later.' }
+      ]
+    },
+    {
+      id: 'e1_concert_cans', stage: 1, title: 'After the Concert', places: ['park'], cooldown: 5,
+      requires: { maxStage: 2 },
+      text: 'A free concert just ended. Cans and bottles are everywhere, and the cleanup crew is short on people.',
+      choices: [
+        { label: 'Collect cans for 3 hours', detail: 'Earn $7 · tiring · 3 hours', hours: 3, energy: 22,
+          effects: [{ cash: 7 }, { skill: 'work', add: 2 }],
+          lesson: 'Hard work after a big event can pay well.' },
+        { label: 'Join the cleanup crew', detail: 'Earn $4 + meet people · 2 hours', hours: 2, energy: 12,
+          effects: [{ cash: 4 }, { reputation: 2 }, { rel: 'jamal', add: 2 }],
+          lesson: 'Teams get big jobs done, and teammates remember you.' },
+        { label: 'Head home to rest', detail: '+10 energy', hours: 1, energy: 0,
+          effects: [{ energy: 10 }],
+          lesson: 'Knowing when to stop keeps you healthy.' }
+      ]
+    },
+    {
+      id: 'e1_haggle_apples', stage: 1, title: 'Can You Haggle?', places: ['market'], cooldown: 5,
+      requires: { maxStage: 2, minCash: 2 },
+      text: 'A farmer sells a bag of apples for $3. It\'s late, and he still has a lot left.',
+      choices: [
+        { label: 'Offer $2 politely', detail: 'Try to negotiate', hours: 0, energy: 2, risky: true,
+          effects: [{ skill: 'people', add: 2 }],
+          outcomes: [
+            { weight: function (s) { return 50 + s.skills.people; }, title: 'Deal!', text: '"It\'s the end of the day. $2 it is." Food for three days.', effects: [{ cash: -2 }, { energy: 8 }, { skill: 'business', add: 1 }] },
+            { weight: 40, title: 'No deal', text: '"Sorry, $3 is fair." You thank him and keep your money.', effects: [] }
+          ],
+          lesson: 'Sellers often drop prices at the end of the day. Asking nicely never hurts.' },
+        { label: 'Pay the $3', detail: 'Pay $3', cost: 3, hours: 0, energy: 0,
+          effects: [{ energy: 8 }, { rel: 'miller', add: 1 }],
+          lesson: 'Paying a fair price supports local farmers.' },
+        { budget: true, label: 'Don\'t buy', detail: 'Keep your money', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'You can always walk away.' }
+      ]
+    },
+    {
+      id: 'e1_bake_sale', stage: 1, title: 'Bake Sale Idea', places: ['home', 'park'], cooldown: 7,
+      requires: { maxStage: 2, minCash: 3 },
+      text: 'There\'s a community bake sale at the park tomorrow. Cookie ingredients cost $3 and make 20 cookies.',
+      choices: [
+        { label: 'Bake and sell at 50¢ each', detail: 'Pay $3 · 3 hours', cost: 3, hours: 3, energy: 15, risky: true,
+          effects: [{ skill: 'business', add: 2 }],
+          outcomes: [
+            { weight: function (s) { return s.weather.today === 'rainy' ? 20 : 60; }, title: 'All gone!', text: '20 cookies × 50¢ = $10. You spent $3, so your profit is $7.', effects: [{ cash: 10 }, { happiness: 3 }] },
+            { weight: function (s) { return s.weather.today === 'rainy' ? 80 : 40; }, title: 'Slow day', text: 'Only 9 cookies sold: $4.50. You eat the rest.', effects: [{ cash: 4.5 }, { energy: 5 }] }
+          ],
+          lesson: 'Weather and timing can change how much you sell.' },
+        { label: 'Bake and sell at $1 each', detail: 'Pay $3 · higher price · 3 hours', cost: 3, hours: 3, energy: 15, risky: true,
+          effects: [{ skill: 'business', add: 2 }],
+          outcomes: [
+            { weight: 35, title: 'People paid it!', text: '14 cookies at $1 = $14. Profit $11!', effects: [{ cash: 14 }] },
+            { weight: 65, title: 'Too pricey', text: 'Other tables charged 50¢. You sold only 6: $6.', effects: [{ cash: 6 }] }
+          ],
+          lesson: 'A higher price earns more per sale but can mean fewer sales.' },
+        { budget: true, label: 'Skip it', detail: 'No risk', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Not every idea has to be tried today.' }
+      ]
+    },
+    {
+      id: 'e1_battery_compare', stage: 1, title: 'Which Is the Better Buy?', cooldown: 8,
+      requires: { maxStage: 3, minCash: 4 },
+      text: 'Your flashlight died. The corner shop sells 4 batteries for $4. Rosa sells a big pack of 12 for $9.',
+      choices: [
+        { label: 'Buy the 12-pack', detail: 'Pay $9 · 75¢ each', cost: 9, hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 3 }, { happiness: 2 }],
+          lesson: '$9 ÷ 12 = 75¢ each, cheaper than $1 each. Big packs win IF you will use them all.' },
+        { label: 'Buy the 4-pack', detail: 'Pay $4 · $1 each', cost: 4, hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 1 }, { happiness: 1 }],
+          lesson: 'Small packs cost more per battery, but keep more cash in your pocket today.' },
+        { budget: true, label: 'Use the flashlight less', detail: 'Free', hours: 0, energy: 0,
+          effects: [{ happiness: -1 }],
+          lesson: 'Sometimes you can change a habit instead of buying something.' }
+      ]
+    },
+    {
+      id: 'e1_job_fair', stage: 1, title: 'Help Wanted Signs', places: ['streets'], cooldown: 14,
+      requires: { maxStage: 2, job: false },
+      text: 'Three shops on your street have "Help Wanted" signs in the window. Nobody knows you yet.',
+      choices: [
+        { label: 'Walk in and ask for work', detail: '+People · 2 hours', hours: 2, energy: 8,
+          effects: [{ skill: 'people', add: 3 }, { skill: 'work', add: 1 }, { rel: 'rosa', add: 4 }, { schedule: 'e1_job_fair_call', inDays: 2 }],
+          lesson: 'Asking in person, politely and looking neat, is one of the best ways to get hired.' },
+        { label: 'Practice an interview with Jamal', detail: '+People · 1 hour', hours: 1, energy: 3,
+          effects: [{ skill: 'people', add: 2 }, { rel: 'jamal', add: 2 }],
+          lesson: 'Practice makes interviews less scary.' },
+        { label: 'Skip it today', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Missing chances can slow you down.' }
+      ]
+    },
+    {
+      id: 'e1_job_fair_call', stage: 1, title: 'Someone Remembered You', weight: 0, cooldown: 0,
+      text: 'Rosa found you. "A shop owner on your street told me you came in asking for work, polite and neat. Want a tryout shift with me?"',
+      choices: [
+        { label: 'Do the tryout shift', detail: 'Earn $6 · 2 hours', hours: 2, energy: 12,
+          effects: [{ cash: 6 }, { rel: 'rosa', add: 8 }, { flag: 'met_rosa' }, { skill: 'work', add: 2 }],
+          lesson: 'A good first impression can lead to a job later.' },
+        { label: 'Not today', detail: 'Maybe later', hours: 0, energy: 0,
+          effects: [{ rel: 'rosa', add: 1 }],
+          lesson: 'Chances come back if people remember you well.' }
+      ]
+    },
+    {
+      id: 'e1_buy_now_pay_later', stage: 1, title: '"No Money Down!"', places: ['streets'], cooldown: 12,
+      requires: { minStage: 1, maxStage: 3 },
+      text: 'A phone shop sign says: "Get headphones TODAY, $0 down! Just $3 a week for 6 weeks." They cost $12 if you pay all at once.',
+      choices: [
+        { label: 'Take them now, pay later', detail: '6 payments of $3', hours: 0, energy: 0,
+          effects: [{ happiness: 6 }, { schedule: 'e1_bnpl_bill', inDays: 4 }],
+          lesson: '$3 × 6 weeks = $18. That\'s $6 more than paying $12 up front.' },
+        { budget: true, label: 'Save up and pay $12 later', detail: 'Free for now', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 3 }],
+          lesson: 'Waiting and paying cash avoids extra costs.' },
+        { budget: true, label: 'You don\'t need them', detail: 'Free', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 1 }],
+          lesson: 'The cheapest thing is the thing you don\'t buy.' }
+      ]
+    },
+    {
+      id: 'e1_bnpl_bill', stage: 1, title: 'The Bill Arrives', weight: 0, cooldown: 0,
+      text: 'The phone shop wants the rest of your headphone payments: $15 more. Late fees start if you wait.',
+      choices: [
+        { label: 'Pay what you can now', detail: 'Pays up to $15', hours: 0, energy: 0,
+          effects: function (s) { var p = Math.min(15, Math.max(0, Math.floor(s.cash))); return [{ cash: -p }, { log: 'Paid ' + money(p) + ' toward the "pay later" headphones.' }, { skill: 'money', add: 3 }].concat(p < 15 ? [{ happiness: -4 }, { reputation: -2 }] : []); },
+          lesson: '"Pay later" still means pay. Small payments add up to more than the price.' },
+        { label: 'Return the headphones', detail: 'Pay a $4 return fee', hours: 1, energy: 2,
+          effects: function (s) { return [{ cash: -Math.min(4, s.cash) }, { happiness: -3 }, { skill: 'money', add: 2 }]; },
+          lesson: 'Getting out of a deal often costs something too.' }
+      ]
+    },
+    {
+      id: 'e1_split_pay', stage: 1, title: 'Payday Plan', cooldown: 6,
+      requires: { minCash: 10, maxStage: 2 },
+      text: function (s) { return 'You have ' + money(s.cash) + '. New shoes cost $8, and your old ones have a hole. What\'s your plan?'; },
+      choices: [
+        { label: 'Save half, spend half', detail: 'Save some, buy cheaper used shoes', hours: 0, energy: 0,
+          effects: function (s) { var h = Math.floor(s.cash / 2); return [{ cash: -h }, { savings: h }, { cash: -Math.min(4, s.cash - h) }, { happiness: 2 }, { skill: 'money', add: 3 }]; },
+          lesson: 'Paying yourself first, even a little, builds savings fast.' },
+        { label: 'Buy the new shoes', detail: 'Pay $8', cost: 8, hours: 0, energy: 0,
+          effects: [{ happiness: 5 }, { energy: 4 }],
+          lesson: 'Good shoes are a need when you walk everywhere.' },
+        { label: 'Save it all', detail: 'Tape the hole for now', hours: 0, energy: 0,
+          effects: function (s) { var a = Math.floor(s.cash); return [{ cash: -a }, { savings: a }, { happiness: -2 }]; },
+          lesson: 'Saving everything is strong, but skipping real needs can cost more later.' }
+      ]
+    },
+    {
+      id: 'e1_water_garden', stage: 1, title: 'Watch My Garden?', places: ['home'], cooldown: 12,
+      requires: { maxStage: 2 },
+      text: 'A neighbor is going away for 3 days. "Water my tomato plants and I\'ll pay you $8 when I\'m back."',
+      choices: [
+        { label: 'Say yes', detail: '1 hour now · $8 in 3 days', hours: 1, energy: 5,
+          effects: [{ skill: 'farming', add: 2 }, { schedule: 'e1_garden_return', inDays: 3 }],
+          lesson: 'Some jobs pay later. You have to trust and be trusted.' },
+        { label: 'Ask for half up front', detail: '$4 now, $4 later', hours: 1, energy: 5,
+          effects: [{ cash: 4 }, { skill: 'business', add: 2 }, { schedule: 'e1_garden_return_half', inDays: 3 }],
+          lesson: 'Asking for a deposit protects you if someone doesn\'t pay.' },
+        { label: 'Too busy', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Only promise what you can really do.' }
+      ]
+    },
+    {
+      id: 'e1_garden_return', stage: 1, title: 'The Tomatoes Made It!', weight: 0, cooldown: 0,
+      text: 'Your neighbor is back. "The plants look great!" She hands you $8 and a bag of tomatoes.',
+      choices: [
+        { label: 'Thank you!', detail: '+$8', hours: 0, energy: 0,
+          effects: [{ cash: 8 }, { energy: 5 }, { reputation: 2 }],
+          lesson: 'Keeping promises gets you paid, and gets you hired again.' },
+        { label: 'Sell the tomatoes at the market', detail: '+$8 now, sell tomatoes · 1 hour', hours: 1, energy: 4,
+          effects: [{ cash: 10 }, { reputation: 2 }, { skill: 'business', add: 1 }],
+          lesson: 'Extra produce can turn into extra money.' }
+      ]
+    },
+    {
+      id: 'e1_garden_return_half', stage: 1, title: 'The Tomatoes Made It!', weight: 0, cooldown: 0,
+      text: 'Your neighbor is back and pays the other $4. "Smart to ask for a deposit," she says.',
+      choices: [
+        { label: 'Thanks!', detail: '+$4', hours: 0, energy: 0,
+          effects: [{ cash: 4 }, { reputation: 1 }],
+          lesson: 'Getting paid in parts is normal for bigger jobs.' },
+        { label: 'Offer to do it again next time', detail: '+$4 · future work', hours: 0, energy: 0,
+          effects: [{ cash: 4 }, { reputation: 2 }, { skill: 'people', add: 1 }],
+          lesson: 'Happy customers become repeat customers.' }
+      ]
+    },
+    {
+      id: 'e1_price_windows', stage: 1, title: 'Wash Shop Windows', places: ['streets'], cooldown: 5,
+      requires: { maxStage: 2 },
+      text: function (s, ctx) { return 'The shops on your street have dirty windows. ' + econLine(ctx) + ' What will you charge?'; },
+      choices: [
+        { label: 'Charge $1 a window', detail: 'Cheap · 3 hours', hours: 3, energy: 15,
+          effects: function (s) { var n = s.economy.phase === 'slow' ? 6 : 8; return [{ cash: n }, { reputation: 2 }, { log: 'Washed ' + n + ' windows at $1 each.' }]; },
+          lesson: 'Low prices win lots of customers but you work hard for each dollar.' },
+        { label: 'Charge $3 a window', detail: 'Fair · 3 hours', hours: 3, energy: 12, risky: true,
+          effects: [{ skill: 'business', add: 2 }],
+          outcomes: [
+            { weight: function (s) { return s.economy.phase === 'slow' ? 35 : 60; }, title: 'Fair price, good day', text: '4 shops said yes: $12!', effects: [{ cash: 12 }] },
+            { weight: function (s) { return s.economy.phase === 'slow' ? 65 : 40; }, title: 'Only a couple said yes', text: '2 windows: $6.', effects: [{ cash: 6 }] }
+          ],
+          lesson: 'The right price depends on how much money people have to spend.' },
+        { label: 'Charge $8 a window', detail: 'Expensive', hours: 2, energy: 6, risky: true,
+          effects: [],
+          outcomes: [
+            { weight: 20, title: 'One big yes', text: 'A fancy shop paid $8.', effects: [{ cash: 8 }] },
+            { weight: 80, title: 'Nobody bit', text: 'Every shop said no. You earned nothing.', effects: [{ happiness: -2 }, { skill: 'business', add: 2 }] }
+          ],
+          lesson: 'Price too high and you may sell nothing at all.' }
+      ]
+    },
+    {
+      id: 'e1_cold_morning', stage: 1, title: 'A Chilly Morning', places: ['home', 'streets'], cooldown: 6,
+      requires: { maxStage: 2, fn: function (s) { return wx(s) === 'cold'; } },
+      text: 'It\'s cold and your jacket is thin. The thrift store has a warm used coat for $6.',
+      choices: [
+        { label: 'Buy the used coat', detail: 'Pay $6 · stay warm', cost: 6, hours: 1, energy: 0,
+          effects: [{ flag: 'warm_coat' }, { energy: 10 }, { happiness: 3 }],
+          lesson: 'Used things can be just as useful and cost much less.' },
+        { label: 'Trade work for the coat', detail: 'Sort donations · 3 hours', hours: 3, energy: 15,
+          effects: [{ flag: 'warm_coat' }, { skill: 'work', add: 2 }, { happiness: 2 }],
+          lesson: 'Sometimes you can trade your time instead of money.' },
+        { budget: true, label: 'Tough it out', detail: 'Free · you\'ll feel it', hours: 0, energy: 0,
+          effects: [{ energy: -10 }, { happiness: -3 }],
+          lesson: 'Skipping needs can cost you energy, health and money later.' }
+      ]
+    },
+    {
+      id: 'e1_street_musician', stage: 1, title: 'The Street Musician', cooldown: 6,
+      requires: { maxStage: 3 },
+      text: 'A guitar player has an open case full of coins and dollars. People stop, smile, and drop money in.',
+      choices: [
+        { label: 'Ask how she earns', detail: '+Business · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'business', add: 2 }, { skill: 'people', add: 1 }],
+          lesson: '"I play where lots of people walk by, at lunch time." Location and timing matter.' },
+        { label: 'Tip her $1', detail: 'Pay $1', cost: 1, hours: 0, energy: 0,
+          effects: [{ donate: 1, why: 'Tipped a street musician' }, { happiness: 3 }],
+          lesson: 'Paying for things you enjoy supports the people who make them.' },
+        { label: 'Try singing for tips', detail: 'Brave! · 2 hours', hours: 2, energy: 8, risky: true,
+          effects: [{ skill: 'people', add: 3 }],
+          outcomes: [
+            { weight: function (s) { return 30 + s.skills.people; }, title: 'People loved it!', text: 'You earned $5 in coins.', effects: [{ cash: 5 }, { happiness: 4 }] },
+            { weight: 50, title: 'A tough crowd', text: '75 cents and a lot of courage.', effects: [{ cash: 0.75 }] }
+          ],
+          lesson: 'Trying new things builds confidence, even when it doesn\'t pay much.' }
+      ]
+    },
+    {
+      id: 'e1_dishwasher_night', stage: 1, title: 'Chef Antonio Needs Help', places: ['streets', 'downtown'], cooldown: 7,
+      requires: { maxStage: 3 },
+      text: 'Chef Antonio\'s dishwasher called in sick and the restaurant is packed. "Can you wash dishes tonight? $9."',
+      choices: [
+        { label: 'Wash dishes all evening', detail: 'Earn $9 · very tiring · 4 hours', hours: 4, energy: 28,
+          effects: [{ cash: 9 }, { rel: 'antonio', add: 8 }, { skill: 'work', add: 2 }],
+          lesson: 'Helping someone in a pinch earns money AND a friend.' },
+        { label: 'Help for 2 hours', detail: 'Earn $4 · 2 hours', hours: 2, energy: 12,
+          effects: [{ cash: 4 }, { rel: 'antonio', add: 4 }],
+          lesson: 'Doing part of a job is better than none, if you say so up front.' },
+        { label: 'Say no, you\'re tired', detail: 'Rest', hours: 0, energy: 0,
+          effects: [{ energy: 6 }],
+          lesson: 'Saying no when you\'re worn out is okay.' }
+      ]
+    },
+    {
+      id: 'e1_birthday_gift', stage: 1, title: 'Jamal\'s Birthday', cooldown: 30,
+      requires: { maxStage: 3 },
+      text: 'It\'s Jamal\'s birthday tomorrow. A cool hat at the shop costs $7.',
+      choices: [
+        { label: 'Buy the hat', detail: 'Pay $7', cost: 7, hours: 0, energy: 0,
+          effects: [{ rel: 'jamal', add: 10 }, { happiness: 3 }],
+          lesson: 'Gifts are a good use of money when you can afford them.' },
+        { label: 'Make a card and cook dinner', detail: '$2 for food · 2 hours', cost: 2, hours: 2, energy: 6,
+          effects: [{ rel: 'jamal', add: 10 }, { happiness: 4 }],
+          lesson: 'Time and thought can mean more than an expensive gift.' },
+        { budget: true, label: 'Just say happy birthday', detail: 'Free', hours: 0, energy: 0,
+          effects: [{ rel: 'jamal', add: 2 }],
+          lesson: 'Kind words are free and still matter.' }
+      ]
+    },
+    {
+      id: 'e1_check_receipt', stage: 1, title: 'Check Your Receipt', places: ['grocery', 'market'], cooldown: 9,
+      requires: { minCash: 5, maxStage: 3 },
+      text: 'You bought bread ($1.50) and peanut butter ($2). The register says $4.50.',
+      choices: [
+        { label: 'Point it out politely', detail: 'Should be $3.50', hours: 0, energy: 0,
+          effects: [{ cash: -3.5 }, { energy: 8 }, { skill: 'money', add: 3 }],
+          lesson: '$1.50 + $2.00 = $3.50. Always check your receipt.' },
+        { label: 'Pay $4.50 and go', detail: 'Pay $4.50', hours: 0, energy: 0,
+          effects: [{ cash: -4.5 }, { energy: 8 }],
+          lesson: 'Mistakes happen. Checking the math saves money.' }
+      ]
+    },
+    {
+      id: 'e1_raffle', stage: 1, title: 'Raffle Tickets', cooldown: 8,
+      requires: { minCash: 1 },
+      text: '"Win a $50 bike shop gift card! Tickets $1 each." The seller says 200 tickets were sold.',
+      choices: [
+        { label: 'Buy 1 ticket', detail: 'Pay $1 · 1 in 200 chance', cost: 1, hours: 0, energy: 0, risky: true,
+          effects: [],
+          outcomes: [
+            { weight: 2, title: 'YOU WON!', text: 'Your number was called! The bike shop gives you $50 credit, worth $50.', effects: [{ cash: 50 }, { happiness: 10 }] },
+            { weight: 98, title: 'Not this time', text: 'Someone else won. The money went to the youth soccer team.', effects: [{ happiness: 1 }] }
+          ],
+          lesson: 'A 1-in-200 chance means you lose almost every time. Raffles are fun giving, not a plan.' },
+        { label: 'Buy 5 tickets', detail: 'Pay $5 · 5 in 200 chance', cost: 5, hours: 0, energy: 0, risky: true,
+          effects: [],
+          outcomes: [
+            { weight: 5, title: 'YOU WON!', text: 'One of your 5 tickets won the $50!', effects: [{ cash: 50 }, { happiness: 10 }] },
+            { weight: 95, title: 'No luck', text: 'All 5 tickets lost. That\'s $5 gone.', effects: [{ happiness: -2 }] }
+          ],
+          lesson: 'Buying more tickets raises your chance only a little and costs a lot more.' },
+        { budget: true, label: 'Pass', detail: 'Keep your money', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 1 }],
+          lesson: 'Games of chance are designed so most players lose.' }
+      ]
+    },
+    {
+      id: 'e1_bus_pass', stage: 1, title: 'Weekly Bus Pass?', cooldown: 10,
+      requires: { minCash: 10, maxStage: 3 },
+      text: 'A bus ride costs $2. A 7-day unlimited pass costs $10. You think you\'ll ride about 6 times this week.',
+      choices: [
+        { label: 'Buy the weekly pass', detail: 'Pay $10', cost: 10, hours: 0, energy: 0,
+          effects: [{ energy: 12 }, { skill: 'money', add: 2 }, { schedule: 'e1_bus_pass_week', inDays: 4 }],
+          lesson: '6 rides × $2 = $12. The pass saves $2 if you really ride that much.' },
+        { budget: true, label: 'Pay per ride', detail: 'Only pay when you ride', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 1 }],
+          lesson: 'Paying per use is best when you aren\'t sure how much you\'ll use it.' },
+        { budget: true, label: 'Walk everywhere', detail: 'Free · tiring', hours: 0, energy: 0,
+          effects: [{ energy: -6 }, { skill: 'work', add: 1 }],
+          lesson: 'Walking is free but costs time and energy.' }
+      ]
+    },
+    {
+      id: 'e1_bus_pass_week', stage: 1, title: 'Riding Around', weight: 0, cooldown: 0,
+      text: 'Your bus pass got you to work and back all week without paying each time.',
+      choices: [
+        { label: 'Worth it!', detail: 'You saved on rides', hours: 0, energy: 0,
+          effects: [{ cash: 3 }, { energy: 6 }],
+          lesson: 'A bulk deal is worth it when you use it.' },
+        { label: 'Next week, just walk', detail: 'Save the $10', hours: 0, energy: 0,
+          effects: [{ cash: 3 }, { skill: 'money', add: 1 }],
+          lesson: 'Check if a deal still makes sense before buying it again.' }
+      ]
+    },
+    {
+      id: 'e1_volunteer_cleanup', stage: 1, title: 'Park Cleanup Day', places: ['park'], cooldown: 10,
+      requires: { maxStage: 3 },
+      text: 'Volunteers are cleaning up the park. Free lunch for helpers, and the park manager is watching who shows up.',
+      choices: [
+        { label: 'Volunteer all morning', detail: 'Free lunch · 3 hours', hours: 3, energy: 12,
+          effects: [{ energy: 10 }, { reputation: 4 }, { happiness: 4 }, { rel: 'jamal', add: 2 }],
+          lesson: 'Volunteering builds your reputation and your community.' },
+        { label: 'Help for an hour', detail: '1 hour', hours: 1, energy: 4,
+          effects: [{ reputation: 2 }, { happiness: 2 }],
+          lesson: 'Even a little help makes a difference.' },
+        { label: 'Use the time to earn money', detail: 'Odd jobs · 2 hours', hours: 2, energy: 10,
+          effects: [{ cash: 3 }],
+          lesson: 'Time is something you choose how to spend, money or community.' }
+      ]
+    },
+    {
+      id: 'e1_library_book', stage: 1, title: 'A Money Book', cooldown: 9,
+      requires: { maxStage: 3 },
+      text: 'You see a book called "Money for Kids" at the bookstore for $9. The library has it too, for free.',
+      choices: [
+        { budget: true, label: 'Borrow it from the library', detail: 'Free · 2 hours of reading', hours: 2, energy: 4,
+          effects: [{ skill: 'money', add: 4 }, { skill: 'business', add: 1 }],
+          lesson: 'The library is one of the best free resources you have.' },
+        { label: 'Buy it', detail: 'Pay $9 · keep it forever', cost: 9, hours: 2, energy: 4,
+          effects: [{ skill: 'money', add: 4 }, { happiness: 2 }],
+          lesson: 'Buying is nice, but borrowing gives you the same knowledge.' },
+        { label: 'Not now', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Learning is always there when you\'re ready.' }
+      ]
+    },
+    {
+      id: 'e1_bike_flat', stage: 1, title: 'A Flat Tire', places: ['streets', 'park'], cooldown: 6,
+      requires: { maxStage: 3 },
+      text: 'A delivery rider has a flat tire and is late. "Can anyone help? I\'ll pay!"',
+      choices: [
+        { label: 'Patch it with your tools', detail: 'Earn $6 · 1 hour', hours: 1, energy: 5,
+          requires: { items: ['tools'] }, reason: 'Need a Tool Kit',
+          effects: [{ cash: 6 }, { skill: 'trades', add: 3 }, { reputation: 2 }],
+          lesson: 'Owning the right tools turns problems into paid jobs.' },
+        { label: 'Run and get Sam', detail: '+Friendship · 1 hour', hours: 1, energy: 6,
+          effects: [{ cash: 2 }, { rel: 'sam', add: 5 }, { flag: 'met_sam' }],
+          lesson: 'Connecting people who need each other is valuable too.' },
+        { label: 'Wish him luck', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Some days you can\'t help, and that\'s okay.' }
+      ]
+    },
+    {
+      id: 'e2_first_bank_visit', stage: 2, title: 'Open a Savings Account?', places: ['downtown', 'streets'], cooldown: 12,
+      requires: { maxStage: 3, minCash: 15, fn: function (s) { return s.savings < 20; } },
+      text: 'Ms. Lee from the Community Bank says: "Money in savings is safe from losing or spending, and it earns a little interest."',
+      choices: [
+        { label: 'Put $10 in savings', detail: 'Move $10 to the bank', cost: 10, hours: 1, energy: 2,
+          effects: [{ savings: 10 }, { rel: 'lee', add: 4 }, { skill: 'money', add: 2 }],
+          lesson: 'Savings grow slowly but safely. Cash in your pocket is easy to spend.' },
+        { label: 'Ask how interest works', detail: '+Money Smarts · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'money', add: 3 }, { rel: 'lee', add: 2 }],
+          lesson: 'Interest is the bank paying you to keep your money there.' },
+        { budget: true, label: 'Keep cash for now', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Cash is handy, but it can disappear fast.' }
+      ]
+    },
+    {
+      id: 'e2_side_hustle', stage: 2, title: 'A Side Hustle Idea', cooldown: 8,
+      requires: { maxStage: 3 },
+      text: function (s, ctx) { return 'Jamal has an idea: "Let\'s offer to carry groceries for older folks. ' + (econ(ctx) === 'boom' ? 'Everyone\'s busy and will pay for help!' : 'People still need help, even in slow times.') + '"'; },
+      choices: [
+        { label: 'Team up with Jamal', detail: 'Split the money 50/50 · 3 hours', hours: 3, energy: 15, risky: true,
+          effects: [{ rel: 'jamal', add: 5 }, { skill: 'people', add: 2 }],
+          outcomes: [
+            { weight: function (s) { return s.economy.phase === 'slow' ? 40 : 65; }, title: 'Busy day', text: 'You two earned $16 together, so $8 each.', effects: [{ cash: 8 }] },
+            { weight: function (s) { return s.economy.phase === 'slow' ? 60 : 35; }, title: 'Quiet day', text: 'You earned $6 together, $3 each.', effects: [{ cash: 3 }] }
+          ],
+          lesson: 'Partners share the work AND the money. Agree on the split first.' },
+        { label: 'Do it alone', detail: 'Keep it all · 3 hours', hours: 3, energy: 20, risky: true,
+          effects: [{ skill: 'work', add: 2 }],
+          outcomes: [
+            { weight: 50, title: 'Good haul', text: 'You earned $9 on your own.', effects: [{ cash: 9 }] },
+            { weight: 50, title: 'Too much for one person', text: 'You could only help a few people: $4.', effects: [{ cash: 4 }] }
+          ],
+          lesson: 'Working alone means more money per job, but fewer jobs.' },
+        { label: 'Not interested', detail: 'Free', hours: 0, energy: 0,
+          effects: [{ rel: 'jamal', add: -1 }],
+          lesson: 'Not every idea is for you.' }
+      ]
+    },
+    {
+      id: 'e2_emergency_fund', stage: 2, title: 'Something Broke', places: ['home'], cooldown: 12,
+      requires: { maxStage: 3 },
+      text: function (s) { return 'Your ' + (s.home === 'tent' ? 'tent zipper ripped' : 'door lock broke') + '. Fixing it costs $12. ' + (s.savings >= 12 ? 'Good thing you have savings.' : 'You don\'t have much saved.'); },
+      choices: [
+        { label: 'Pay from savings', detail: 'Use $12 of savings', hours: 1, energy: 2,
+          requires: { minSavings: 12 }, reason: 'Need $12 in savings',
+          effects: [{ savings: -12 }, { happiness: 2 }, { skill: 'money', add: 2 }],
+          lesson: 'This is why people keep an emergency fund. Surprises happen.' },
+        { label: 'Pay with cash', detail: 'Pay $12', cost: 12, hours: 1, energy: 2,
+          effects: [],
+          lesson: 'Surprise costs hurt less when you planned for them.' },
+        { budget: true, label: 'Fix it yourself', detail: 'Free · 3 hours · might not hold', hours: 3, energy: 12, risky: true,
+          effects: [{ skill: 'trades', add: 3 }],
+          outcomes: [
+            { weight: function (s) { return 40 + s.skills.trades; }, title: 'Fixed!', text: 'It works great. You saved $12.', effects: [{ happiness: 3 }] },
+            { weight: 40, title: 'It broke again', text: 'You had to pay $12 to fix it right after all.', effects: function (s) { return [{ cash: -Math.min(12, s.cash) }, { happiness: -3 }]; } }
+          ],
+          lesson: 'Doing it yourself saves money when you have the skill.' }
+      ]
+    },
+
+    {
+      id: 'e2_coffee_habit', stage: 2, title: 'The $3 Coffee', cooldown: 7,
+      requires: { maxStage: 4 },
+      text: 'Everyone downtown grabs a $3 coffee before work. It smells great, and the line is long.',
+      choices: [
+        { label: 'Buy one every workday', detail: 'Pay $3 now', cost: 3, hours: 0, energy: 0,
+          effects: [{ energy: 6 }, { happiness: 3 }],
+          lesson: '$3 × 5 days × 52 weeks = $780 a year. Small daily habits are big yearly costs.' },
+        { budget: true, label: 'Make it at home', detail: 'About 30¢ a cup', hours: 0, energy: 0,
+          effects: [{ energy: 4 }, { skill: 'money', add: 3 }],
+          lesson: 'Making it yourself costs about a tenth as much.' },
+        { budget: true, label: 'Treat yourself on Fridays only', detail: 'Keep it special', hours: 0, energy: 0,
+          effects: [{ happiness: 2 }, { skill: 'money', add: 2 }],
+          lesson: 'You don\'t have to give up treats. Just choose how often.' }
+      ]
+    },
+    {
+      id: 'e2_paycheck_stub', stage: 2, title: 'Where Did My Pay Go?', cooldown: 12,
+      requires: { job: true, maxStage: 4 },
+      text: 'Your pay stub says you earned $100 this week, but only $85 went into your pocket. Taxes were taken out first.',
+      choices: [
+        { label: 'Ask what taxes pay for', detail: '+Money Smarts · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'money', add: 3 }, { rel: 'lee', add: 2 }],
+          lesson: 'Taxes pay for roads, schools, firefighters and parks. Plan with your take-home pay, not the big number.' },
+        { label: 'Grumble about it', detail: 'Free', hours: 0, energy: 0,
+          effects: [{ happiness: -2 }],
+          lesson: 'Knowing about taxes ahead of time helps you budget.' },
+        { label: 'Budget with the $85', detail: '+Money Smarts', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 2 }, { happiness: 1 }],
+          lesson: 'Your real budget starts with what you actually take home.' }
+      ]
+    },
+    {
+      id: 'e2_atm_fee', stage: 2, title: 'The ATM Fee', places: ['downtown', 'streets'], cooldown: 9,
+      requires: { minSavings: 10, maxStage: 4 },
+      text: 'You need $10 from your savings. This ATM charges a $3 fee. Ms. Lee\'s Community Bank is a 15-minute walk and free.',
+      choices: [
+        { label: 'Use the ATM', detail: '$3 fee · fast', hours: 0, energy: 0,
+          effects: [{ savings: -10 }, { cash: 7 }],
+          lesson: 'Convenience fees add up. $3 out of $10 is 30%!' },
+        { budget: true, label: 'Walk to the bank', detail: 'Free · 1 hour', hours: 1, energy: 4,
+          effects: [{ savings: -10 }, { cash: 10 }, { rel: 'lee', add: 1 }],
+          lesson: 'A little planning avoids fees.' },
+        { budget: true, label: 'Don\'t take any out', detail: 'Leave it saved', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 1 }],
+          lesson: 'Money left in savings keeps growing.' }
+      ]
+    },
+    {
+      id: 'e2_lunch_split', stage: 2, title: 'Lunch With Coworkers', cooldown: 8,
+      requires: { job: true, minCash: 6, maxStage: 4 },
+      text: 'Coworkers invite you to lunch. You order a $6 sandwich. They order big meals and say "Let\'s just split the $48 bill four ways."',
+      choices: [
+        { label: 'Split it evenly ($12)', detail: 'Pay $12 · keep the peace', cost: 12, hours: 1, energy: 0,
+          effects: [{ happiness: 2 }, { skill: 'people', add: 1 }],
+          lesson: 'Splitting evenly is easy, but you paid $6 more than your meal cost.' },
+        { label: 'Ask to pay for what you ordered', detail: 'Pay $6 + tip', cost: 7, hours: 1, energy: 0,
+          effects: [{ skill: 'people', add: 2 }, { skill: 'money', add: 2 }],
+          lesson: 'It\'s okay to politely pay only for what you ate.' },
+        { budget: true, label: 'Bring lunch next time', detail: 'Skip it today', hours: 0, energy: 0,
+          effects: [{ happiness: -1 }, { skill: 'money', add: 1 }],
+          lesson: 'Eating out with friends is fun, but plan for the cost.' }
+      ]
+    },
+    {
+      id: 'e2_food_bank', stage: 2, title: 'Food Bank Needs Volunteers', places: ['downtown', 'grocery'], cooldown: 10,
+      requires: { maxStage: 4 },
+      text: function (s, ctx) { return econ(ctx) === 'slow' ? 'With times slow, more families are visiting the food bank. They need help sorting donations.' : 'The food bank downtown needs help sorting donations this afternoon.'; },
+      choices: [
+        { label: 'Volunteer for 2 hours', detail: '+Reputation · 2 hours', hours: 2, energy: 8,
+          effects: [{ reputation: 4 }, { happiness: 4 }, { skill: 'people', add: 2 }],
+          lesson: 'When the economy is slow, helping others matters even more.' },
+        { label: 'Donate $3 of food', detail: 'Pay $3', cost: 3, hours: 0, energy: 0,
+          effects: [{ fn: function (s) { s.stats.donated = Math.round((s.stats.donated + 3) * 100) / 100; } }, { reputation: 2 }, { happiness: 3 }],
+          lesson: 'Giving a little, often, adds up to a lot.' },
+        { label: 'Not today', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'You can help another time.' }
+      ]
+    },
+    {
+      id: 'e2_store_brand', stage: 1, title: 'Name Brand or Store Brand?', places: ['grocery'], cooldown: 7,
+      requires: { minCash: 2, maxStage: 4 },
+      text: 'Brand-name cereal with a cartoon on the box is $4.50. The store brand right next to it, made almost the same way, is $2.25.',
+      choices: [
+        { label: 'Buy the store brand', detail: 'Pay $2.25', cost: 2.25, hours: 0, energy: 0,
+          effects: [{ energy: 6 }, { skill: 'money', add: 2 }],
+          lesson: 'Store brands often taste the same for about half the price.' },
+        { label: 'Buy the name brand', detail: 'Pay $4.50', cost: 4.5, hours: 0, energy: 0,
+          effects: [{ energy: 6 }, { happiness: 2 }],
+          lesson: 'Part of what you pay for with name brands is the advertising.' },
+        { budget: true, label: 'Oatmeal instead ($1)', detail: 'Pay $1', cost: 1, hours: 0, energy: 0,
+          effects: [{ energy: 6 }, { skill: 'money', add: 3 }],
+          lesson: 'Simple foods are often the cheapest and healthiest.' }
+      ]
+    },
+    {
+      id: 'e2_meal_plan', stage: 1, title: 'Plan the Week\'s Meals', places: ['home'], cooldown: 7,
+      requires: { minCash: 6, maxStage: 4 },
+      text: 'Buying food one meal at a time is costing you about $3 a meal. A planned grocery trip for the week is $12 for 7 dinners.',
+      choices: [
+        { label: 'Shop for the whole week', detail: 'Pay $12 · ~$1.70 a meal', cost: 12, hours: 2, energy: 5,
+          requires: { minCash: 12 }, reason: 'Need $12',
+          effects: [{ energy: 10 }, { skill: 'money', add: 3 }, { schedule: 'e2_meal_plan_done', inDays: 4 }],
+          lesson: 'Planning meals is one of the biggest ways families save money.' },
+        { label: 'Cook one big pot of chili', detail: 'Pay $6 · 4 meals · 2 hours', cost: 6, hours: 2, energy: 6,
+          effects: [{ energy: 8 }, { skill: 'money', add: 2 }, { happiness: 2 }],
+          lesson: 'Cooking in big batches saves money and time.' },
+        { label: 'Keep buying meal by meal', detail: 'Free for now', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Without a plan, food quietly eats your budget.' }
+      ]
+    },
+    {
+      id: 'e2_meal_plan_done', stage: 1, title: 'The Plan Worked', weight: 0, cooldown: 0,
+      text: 'A week of planned dinners cost $12 instead of about $21. You barely thought about food all week.',
+      choices: [
+        { label: 'Put the savings away', detail: '+$5 to savings', hours: 0, energy: 0,
+          effects: [{ savings: 5 }, { happiness: 2 }],
+          lesson: 'Money you don\'t waste is money you can save.' },
+        { label: 'Enjoy a little treat', detail: '+$5 cash', hours: 0, energy: 0,
+          effects: [{ cash: 5 }, { happiness: 3 }],
+          lesson: 'Saving on needs can leave room for wants.' }
+      ]
+    },
+    {
+      id: 'e2_sell_old_stuff', stage: 1, title: 'Old Stuff, New Money', cooldown: 10,
+      requires: { maxStage: 4 },
+      text: 'You have a few things you never use: an old backpack, a puzzle, and some comic books.',
+      choices: [
+        { label: 'Sell them at the park', detail: '2 hours', hours: 2, energy: 8, risky: true,
+          effects: [{ skill: 'business', add: 2 }],
+          outcomes: [
+            { weight: function (s) { return s.economy.phase === 'slow' ? 40 : 65; }, title: 'Sold!', text: 'Everything sold for $7.', effects: [{ cash: 7 }] },
+            { weight: function (s) { return s.economy.phase === 'slow' ? 60 : 35; }, title: 'Only the comics sold', text: '$3 for the comics. Better than nothing.', effects: [{ cash: 3 }] }
+          ],
+          lesson: 'Things you don\'t use can turn into money for things you need.' },
+        { label: 'Give them to Jamal\'s little cousins', detail: 'Free', hours: 1, energy: 2,
+          effects: [{ rel: 'jamal', add: 4 }, { happiness: 4 }, { reputation: 1 }],
+          lesson: 'Giving away what you don\'t need makes room, and makes people happy.' },
+        { label: 'Keep them', detail: 'Maybe someday', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Stuff you keep but never use still costs you space.' }
+      ]
+    },
+    {
+      id: 'e2_overtime', stage: 2, title: 'Stay Late for Extra Pay?', cooldown: 6,
+      requires: { job: true, maxStage: 4 },
+      text: function (s) { var j = FN.Catalog.JOBS[s.job]; return 'Your boss asks if you can stay late tonight. Extra hours pay "time and a half": ' + money(Math.round(j.wage * 1.5 * 100) / 100) + ' instead of ' + money(j.wage) + '.'; },
+      choices: [
+        { label: 'Work the extra shift', detail: 'Tiring · 3 hours', hours: 3, energy: 25,
+          effects: function (s) { var j = FN.Catalog.JOBS[s.job]; return [{ cash: Math.round(j.wage * 1.5 * 100) / 100 }, { skill: 'work', add: 2 }]; },
+          lesson: 'Overtime pays more per hour, but your energy and free time are worth something too.' },
+        { label: 'Stay one hour to help', detail: '1 hour', hours: 1, energy: 8,
+          effects: function (s) { var j = FN.Catalog.JOBS[s.job]; return [{ cash: Math.round(j.wage * 0.5 * 100) / 100 }, { reputation: 2 }]; },
+          lesson: 'Helping a little shows you\'re a team player.' },
+        { label: 'Go home and rest', detail: '+Energy', hours: 0, energy: 0,
+          effects: [{ energy: 8 }, { happiness: 2 }],
+          lesson: 'Rest is part of doing a good job tomorrow.' }
+      ]
+    },
+
+    /* ===================== LATE GAME (stage 4-5) ===================== */
+    {
+      id: 'l5_franchise_buyer', stage: 4, title: 'Someone Wants to Copy You', cooldown: 18,
+      requires: { fn: function (s) { return totalLevels(s) >= 5; } },
+      text: function (s) { return 'A businesswoman from another city loves your ' + topBizName(s) + '. She wants to open one just like it and pay you for the name and the recipe. That\'s called a franchise.'; },
+      choices: [
+        { label: 'Sell her a franchise', detail: 'Big payment now + small fee every week', hours: 2, energy: 5, risky: true,
+          effects: function (s) { return [{ cash: big(s, 0.06, 600) }, { skill: 'business', add: 4 }, { log: 'Sold a franchise of the ' + topBizName(s) + '.' }]; },
+          outcomes: [
+            { weight: 65, title: 'A great partner', text: 'Her shop does well and your name gets famous.', effects: [{ reputation: 6 }] },
+            { weight: 35, title: 'Bad reviews', text: 'Her shop cuts corners and some people blame your brand.', effects: [{ reputation: -5 }] }
+          ],
+          lesson: 'A franchise lets your idea grow with other people\'s money, but they carry your name.' },
+        { label: 'Open a second one yourself', detail: 'Costs more, keep control', hours: 3, energy: 15,
+          effects: function (s) { var id = topBiz(s); return [{ cash: -Math.min(s.cash, big(s, 0.04, 400)) }, { bizLevel: id }, { skill: 'business', add: 3 }]; },
+          lesson: 'Growing by yourself is slower and costs more, but you keep all the profit.' },
+        { label: 'Say no', detail: 'Keep it special', hours: 0, energy: 0,
+          effects: [{ happiness: 1 }],
+          lesson: 'Not every growth chance has to be taken.' }
+      ]
+    },
+    {
+      id: 'l5_competitor', stage: 4, title: 'A Competitor Opens Nearby', cooldown: 16,
+      requires: { anyBusiness: true },
+      text: function (s, ctx) { return 'A brand-new business just like your ' + topBizName(s) + ' opened down the street with lower prices. ' + econLine(ctx); },
+      choices: [
+        { label: 'Lower your prices too', detail: 'Price war', hours: 1, energy: 3, risky: true,
+          effects: [{ skill: 'business', add: 2 }],
+          outcomes: [
+            { weight: 40, title: 'You outlasted them', text: 'They closed after a month. Prices go back up.', effects: function (s) { return [{ cash: big(s, 0.01, 100) }]; } },
+            { weight: 60, title: 'Everybody lost', text: 'Both of you made less money for weeks.', effects: function (s) { return [{ cash: -big(s, 0.015, 120) }]; } }
+          ],
+          lesson: 'Price wars can hurt everyone. Cheaper isn\'t the only way to win.' },
+        { label: 'Be better, not cheaper', detail: 'Improve service · 3 hours', hours: 3, energy: 12,
+          effects: [{ reputation: 5 }, { skill: 'people', add: 3 }, { skill: 'business', add: 2 }],
+          lesson: 'Great service and quality keep customers coming back.' },
+        { label: 'Visit and make friends', detail: '+People · 1 hour', hours: 1, energy: 3,
+          effects: [{ skill: 'people', add: 3 }, { reputation: 2 }],
+          lesson: 'Competitors can become partners. There\'s often room for both.' }
+      ]
+    },
+    {
+      id: 'l5_tax_time', stage: 4, title: 'Tax Time', cooldown: 28,
+      requires: { anyBusiness: true },
+      text: function (s) { return 'Business owners pay taxes on their profits. Your accountant says you owe about ' + money(big(s, 0.02, 150)) + ' this season.'; },
+      choices: [
+        { label: 'Pay it on time', detail: 'Pay your taxes', hours: 1, energy: 2,
+          effects: function (s) { var t = big(s, 0.02, 150); return [{ cash: -Math.min(s.cash, t) }, { reputation: 3 }, { skill: 'money', add: 3 }]; },
+          lesson: 'Taxes pay for roads, schools and parks. Smart owners set money aside for them.' },
+        { label: 'Hire help to find deductions', detail: 'Pay a tax helper', hours: 2, energy: 2, risky: true,
+          effects: [{ skill: 'money', add: 4 }],
+          outcomes: [
+            { weight: 70, title: 'Money saved', text: 'Your business costs lowered the bill. You paid less, legally.', effects: function (s) { return [{ cash: -Math.min(s.cash, Math.round(big(s, 0.02, 150) * 0.7)) }]; } },
+            { weight: 30, title: 'About the same', text: 'The helper\'s fee ate most of the savings.', effects: function (s) { return [{ cash: -Math.min(s.cash, big(s, 0.02, 150)) }]; } }
+          ],
+          lesson: 'Business costs (deductions) lower the profit you pay taxes on.' },
+        { label: 'Pay late', detail: 'Wait and pay a penalty', hours: 0, energy: 0,
+          effects: function (s) { var t = Math.round(big(s, 0.02, 150) * 1.25); return [{ cash: -Math.min(s.cash, t) }, { reputation: -3 }, { happiness: -3 }]; },
+          lesson: 'Paying late adds penalties. It always costs more.' }
+      ]
+    },
+    {
+      id: 'l5_insurance', stage: 4, title: 'Insurance or Not?', cooldown: 20,
+      requires: { anyBusiness: true },
+      text: function (s) { return 'An insurance agent offers to protect your ' + topBizName(s) + ' from fires, floods and break-ins for ' + money(big(s, 0.005, 60)) + ' a season.'; },
+      choices: [
+        { label: 'Buy the insurance', detail: 'Pay now, protected later', hours: 1, energy: 2,
+          effects: function (s) { return [{ cash: -Math.min(s.cash, big(s, 0.005, 60)) }, { flag: 'insured' }, { skill: 'money', add: 2 }]; },
+          lesson: 'Insurance is a small sure cost that protects you from a big maybe-cost.' },
+        { label: 'Skip it', detail: 'Keep the money · take the risk', hours: 0, energy: 0, risky: true,
+          effects: [{ unflag: 'insured' }],
+          outcomes: [
+            { weight: 80, title: 'Nothing happened', text: 'A quiet season. You kept the money.', effects: [] },
+            { weight: 20, title: 'A pipe burst!', text: 'Water damage, and no insurance to help.', effects: function (s) { return [{ cash: -Math.min(s.cash, big(s, 0.04, 300)) }, { happiness: -5 }]; } }
+          ],
+          lesson: 'Skipping insurance saves money until the day something goes wrong.' }
+      ]
+    },
+    {
+      id: 'l5_scholarship', stage: 4, title: 'Start a Scholarship?', places: ['downtown', 'town'], cooldown: 25,
+      requires: { minCash: 200 },
+      text: 'The school says a kid from the campsite wants to learn a trade but can\'t pay for classes. You could help.',
+      choices: [
+        { label: 'Fund a full scholarship', detail: 'Give generously', hours: 1, energy: 2,
+          effects: function (s) { var g = big(s, 0.02, 200); return [{ donate: Math.min(s.cash, g), why: 'Funded a scholarship' }, { reputation: 8 }, { happiness: 8 }]; },
+          lesson: 'When you\'ve built something, lifting others up is one of the best uses of money.' },
+        { label: 'Mentor the kid for free', detail: 'Give your time · 3 hours', hours: 3, energy: 8,
+          effects: [{ reputation: 5 }, { happiness: 6 }, { skill: 'people', add: 3 }],
+          lesson: 'Your time and know-how can be worth as much as money.' },
+        { label: 'Not right now', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'You can give later when you\'re ready.' }
+      ]
+    },
+    {
+      id: 'l5_market_dip', stage: 4, title: 'The Stock Market Dropped', cooldown: 14,
+      requires: { fn: function (s) { return s.investments && s.investments.index && s.investments.index.value > 50; } },
+      text: function (s, ctx) { return 'The news says stocks fell this week. ' + (econ(ctx) === 'slow' ? 'The economy is slow and people are scared.' : 'People are nervous.') + ' Your Index Fund is worth less today.'; },
+      choices: [
+        { label: 'Stay calm and hold', detail: 'Do nothing', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 3 }, { happiness: 1 }],
+          lesson: 'Markets go up and down. Long-term investors usually wait out the dips.' },
+        { label: 'Sell everything!', detail: 'Panic', hours: 0, energy: 0,
+          effects: function (s) { var v = s.investments.index.value; return [{ cash: Math.round(v * 0.93) }, { fn: function (st) { st.investments.index.value = 0; st.investments.index.cost = 0; } }, { happiness: -2 }, { log: 'Sold the Index Fund during a dip.' }]; },
+          lesson: 'Selling during a drop locks in the loss. Panic is expensive.' },
+        { label: 'Buy a little more on sale', detail: 'Read the Bank panel', hours: 0, energy: 0,
+          effects: [{ skill: 'money', add: 4 }],
+          lesson: 'Some investors buy more when prices are low. That can pay off over years.' }
+      ]
+    },
+    {
+      id: 'l5_big_order', stage: 4, title: 'A Huge Order', cooldown: 15,
+      requires: { anyBusiness: true },
+      text: function (s) { return 'A hotel wants to order a LOT from your ' + topBizName(s) + ' for a big event, but you\'ll need to buy extra supplies first and they pay in 30 days.'; },
+      choices: [
+        { label: 'Take the order', detail: 'Pay for supplies now, get paid later', hours: 4, energy: 18,
+          effects: function (s) { var c = Math.min(s.cash, big(s, 0.02, 150)); return [{ cash: -c }, { skill: 'business', add: 3 }, { schedule: 'l5_big_order_paid', inDays: 4 }]; },
+          lesson: 'Big customers can be great, but waiting to get paid is hard on your cash.' },
+        { label: 'Ask for half up front', detail: 'Safer deal · 2 hours', hours: 2, energy: 6, risky: true,
+          effects: [{ skill: 'business', add: 3 }, { skill: 'people', add: 2 }],
+          outcomes: [
+            { weight: 60, title: 'They agreed', text: 'Half now, half later. Smart!', effects: function (s) { return [{ cash: big(s, 0.015, 100) }]; } },
+            { weight: 40, title: 'They went elsewhere', text: 'The hotel found another supplier.', effects: [] }
+          ],
+          lesson: 'A deposit protects your cash flow.' },
+        { label: 'Too big for us', detail: 'Pass', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'Taking on more than you can handle can hurt your business.' }
+      ]
+    },
+    {
+      id: 'l5_big_order_paid', stage: 4, title: 'The Hotel Paid!', weight: 0, cooldown: 0,
+      text: 'The hotel event was a hit, and the check finally came in.',
+      choices: [
+        { label: 'Deposit the check', detail: 'Get paid', hours: 0, energy: 0,
+          effects: function (s) { return [{ cash: big(s, 0.035, 280) }, { reputation: 4 }, { log: 'Got paid for the big hotel order.' }]; },
+          lesson: 'Patience with good customers pays off.' },
+        { label: 'Invest it back in the business', detail: 'Grow your top business', hours: 1, energy: 3,
+          effects: function (s) { return [{ cash: big(s, 0.035, 280) }, { reputation: 4 }, { skill: 'business', add: 3 }, { log: 'Got paid for the big hotel order and reinvested.' }]; },
+          lesson: 'Putting profits back into the business helps it grow.' }
+      ]
+    },
+    {
+      id: 'l5_new_city', stage: 5, title: 'Expand to a New City?', cooldown: 25,
+      requires: { fn: function (s) { return totalLevels(s) >= 8; } },
+      text: function (s) { return 'Your ' + topBizName(s) + ' is famous here. A real estate agent says a busy spot just opened in a city two hours away.'; },
+      choices: [
+        { label: 'Go for it', detail: 'Big investment · big risk', hours: 3, energy: 15, risky: true,
+          effects: function (s) { return [{ cash: -Math.min(s.cash, big(s, 0.08, 800)) }, { skill: 'business', add: 5 }]; },
+          outcomes: [
+            { weight: 55, title: 'A big success!', text: 'The new city loves you. Your business grows a full level.', effects: function (s) { return [{ bizLevel: topBiz(s) }, { bizLevel: topBiz(s) }, { reputation: 6 }]; } },
+            { weight: 45, title: 'A slow start', text: 'It\'s taking time to catch on. You learned a lot.', effects: function (s) { return [{ bizLevel: topBiz(s) }]; } }
+          ],
+          lesson: 'Expanding to new places multiplies customers, but every new spot is a fresh risk.' },
+        { label: 'Study the market first', detail: '+Business · 2 hours', hours: 2, energy: 4,
+          effects: [{ skill: 'business', add: 4 }, { skill: 'money', add: 2 }],
+          lesson: 'Research before big moves. Who are the customers? What does rent cost?' },
+        { label: 'Stay local', detail: 'Keep it simple', hours: 0, energy: 0,
+          effects: [{ happiness: 2 }],
+          lesson: 'Growing deeper at home can be as good as growing wider.' }
+      ]
+    },
+    {
+      id: 'l5_business_award', stage: 5, title: 'Business of the Year!', cooldown: 40,
+      requires: { fn: function (s) { return s.reputation >= 60 && bizList(s).length > 0; } },
+      text: function (s) { return 'The town newspaper named your ' + topBizName(s) + ' "Business of the Year"! They want to interview you.'; },
+      choices: [
+        { label: 'Do the interview', detail: 'More customers · 2 hours', hours: 2, energy: 4,
+          effects: function (s) { return [{ reputation: 8 }, { happiness: 8 }, { cash: big(s, 0.01, 100) }, { log: topBizName(s) + ' named Business of the Year!' }]; },
+          lesson: 'A good reputation is free advertising.' },
+        { label: 'Thank your workers in the story', detail: 'Share the credit', hours: 2, energy: 4,
+          effects: [{ reputation: 10 }, { happiness: 10 }, { skill: 'people', add: 3 }],
+          lesson: 'Great leaders share the credit with their team.' }
+      ]
+    },
+    {
+      id: 'l5_retire_plan', stage: 5, title: 'Thinking Way Ahead', places: ['downtown'], cooldown: 30,
+      text: 'Ms. Lee asks: "Have you thought about when you\'re old? If you invest a little every month for 40 years, it can grow into a lot."',
+      choices: [
+        { label: 'Set up long-term investing', detail: '+Money Smarts · put some in the Index Fund', hours: 1, energy: 2,
+          effects: function (s) { var a = Math.min(s.cash, big(s, 0.03, 200)); return [{ cash: -a }, { fn: function (st) { var inv = st.investments.index; inv.value = Math.round((inv.value + a) * 100) / 100; inv.cost = Math.round((inv.cost + a) * 100) / 100; } }, { skill: 'money', add: 4 }, { achievement: 'investor' }, { log: 'Invested ' + money(a) + ' for the long term.' }]; },
+          lesson: 'Time is the secret ingredient in investing. Starting early matters most.' },
+        { label: 'Ask about the math', detail: '+Money Smarts · 1 hour', hours: 1, energy: 2,
+          effects: [{ skill: 'money', add: 3 }, { rel: 'lee', add: 3 }],
+          lesson: 'Growth on top of growth is called compound interest.' },
+        { label: 'Too far away to think about', detail: 'Free', hours: 0, energy: 0,
+          effects: [],
+          lesson: 'The best time to start saving for later was yesterday. The next best is today.' }
       ]
     }
   );
@@ -4980,7 +6283,7 @@ window.FN = window.FN || {};
         if (level === 'younger') {
           var each = round2(price - cost);
           return build(rng, {
-            question: 'At your ' + c.name + ', each ' + c.unit + ' costs you ' + money(cost) + ' to make and you sell it for ' + money(price) + '. You sell ' + n + '. What is your profit?',
+            question: 'At your ' + C().bizName(s, id) + ', each ' + c.unit + ' costs you ' + money(cost) + ' to make and you sell it for ' + money(price) + '. You sell ' + n + '. What is your profit?',
             answer: round2(n * each), step: each,
             right: 'Each ' + c.unit + ' makes ' + money(price) + ' − ' + money(cost) + ' = ' + money(each) + '. Then ' + n + ' × ' + money(each) + ' = ' + money(n * each) + '.',
             wrongs: [{ v: round2(n * price), why: 'That is all your sales money. You still have to pay for what you made.' },
@@ -4992,7 +6295,7 @@ window.FN = window.FN || {};
         var sales = round2(n * price), goods = round2(n * cost), prof = round2(sales - goods - helper - fixed);
         var extra = (helper ? ' Your helper costs ' + money(helper) + ' today.' : '') + (fixed ? ' Rent and bills for the day are ' + money(fixed) + '.' : '');
         return build(rng, {
-          question: 'Your ' + c.name + ' sells ' + n + ' ' + plural(c.unit) + ' at ' + money(price) + ' each. Each one cost you ' + money(cost) + '.' + extra + ' What is your profit for the day?',
+          question: 'Your ' + C().bizName(s, id) + ' sells ' + n + ' ' + plural(c.unit) + ' at ' + money(price) + ' each. Each one cost you ' + money(cost) + '.' + extra + ' What is your profit for the day?',
           answer: prof, allowNeg: true, step: price,
           right: 'Sales ' + money(sales) + ' − goods ' + money(goods) + (helper ? ' − helper ' + money(helper) : '') + (fixed ? ' − bills ' + money(fixed) : '') + ' = ' + money(prof) + '.',
           wrongs: [{ v: sales, why: 'That is just the money that came in. Take away every cost.' },
@@ -5007,7 +6310,7 @@ window.FN = window.FN || {};
         var price = c.prices.fair, sup = c.supplyCost, n = ri(rng, 2, C().bizCap(c.maxJobs, s.businesses[id].level || 1));
         if (level === 'younger') {
           return build(rng, {
-            question: 'Your ' + c.name + ' charges ' + money(price) + ' per ' + c.unit + '. You do ' + n + ' today. How much money comes in?',
+            question: 'Your ' + C().bizName(s, id) + ' charges ' + money(price) + ' per ' + c.unit + '. You do ' + n + ' today. How much money comes in?',
             answer: n * price, step: price,
             right: n + ' × ' + money(price) + ' = ' + money(n * price) + '.',
             wrongs: [{ v: n + price, why: 'That adds them. Each ' + c.unit + ' pays the same, so multiply.' },
@@ -5017,7 +6320,7 @@ window.FN = window.FN || {};
         }
         var each = round2(price - sup);
         return build(rng, {
-          question: 'Your ' + c.name + ' charges ' + money(price) + ' per ' + c.unit + ' and supplies cost ' + money(sup) + ' each time. You do ' + n + ' ' + plural(c.unit) + '. What is your profit?',
+          question: 'Your ' + C().bizName(s, id) + ' charges ' + money(price) + ' per ' + c.unit + ' and supplies cost ' + money(sup) + ' each time. You do ' + n + ' ' + plural(c.unit) + '. What is your profit?',
           answer: round2(n * each), step: each,
           right: 'Each ' + c.unit + ' earns ' + money(price) + ' − ' + money(sup) + ' = ' + money(each) + '. ' + n + ' × ' + money(each) + ' = ' + money(n * each) + '.',
           wrongs: [{ v: round2(n * price), why: 'That forgot the supplies you used.' },
@@ -5033,7 +6336,7 @@ window.FN = window.FN || {};
         var stock = c.stock[1], sold = ri(rng, Math.floor(stock * 0.5), stock - 3), left = stock - sold;
         var lost = round2(left * c.perish), loss = round2(Math.round(lost) * c.unitCost);
         return build(rng, {
-          question: 'You stocked ' + stock + ' ' + plural(c.unit) + ' at your ' + c.name + ' and sold ' + sold + '. ' + (c.perish >= 1 ? 'All of the leftovers' : 'About half of the leftovers') + ' go bad overnight. Each cost you ' + money(c.unitCost) + '. How much money is lost to spoiling?',
+          question: 'You stocked ' + stock + ' ' + plural(c.unit) + ' at your ' + C().bizName(s, id) + ' and sold ' + sold + '. ' + (c.perish >= 1 ? 'All of the leftovers' : 'About half of the leftovers') + ' go bad overnight. Each cost you ' + money(c.unitCost) + '. How much money is lost to spoiling?',
           answer: loss, step: c.unitCost,
           right: stock + ' − ' + sold + ' = ' + left + ' left over' + (c.perish < 1 ? ', and half of that is ' + Math.round(lost) : '') + '. ' + Math.round(lost) + ' × ' + money(c.unitCost) + ' = ' + money(loss) + '.',
           wrongs: [{ v: round2(left * c.unitCost * (c.perish < 1 ? 1 : 2)), why: c.perish < 1 ? 'Only about half of the leftovers spoil, not all of them.' : 'Check how many were left over.' },
@@ -5105,7 +6408,7 @@ window.FN = window.FN || {};
         var m = lvlMult(s, id), gross = id === 'rental' ? round2(c.rent * m) : id === 'market_farm' ? round2(c.perDay * m * (s.economy.prices.produce || 1.6)) : round2(ri(rng, 40, 90) * (c.prices.fair - c.unitCost));
         var weekly = round2((gross - c.fixed) * 7);
         return build(rng, {
-          question: 'Your ' + c.name + ' brings in about ' + money(gross) + ' a day and costs ' + money(c.fixed) + ' a day to keep running. About how much does it earn in a week?',
+          question: 'Your ' + C().bizName(s, id) + ' brings in about ' + money(gross) + ' a day and costs ' + money(c.fixed) + ' a day to keep running. About how much does it earn in a week?',
           answer: weekly, allowNeg: true, step: c.fixed || 1,
           right: '(' + money(gross) + ' − ' + money(c.fixed) + ') × 7 = ' + money(weekly) + '.',
           wrongs: [{ v: round2(gross * 7), why: 'That forgot the daily cost of running it.' }, { v: round2(gross - c.fixed), why: 'That is just ONE day. Multiply by 7.' }],
@@ -5114,6 +6417,188 @@ window.FN = window.FN || {};
       } }
   ];
   LIFE.forEach(function (q) { if (!q.levels) q.levels = ['younger', 'older']; FN.Quizzes.push(q); });
+  /* 1.7.0: more kinds of questions, each with several stories, so the same question doesn't keep coming back.
+     Prices nudge with the economy (boom = a little higher, slow = a little lower). */
+  function econ(s) { return (s && s.economy && s.economy.phase) || 'normal'; }
+  function econMult(s) { var p = econ(s); return p === 'boom' ? 1.1 : p === 'slow' ? 0.92 : 1; }
+  var FRIENDS = ['Jamal', 'Sam', 'Rosa', 'Mia', 'Leo', 'Ava', 'Noah', 'Zoe'];
+  var MORE = [
+    { id: 'q_tip', topic: 'Tipping', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        var place = pick(rng, ['a pizza delivery', 'a haircut', 'dinner at Chef Antonio\'s', 'a taxi ride']);
+        if (level === 'younger') {
+          var bill = pick(rng, [10, 20, 30, 40, 50]), tip = bill / 10;
+          return build(rng, { question: 'The bill for ' + place + ' is ' + money(bill) + '. You leave a 10% tip. How much is the tip?', answer: tip,
+            right: '10% means divide by 10: ' + money(bill) + ' ÷ 10 = ' + money(tip) + '.',
+            wrongs: [{ v: 10, why: 'That is the percent, not the dollars.' }, { v: tip * 2, why: 'That would be a 20% tip.' }],
+            lesson: 'To find 10%, move the decimal one place left.' });
+        }
+        var b = ri(rng, 12, 80), pct = pick(rng, [15, 20]), tp = round2(b * pct / 100);
+        return build(rng, { question: 'Your bill for ' + place + ' is ' + money(b) + '. You tip ' + pct + '%. How much is the tip?', answer: tp,
+          right: money(b) + ' × ' + pct + '% = ' + money(tp) + '.' + (pct === 20 ? ' Trick: find 10% and double it.' : ' Trick: 10% plus half of 10%.'),
+          wrongs: [{ v: round2(b / 10), why: 'That is only 10%.' }, { v: round2(b + tp), why: 'That is the whole bill plus the tip.' }],
+          lesson: 'Tips are part of the real cost of some services. Plan for them.' });
+      } },
+    { id: 'q_sales_tax', topic: 'Sales tax', levels: ['older'],
+      gen: function (rng, level, s) {
+        var item = pick(rng, ['a backpack', 'a bike helmet', 'a pair of sneakers', 'a lamp', 'a toolbox']);
+        var p = Math.round(ri(rng, 10, 60) * econMult(s)), tax = round2(p * 0.06), tot = round2(p + tax);
+        return build(rng, { question: item.charAt(0).toUpperCase() + item.slice(1) + ' costs ' + money(p) + '. Sales tax is 6%. What do you pay in total?', answer: tot,
+          right: '6% of ' + money(p) + ' is ' + money(tax) + '. ' + money(p) + ' + ' + money(tax) + ' = ' + money(tot) + '.',
+          wrongs: [{ v: p, why: 'You forgot to add the tax.' }, { v: round2(p + 6), why: 'Tax is 6 percent, not 6 dollars.' }],
+          lesson: 'The price tag is often not the final price. Sales tax pays for roads and schools.' });
+      } },
+    { id: 'q_split', topic: 'Splitting costs', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        var n = level === 'younger' ? pick(rng, [2, 3, 4]) : ri(rng, 3, 6);
+        var each = level === 'younger' ? ri(rng, 2, 6) : ri(rng, 4, 15) + pick(rng, [0, 0.5]);
+        var tot = round2(n * each);
+        var what = pick(rng, ['a pizza', 'a soccer ball', 'a used tent', 'a picnic lunch', 'a gift for Rosa']);
+        return build(rng, { question: n + ' friends buy ' + what + ' together for ' + money(tot) + ' and split it equally. How much does each friend pay?', answer: each,
+          right: money(tot) + ' ÷ ' + n + ' = ' + money(each) + ' each.',
+          wrongs: [{ v: tot, why: 'That is the whole price, not each person\'s share.' }, { v: round2(each + 1), why: 'Check: ' + n + ' × that is more than ' + money(tot) + '.' }],
+          lesson: 'Sharing a cost makes big things affordable. Agree on the split first.' });
+      } },
+    { id: 'q_better_buy', topic: 'Better buy', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        var thing = pick(rng, [['granola bars', 'bar'], ['pencils', 'pencil'], ['eggs', 'egg'], ['juice boxes', 'box'], ['batteries', 'battery']]);
+        var a = level === 'younger' ? pick(rng, [2, 4]) : pick(rng, [3, 4, 5]);
+        var b = a * pick(rng, [2, 3]);
+        var pa = level === 'younger' ? a : round2(a * pick(rng, [0.5, 0.75, 1, 1.25]));
+        var cheaperBig = rng() < 0.6;
+        var pb = round2(pa / a * b * (cheaperBig ? pick(rng, [0.7, 0.8]) : pick(rng, [1.15, 1.25])));
+        var ua = round2(pa / a), ub = round2(pb / b);
+        var A = a + ' ' + thing[0] + ' for ' + money(pa), B = b + ' ' + thing[0] + ' for ' + money(pb);
+        return choiceQ(rng, 'Which is the better deal per ' + thing[1] + '?',
+          { text: cheaperBig ? B : A, why: (cheaperBig ? B : A) + ' is ' + money(cheaperBig ? ub : ua) + ' each, vs ' + money(cheaperBig ? ua : ub) + ' each.' },
+          [{ text: cheaperBig ? A : B, why: 'Divide price by how many: that one costs ' + money(cheaperBig ? ua : ub) + ' each.' },
+           { text: 'They cost the same each', why: 'Divide to check: ' + money(ua) + ' vs ' + money(ub) + '.' }],
+          'Bigger packs are NOT always cheaper. Divide the price by how many to compare.');
+      } },
+    { id: 'q_week_budget', topic: 'A week of money', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        var earn = level === 'younger' ? ri(rng, 3, 8) : ri(rng, 8, 30), days = level === 'younger' ? 5 : pick(rng, [5, 6]);
+        var spend = level === 'younger' ? ri(rng, 1, Math.max(1, earn - 1)) : ri(rng, 3, earn - 2);
+        var left = (earn - spend) * days;
+        return build(rng, { question: 'You earn ' + money(earn) + ' a day and spend ' + money(spend) + ' a day on food. After ' + days + ' days, how much have you saved?', answer: left,
+          right: '(' + money(earn) + ' − ' + money(spend) + ') × ' + days + ' = ' + money(earn - spend) + ' × ' + days + ' = ' + money(left) + '.',
+          wrongs: [{ v: earn * days, why: 'That forgets the money you spent.' }, { v: earn - spend, why: 'That is just one day.' }],
+          lesson: 'What you keep each day, times the days, is what you save.' });
+      } },
+    { id: 'q_coins', topic: 'Counting coins', levels: ['younger'],
+      gen: function (rng) {
+        var q = ri(rng, 0, 6), d = ri(rng, 0, 8), n = ri(rng, 0, 6), p = ri(rng, 0, 9);
+        if (q + d + n + p < 3) q += 2;
+        var tot = round2(q * 0.25 + d * 0.1 + n * 0.05 + p * 0.01);
+        return build(rng, { question: 'Your jar has ' + q + ' quarters, ' + d + ' dimes, ' + n + ' nickels and ' + p + ' pennies. How much money is that?', answer: tot, step: 0.1,
+          right: 'Quarters ' + money(q * 0.25) + ' + dimes ' + money(d * 0.1) + ' + nickels ' + money(n * 0.05) + ' + pennies ' + money(p * 0.01) + ' = ' + money(tot) + '.',
+          wrongs: [{ v: round2((q + d + n + p) * 0.1), why: 'Each coin is worth a different amount. Count each kind.' }],
+          lesson: 'Small coins add up. Count your jar before you spend it.' });
+      } },
+    { id: 'q_price_up', topic: 'Prices going up', levels: ['younger', 'older'],
+      gen: function (rng, level, s) {
+        var item = pick(rng, ['A loaf of bread', 'A gallon of milk', 'A bag of apples', 'A bus ride', 'A carton of eggs']);
+        var old = level === 'younger' ? ri(rng, 1, 5) : round2(ri(rng, 2, 8) + pick(rng, [0, 0.25, 0.5]));
+        var up = level === 'younger' ? 1 : pick(rng, [0.25, 0.5, 0.75, 1]);
+        var nu = round2(old + up), times = level === 'younger' ? pick(rng, [2, 3, 4]) : pick(rng, [4, 5, 7]);
+        var extra = round2(up * times);
+        var why = econ(s) === 'boom' ? 'Business is booming, so prices are rising.' : econ(s) === 'slow' ? 'Even in a slow economy, some costs still go up.' : 'Prices often creep up over time. That\'s called inflation.';
+        return build(rng, { question: why + ' ' + item + ' went from ' + money(old) + ' to ' + money(nu) + '. If you buy it ' + times + ' times a week, how much MORE do you spend each week?', answer: extra,
+          right: 'It costs ' + money(up) + ' more each time. ' + money(up) + ' × ' + times + ' = ' + money(extra) + ' more a week.',
+          wrongs: [{ v: up, why: 'That is the extra for one time. You buy it ' + times + ' times.' }, { v: round2(nu * times), why: 'That is the whole new cost, not the extra.' }],
+          lesson: 'When prices rise, the same money buys less. That\'s why savings need to grow too.' });
+      } },
+    { id: 'q_work_hours', topic: 'Hours of work', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        var wage = level === 'younger' ? pick(rng, [2, 3, 4, 5]) : pick(rng, [8, 10, 12, 15]);
+        var h = level === 'younger' ? ri(rng, 2, 6) : ri(rng, 3, 12);
+        var thing = pick(rng, ['a new video game', 'a pair of sneakers', 'a skateboard', 'concert tickets', 'a phone case']);
+        var price = wage * h;
+        return build(rng, { question: 'You earn ' + money(wage) + ' an hour. ' + thing.charAt(0).toUpperCase() + thing.slice(1) + ' costs ' + money(price) + '. How many hours do you have to work to pay for it?', answer: h, fmt: function (v) { return v + ' hours'; },
+          right: money(price) + ' ÷ ' + money(wage) + ' = ' + h + ' hours.',
+          wrongs: [{ v: h + 2, why: 'Too many: ' + (h + 2) + ' × ' + money(wage) + ' is more than the price.' }, { v: Math.max(1, h - 1), why: 'Not enough hours yet.' }],
+          lesson: 'Thinking of prices as hours of work helps you decide if something is worth it.' });
+      } },
+    { id: 'q_sale_price', topic: 'Sales & deals', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        if (level === 'younger') {
+          var p = pick(rng, [4, 6, 8, 10, 12, 20]);
+          return build(rng, { question: 'A toy costs ' + money(p) + '. Today it\'s HALF OFF. What is the sale price?', answer: p / 2,
+            right: 'Half of ' + money(p) + ' is ' + money(p / 2) + '.', wrongs: [{ v: p, why: 'That is the full price.' }, { v: p - 2, why: 'Half means divide by 2, not subtract 2.' }],
+            lesson: 'Half off means you pay half.' });
+        }
+        var pr = ri(rng, 20, 90), off = pick(rng, [10, 25, 30, 40]), sale = round2(pr * (1 - off / 100));
+        return build(rng, { question: 'A jacket is ' + money(pr) + ' with ' + off + '% off. What is the sale price?', answer: sale,
+          right: off + '% of ' + money(pr) + ' is ' + money(round2(pr * off / 100)) + '. ' + money(pr) + ' − that = ' + money(sale) + '.',
+          wrongs: [{ v: round2(pr * off / 100), why: 'That is the discount, not the price you pay.' }, { v: pr - off, why: off + '% is not ' + off + ' dollars.' }],
+          lesson: 'A sale only saves money if you were going to buy it anyway.' });
+      } },
+    { id: 'q_pay_off', topic: 'Paying off a debt', levels: ['older'],
+      gen: function (rng) {
+        var pay = pick(rng, [5, 10, 15, 20, 25]), wk = ri(rng, 4, 12), owe = pay * wk;
+        var what = pick(rng, ['a used bike', 'a phone', 'a laptop', 'a sewing machine']);
+        return build(rng, { question: 'You owe ' + money(owe) + ' for ' + what + ' and pay ' + money(pay) + ' a week, with no interest. How many weeks until it\'s paid off?', answer: wk, fmt: function (v) { return v + ' weeks'; },
+          right: money(owe) + ' ÷ ' + money(pay) + ' = ' + wk + ' weeks.',
+          wrongs: [{ v: wk + 2, why: 'Too many weeks. Multiply to check.' }, { v: Math.max(1, wk - 2), why: 'Not enough: you\'d still owe money.' }],
+          lesson: 'Paying more each week gets you out of debt faster.' });
+      } },
+    { id: 'q_estimate', topic: 'Estimating', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        var items = [['milk', 2.89], ['bread', 1.95], ['apples', 3.1], ['cheese', 4.05], ['rice', 2.99], ['beans', 0.98], ['peanut butter', 3.49]];
+        shuffle(rng, items); var take = items.slice(0, level === 'younger' ? 3 : 4);
+        var exact = round2(take.reduce(function (a, x) { return a + x[1]; }, 0)), est = take.reduce(function (a, x) { return a + Math.round(x[1]); }, 0);
+        return build(rng, { question: 'About how much is this grocery trip? ' + take.map(function (x) { return x[0] + ' ' + money(x[1]); }).join(', ') + '. Round to the nearest dollar.', answer: est,
+          right: 'Round each price: ' + take.map(function (x) { return money(Math.round(x[1])); }).join(' + ') + ' ≈ ' + money(est) + '. (Exact: ' + money(exact) + '.)',
+          wrongs: [{ v: est + 3, why: 'Too high. Round each price to the nearest dollar first.' }, { v: Math.max(1, est - 3), why: 'Too low. Did you skip an item?' }],
+          lesson: 'Estimating before the register helps you know if you have enough money.' });
+      } },
+    { id: 'q_rent_rule', topic: 'Housing budget', levels: ['older'],
+      gen: function (rng, level, s) {
+        var inc = pick(rng, [600, 900, 1200, 1500, 2000, 2400]), rent = round2(inc * 0.3);
+        return build(rng, { question: 'A simple rule says spend no more than 30% of your monthly income on housing. If you earn ' + money(inc) + ' a month, what is the most you should pay for rent?', answer: rent,
+          right: '30% of ' + money(inc) + ' = ' + money(inc) + ' × 0.3 = ' + money(rent) + '.',
+          wrongs: [{ v: round2(inc * 0.03), why: '30% is 0.30, not 0.03.' }, { v: inc - 300, why: '30% is a percent, not $300.' }],
+          lesson: 'Keeping housing affordable leaves money for food, savings and surprises.' });
+      } },
+    { id: 'q_money_ideas', topic: 'Money ideas', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        var Q = [
+          ['What is an "emergency fund"?', 'Money saved for surprise costs, like a broken bike', ['Money for a fun surprise party', 'A loan from the bank'], 'It\'s a cushion so a surprise doesn\'t wreck your budget.'],
+          ['What is PROFIT?', 'Money left after paying your costs', ['All the money customers pay you', 'The price of your product'], 'Sales are not profit. Profit is what\'s left after costs.'],
+          ['What is INTEREST on a loan?', 'Extra money you pay for borrowing', ['A fee to open a store', 'The money you earn from a job'], 'Borrowing costs money. That cost is interest.'],
+          ['A stranger says you can double your money in one day. What is it most likely?', 'A scam', ['A great investment', 'A bank savings account'], 'Real investments grow slowly. Fast "doubling" is a red flag.'],
+          ['Why do people buy INSURANCE?', 'To pay a little now so a big disaster doesn\'t ruin them', ['To make money quickly', 'Because it\'s free'], 'Insurance trades a small sure cost for protection from a big maybe-cost.'],
+          ['What does "diversify" mean for your money?', 'Spread it across many things, not just one', ['Put it all in your favorite company', 'Hide it under your bed'], 'If one thing drops, the others can hold you up.'],
+          ['You get paid $20. What\'s a smart first step?', 'Save part of it before spending', ['Spend it all today', 'Lend it all to a friend'], '"Pay yourself first" builds savings.'],
+          ['What is a BUDGET?', 'A plan for how you\'ll spend and save your money', ['A kind of bank account', 'A coupon'], 'A budget tells your money where to go.'],
+          ['What is a "want"?', 'Something nice to have but not needed to live', ['Something you need to be safe', 'A bill you have to pay'], 'Needs first, then wants.'],
+          ['Prices in a booming economy usually…', 'Go up, because lots of people are buying', ['Always go down', 'Never change'], 'When demand is high, sellers can charge more.'],
+          ['In a slow economy, a business should probably…', 'Watch costs and keep some cash saved', ['Spend everything on ads', 'Double its prices'], 'Slow times reward businesses that saved during good times.'],
+          ['What does it mean to "reinvest"?', 'Put profits back into growing your business', ['Spend profit on treats', 'Close your business'], 'Reinvesting is how small businesses become big ones.'],
+          ['Why is a credit score important?', 'It shows lenders if you pay back on time', ['It shows how much money you have', 'It\'s your school grade'], 'Paying bills on time builds trust with banks.'],
+          ['What is "net worth"?', 'What you own minus what you owe', ['How much cash is in your pocket', 'Your weekly pay'], 'You can have lots of stuff and still owe more than it\'s worth.']
+        ];
+        var q = Q[Math.floor(rng() * Q.length)];
+        return choiceQ(rng, q[0], { text: q[1], why: q[3] },
+          [{ text: q[2][0], why: 'Not quite. ' + q[3] }, { text: q[2][1], why: 'Not quite. ' + q[3] }], q[3]);
+      } },
+    { id: 'q_simple_interest', topic: 'Savings growth', levels: ['younger', 'older'],
+      gen: function (rng, level) {
+        if (level === 'younger') {
+          var sv = pick(rng, [10, 20, 30, 50, 100]), add = sv / 10;
+          return build(rng, { question: 'The bank pays 10% a year. You save ' + money(sv) + '. How much interest do you earn in one year?', answer: add,
+            right: '10% of ' + money(sv) + ' = ' + money(add) + '.', wrongs: [{ v: 10, why: 'That is the percent.' }, { v: sv + add, why: 'That is your total, not just the interest.' }],
+            lesson: 'Money in savings earns a little extra every year.' });
+        }
+        var p = pick(rng, [100, 200, 400, 500, 1000]), r = pick(rng, [3, 4, 5]), y = pick(rng, [2, 3]), i = round2(p * r / 100 * y);
+        return build(rng, { question: 'You put ' + money(p) + ' in savings that pays ' + r + '% simple interest per year. How much interest after ' + y + ' years?', answer: i,
+          right: money(p) + ' × ' + r + '% = ' + money(p * r / 100) + ' a year × ' + y + ' = ' + money(i) + '.',
+          wrongs: [{ v: round2(p * r / 100), why: 'That is just one year.' }, { v: round2(p + i), why: 'That is the total balance, not the interest.' }],
+          lesson: 'The longer money stays saved, the more interest it earns.' });
+      } }
+  ];
+  MORE.forEach(function (q) { FN.Quizzes.push(q); });
+
 })();
 
 /* ==== src/ui/characters.js ==== */
@@ -8999,7 +10484,8 @@ window.FN = window.FN || {};
       '<span class="chip" title="Your home">🏠 ' + esc(C.HOMES[s.home].short) + '</span>' +
       '<span class="chip" title="Weather today. Tomorrow: ' + esc((C.WEATHER[s.weather.tomorrow] || {}).name) + '">' + C.SEASONS[C.seasonOf(s.day)].icon + ' ' + (w.icon || '') + ' ' + esc(w.name || '') + '</span>' +
       '<span class="chip" title="Energy">⚡ <span class="energy"><i style="width:' + s.energy + '%"></i></span></span>' +
-      '<span class="chip" title="' + esc(C.STAGES[s.stage].goal) + '">⭐ Stage ' + s.stage + '<span class="wide-only">: ' + esc(C.STAGES[s.stage].name) + '</span></span>' +
+      (s.stage >= 5 && FN.Goals ? (function () { var rk = FN.Goals.rank(s); return '<span class="chip rank-chip" title="Your rank from Big Goals. ' + rk.total + ' goals reached. Open 🏠 My Home &amp; Me to see your Big Goals.">' + rk.icon + ' ' + esc(rk.name) + '</span>'; })()
+        : '<span class="chip" title="' + esc(C.STAGES[s.stage].goal) + '">⭐ Stage ' + s.stage + '<span class="wide-only">: ' + esc(C.STAGES[s.stage].name) + '</span></span>') +
       '</div><div class="tb-actions">' +
       (FN.Milestones.isUnlocked(s) ? btn('future', null, '🔮<span class="lbl"> SEE MY FUTURE</span>', 'gold small', false, 'See my future — 10 years later')
         : btn('future', null, '🔒<span class="lbl"> SEE MY FUTURE</span> <span class="ms-count">' + FN.Milestones.count(s) + '/5</span>', 'small locked-future', false, 'Complete 5 milestones to unlock your future')) +
@@ -9047,7 +10533,7 @@ window.FN = window.FN || {};
       var c = C.BUSINESSES[id];
       if (c.type === 'passive') return;
       var place = c.place;
-      if (s.place === place) { var r = G.runReason(s, id); out.push(btn('runDialog', id, c.icon + ' Open ' + esc(c.name), 'small gold', !!r, r)); }
+      if (s.place === place) { var r = G.runReason(s, id); out.push(btn('runDialog', id, c.icon + ' Open ' + esc(C.bizName(s, id)), 'small gold', !!r, r)); }
     });
     out.push(btn('rest', null, '😌 Rest (' + G.hrsText(G.hrs(2)) + ')', 'small', G.hoursLeft(s) < G.hrs(2)));
     if (A.s.current) out.push(btn('skip', null, '🔀 Something else', 'small'));
@@ -9065,6 +10551,7 @@ window.FN = window.FN || {};
       if (r.lesson) h += '<div class="lesson">💡 ' + esc(r.lesson) + '</div>';
       if (r.stageUp) h += '<div class="banner">🎉 You reached Stage ' + r.stageUp + ': ' + esc(C.STAGES[r.stageUp].name) + '! ' + esc(C.STAGES[r.stageUp].goal) + '</div>';
       (r.achievements || []).forEach(function (a) { var ac = C.ACHIEVEMENTS[a]; if (ac) h += '<div class="banner">' + ac.icon + ' Achievement: <b>' + esc(ac.name) + '</b> — ' + esc(ac.desc) + '</div>'; });
+      h += goalsHtml(r.goals);
       ((r.milestones && r.milestones.completed) || []).forEach(function (id) { var d = FN.Milestones.DEFS.filter(function (x) { return x.id === id; })[0]; if (d) h += '<div class="banner ms-banner">🏁 Milestone ' + (FN.Milestones.DEFS.indexOf(d) + 1) + ' of 5 complete: <b>' + esc(d.title) + '</b> ' + btn('journey', null, 'See my journey', 'small') + '</div>'; });
       h += '<div class="row" style="margin-top:12px">' + btn('continue', null, 'Continue ➜', 'big primary') + '</div>';
       box.innerHTML = h; return;
@@ -9187,11 +10674,24 @@ window.FN = window.FN || {};
     h += meHtml(s);
     return h;
   };
+  function goalsPanelHtml(s) {
+    if (!FN.Goals) return '';
+    var rk = FN.Goals.rank(s), v = FN.Goals.view(s);
+    var h = '<h3 id="big-goals">🎯 Big Goals</h3><div class="card rank-card"><div class="spread"><b style="font-size:1.15em">' + rk.icon + ' Rank: ' + esc(rk.name) + '</b><span class="muted">' + rk.total + ' goals reached</span></div>' +
+      '<div class="muted">Next rank' + (rk.nextName ? ' (' + esc(rk.nextName) + ')' : '') + ' at ' + rk.next + ' goals. Every goal pays a cash reward, and the goals never run out.</div></div>';
+    h += v.map(function (g) {
+      return '<div class="goal"><div class="spread"><span>' + g.icon + ' <b>' + esc(g.name) + '</b> <small class="muted">· ' + g.steps + ' reached</small></span><small class="muted">Now: ' + esc(g.now) + '</small></div>' +
+        '<div class="muted"><small>' + (g.done ? '✅ ' : 'Next: ') + esc(g.goal) + (g.reward ? ' · reward ' + fmt(g.reward) : '') + '</small></div>' +
+        '<div class="skillbar"><i style="width:' + g.pct + '%;background:linear-gradient(90deg,#f6c453,#ffde7a)"></i></div></div>';
+    }).join('');
+    return h;
+  }
   function meHtml(s) {
     var h = '<h3>📈 My Skills</h3><p class="muted">Skills grow when you practice. Many jobs and businesses need certain skills.</p>';
     h += Object.keys(C.SKILLS).map(function (k) { return '<div class="spread"><span>' + C.SKILLS[k].icon + ' ' + C.SKILLS[k].name + '</span><b>' + Math.floor(s.skills[k]) + ' / 100</b></div><div class="skillbar"><i style="width:' + s.skills[k] + '%"></i></div>'; }).join('');
     h += '<h3>🤝 My Friends</h3><p class="muted">Good friendships create opportunities. Reputation: <b>' + Math.round(s.reputation) + '</b> · Happiness: <b>' + Math.round(s.happiness) + '</b></p>';
     h += Object.keys(C.PEOPLE).map(function (k) { var v = Math.max(0, s.rel[k] || 0); return '<div class="spread"><span>' + esc(C.PEOPLE[k].name) + ' <small class="muted">' + esc(C.PEOPLE[k].role) + '</small></span><b>' + Math.round(s.rel[k] || 0) + '</b></div><div class="skillbar"><i style="width:' + Math.min(100, v) + '%;background:linear-gradient(90deg,#39c27a,#f6c453)"></i></div>'; }).join('');
+    h += goalsPanelHtml(s);
     var got = Object.keys(C.ACHIEVEMENTS).filter(function (k) { return s.achievements[k]; });
     h += '<h3>🏅 Achievements (' + got.length + ' of ' + Object.keys(C.ACHIEVEMENTS).length + ')</h3><div class="grid">' + Object.keys(C.ACHIEVEMENTS).map(function (k) {
       var a = C.ACHIEVEMENTS[k], on = !!s.achievements[k];
@@ -9234,13 +10734,18 @@ window.FN = window.FN || {};
     });
     if (hidden) h += btn('allJobs', null, 'Show ' + hidden + ' more advanced jobs', 'small');
     else if (A.allJobs) h += btn('allJobs', null, 'Show fewer jobs', 'small');
+    if (FN.Goals && Object.keys(s.businesses).length) {
+      var rk = FN.Goals.rank(s), gv = FN.Goals.view(s).filter(function (g) { return !g.done; }).sort(function (a, b) { return b.pct - a.pct; })[0];
+      if (gv) h += '<div class="card rank-card"><div class="spread"><b>' + rk.icon + ' ' + esc(rk.name) + '</b><small class="muted">' + rk.total + ' Big Goals</small></div><div class="muted"><small>Closest goal: ' + gv.icon + ' ' + esc(gv.goal) + ' · reward ' + fmt(gv.reward) + '</small></div><div class="skillbar"><i style="width:' + gv.pct + '%;background:linear-gradient(90deg,#f6c453,#ffde7a)"></i></div></div>';
+    }
     h += '<h3>🏪 My Businesses</h3>';
     var mine = Object.keys(s.businesses);
     if (!mine.length) h += '<p class="muted">You don\'t own a business yet. Start one below — it can earn more than a job, but it\'s riskier.</p>';
     mine.forEach(function (id) {
       var b = s.businesses[id], c = C.BUSINESSES[id], lvl = C.bizLevel(id, b.level);
       var profit = E.r2(b.totalRevenue - b.totalExpenses);
-      h += '<div class="card owned"><div class="spread"><h4>' + c.icon + ' ' + esc(c.name) + ' <small class="muted">· ' + esc(lvl.name) + ' (Level ' + b.level + ')</small></h4><span>' + (profit >= 0 ? '<b class="good">Profit ' + fmt(profit) + '</b>' : '<b class="bad">Loss ' + fmt(-profit) + '</b>') + '</span></div>';
+      var title = C.bizName(s, id);
+      h += '<div class="card owned"><div class="spread"><h4 class="biz-title">' + c.icon + ' <b>' + esc(title) + '</b> <small class="muted">· Level ' + b.level + (title !== c.name ? ' · started as a ' + esc(c.name) : (lvl.name !== c.name ? ' · ' + esc(lvl.name) : '')) + '</small></h4><span>' + (profit >= 0 ? '<b class="good">Profit ' + fmt(profit) + '</b>' : '<b class="bad">Loss ' + fmt(-profit) + '</b>') + '</span></div>';
       h += '<div class="muted">Total sales ' + fmt(b.totalRevenue) + ' − total costs ' + fmt(b.totalExpenses) + ' = ' + fmt(profit) + ' · Days run: ' + b.daysRun + (c.fixed ? ' · Daily operating cost ' + fmt(c.fixed) : '') + ' · Location: ' + esc(C.PLACES[c.place].name) + '</div>';
       if (b.recent.length) { var mx = 1; b.recent.forEach(function (p) { mx = Math.max(mx, Math.abs(p)); }); h += '<div class="minibars" title="Recent daily profit">' + b.recent.map(function (p) { return '<i style="height:' + Math.max(3, Math.round(Math.abs(p) / mx * 34)) + 'px;background:' + (p >= 0 ? 'var(--green)' : 'var(--red)') + '"></i>'; }).join('') + '</div>'; }
       if (id === 'chickens') h += '<div>🐔 Hens: <b>' + b.units + '</b> / ' + E.maxUnits(s, id) + ' · Feed costs ' + fmt(s.economy.prices.feed) + ' per hen per day · Eggs in storage: ' + (s.inventory.eggs ? s.inventory.eggs.qty : 0) + ' · Egg price ' + fmt(s.economy.prices.eggs) + '</div>';
@@ -9299,7 +10804,7 @@ window.FN = window.FN || {};
   function runDialog(id) {
     var s = A.s, c = C.BUSINESSES[id];
     var o = A.runOpts;
-    var h = '<h2>' + c.icon + ' Open your ' + esc(c.name) + '</h2>';
+    var h = '<h2>' + c.icon + ' Open your ' + esc(C.bizName(A.s, id)) + '</h2>';
     var w = C.WEATHER[s.weather.today];
     h += '<p>Today\'s weather: <b>' + w.icon + ' ' + w.name + '</b> · Economy: <b>' + esc(C.PHASES[s.economy.phase].name) + '</b>' + (c.weather ? ' · Weather changes how many customers come!' : '') + '</p>';
     if (c.type === 'stock') {
@@ -9334,10 +10839,18 @@ window.FN = window.FN || {};
     h += '<div class="lesson">💡 Profit = Sales − Costs → ' + fmt(r.revenue) + ' − ' + fmt(r.expenses) + ' = ' + fmt(r.profit) + '. ' + esc(c.lesson) + '</div>';
     if (r.stageUp) h += '<div class="banner">🎉 Stage ' + r.stageUp + ': ' + esc(C.STAGES[r.stageUp].name) + '!</div>';
     (r.achievements || []).forEach(function (a) { var ac = C.ACHIEVEMENTS[a]; if (ac) h += '<div class="banner">' + ac.icon + ' Achievement: ' + esc(ac.name) + '</div>'; });
+    h += goalsHtml(r.goals);
     h += '<br>' + btn('closeModal', null, 'Great!', 'big primary block');
     modal(h);
   }
 
+  // 1.7.0: Big Goals banners
+  function goalsHtml(list) {
+    var h = '';
+    (list || []).forEach(function (g) { h += '<div class="banner goal-banner">' + g.icon + ' Big Goal: <b>' + esc(g.text) + '</b>' + (g.reward ? ' · Reward <b class="good">+' + fmt(g.reward) + '</b>' : '') + '</div>'; });
+    if (list && list.rankUp) h += '<div class="banner goal-banner">🏆 New rank: <b>' + esc(list.rankUp) + '</b>!</div>';
+    return h;
+  }
   /* ---------------- morning report ---------------- */
   function showMorning(rep) {
     var s = A.s, w = C.WEATHER[s.weather.today], t = C.WEATHER[s.weather.tomorrow];
@@ -9351,6 +10864,7 @@ window.FN = window.FN || {};
     if (rep.event) h += '<div class="event"><b>📣 ' + esc(rep.event.title) + '</b><br>' + esc(rep.event.text) + deltasHtml(rep.event.deltas) + (rep.event.hasScenario ? '<div class="muted">This will be your next decision.</div>' : '') + '</div>';
     if (rep.stageUp) h += '<div class="banner">🎉 You reached Stage ' + rep.stageUp + ': ' + esc(C.STAGES[rep.stageUp].name) + '! ' + esc(C.STAGES[rep.stageUp].goal) + '</div>';
     (rep.achievements || []).forEach(function (a) { var ac = C.ACHIEVEMENTS[a]; if (ac) h += '<div class="banner">' + ac.icon + ' Achievement: <b>' + esc(ac.name) + '</b></div>'; });
+    h += goalsHtml(rep.goals);
     h += '<br>' + btn('closeModal', null, 'Start the day ➜', 'big primary block');
     modal(h, true);
   }
@@ -9504,7 +11018,7 @@ window.FN = window.FN || {};
       FN.Effects.floatText((cashD > 0 ? '+' : '') + fmt(cashD), r.left + 20, r.bottom + 4, cashD > 0 ? 'up' : 'down');
       if (cashD > 0) FN.Effects.coins(fromEl, chip, Math.ceil(cashD / 2));
     }
-    if (res.stageUp || (res.achievements && res.achievements.length)) FN.Effects.confetti(res.stageUp ? 220 : 120);
+    if (res.stageUp || (res.achievements && res.achievements.length) || (res.goals && res.goals.length)) FN.Effects.confetti(res.stageUp ? 220 : 120);
   }
   A.celebrate = celebrate;
 
@@ -9678,7 +11192,7 @@ window.FN = window.FN || {};
         A.sleeping = false;
         var rep = G.nextDay(A.s);
         renderGame(); showMorning(rep); sound('day');
-        if (rep.stageUp || (rep.achievements && rep.achievements.length)) FN.Effects.confetti(rep.stageUp ? 220 : 120);
+        if (rep.stageUp || (rep.achievements && rep.achievements.length) || (rep.goals && rep.goals.length)) FN.Effects.confetti(rep.stageUp ? 220 : 120);
         milestoneNews(rep);
       });
     },
@@ -9742,13 +11256,13 @@ window.FN = window.FN || {};
       FN.Milestones.money(A.s, 'start:' + id, C.BUSINESSES[id].startCost); FN.Milestones.decision(A.s, 'startbiz');
       var r = {}; G.afterAction(A.s, r); announce(r); A.sceneKey = ''; after();
     },
-    upgrade: function (id) { var cost = E.upgradeCost(A.s, id); if (E.upgradeBusiness(A.s, id)) { toast('⬆️ Your business grew: ' + C.bizLevel(id, A.s.businesses[id].level).name + '!'); track('upgrade:' + id, cost); } G.afterAction(A.s, {}); A.sceneKey = ''; after(); },
-    hire: function (id) { if (A.s.stage < 3) return; A.s.businesses[id].helper = true; E.log(A.s, 'Hired a helper for the ' + C.BUSINESSES[id].name); FN.Milestones.money(A.s, 'hire:' + id); var r = {}; G.afterAction(A.s, r); announce(r); toast('👔 Helper hired! They run it on days you don\'t.'); after(); },
+    upgrade: function (id) { var cost = E.upgradeCost(A.s, id), was = C.bizName(A.s, id); if (E.upgradeBusiness(A.s, id)) { var now = C.bizName(A.s, id); toast(now !== was ? '🎉 Your ' + was + ' is now a ' + now + '!' : '⬆️ Your business grew: ' + C.bizLevel(id, A.s.businesses[id].level).name + '!', now !== was ? 'ach' : undefined); track('upgrade:' + id, cost); } G.afterAction(A.s, {}); A.sceneKey = ''; after(); },
+    hire: function (id) { if (A.s.stage < 3) return; A.s.businesses[id].helper = true; E.log(A.s, 'Hired a helper for the ' + C.bizName(A.s, id)); FN.Milestones.money(A.s, 'hire:' + id); var r = {}; G.afterAction(A.s, r); announce(r); toast('👔 Helper hired! They run it on days you don\'t.'); after(); },
     mute: function () { A.muted = !A.muted; try { localStorage.setItem('fromnothing_muted', A.muted ? '1' : '0'); } catch (e) { } renderTop(); },
     allJobs: function () { A.allJobs = !A.allJobs; renderGame(); },
     fire: function (id) { A.s.businesses[id].helper = false; S.save(A.s); after(); },
     addHens: function (n) { var v = E.addUnits(A.s, 'chickens', +n); if (v) { toast('🐔 +' + v + ' hen(s)'); track('hens', v * 5); } S.save(A.s); A.sceneKey = ''; after(); },
-    sellBiz: function (id) { modal('<h2>Sell your ' + esc(C.BUSINESSES[id].name) + '?</h2><p>You will get ' + fmt(E.bizValue(A.s, id)) + ' back. Used equipment sells for less than you paid.</p><div class="row">' + btn('sellBizYes', id, 'Sell it', 'red') + btn('closeModal', null, 'Keep it') + '</div>'); },
+    sellBiz: function (id) { modal('<h2>Sell your ' + esc(C.bizName(A.s, id)) + '?</h2><p>You will get ' + fmt(E.bizValue(A.s, id)) + ' back. Used equipment sells for less than you paid.</p><div class="row">' + btn('sellBizYes', id, 'Sell it', 'red') + btn('closeModal', null, 'Keep it') + '</div>'); },
     sellBizYes: function (id) { var v = E.sellBusiness(A.s, id); toast('💵 Sold for ' + fmt(v)); closeModal(); track('sellbiz', v); A.sceneKey = ''; renderGame(); },
     runDialog: function (id) { A.runOpts = { stock: 1, price: 'fair', id: id }; runDialog(id); },
     runOpt: function (arg) { var p = arg.split(':'); A.runOpts[p[0]] = p[0] === 'stock' ? +p[1] : p[1]; runDialog(A.runOpts.id); },
@@ -9757,7 +11271,7 @@ window.FN = window.FN || {};
       if (!r.ok) { toast('🔒 ' + r.msg); closeModal(); renderGame(); return; }
       renderGame(); runResult(r); sound(r.profit > 0 ? 'good' : 'bad');
       if (r.revenue > 0) FN.Effects.coins(document.querySelector('#modal .receipt'), $('cash'), Math.ceil(r.revenue / 3));
-      if (r.stageUp || (r.achievements && r.achievements.length)) FN.Effects.confetti(r.stageUp ? 220 : 120);
+      if (r.stageUp || (r.achievements && r.achievements.length) || (r.goals && r.goals.length)) FN.Effects.confetti(r.stageUp ? 220 : 120);
       milestoneNews(r);
     },
     exportSave: function () {
@@ -9784,7 +11298,7 @@ window.FN = window.FN || {};
   };
   A.ACTIONS = ACTIONS;
   function announce(r) { milestoneNews(r); announce0(r); }
-  function announce0(r) { if (r && (r.stageUp || (r.achievements && r.achievements.length))) FN.Effects.confetti(100); (r && r.achievements || []).forEach(function (a) { var ac = C.ACHIEVEMENTS[a]; if (ac) toast(ac.icon + ' Achievement: ' + ac.name, 'ach'); }); if (r && r.stageUp) toast('🎉 Stage ' + r.stageUp + ': ' + C.STAGES[r.stageUp].name, 'ach'); }
+  function announce0(r) { if (r && (r.stageUp || (r.achievements && r.achievements.length) || (r.goals && r.goals.length))) FN.Effects.confetti(100); (r && r.goals || []).forEach(function (g) { toast(g.icon + ' Big Goal reached! +' + fmt(g.reward), 'ach'); }); (r && r.achievements || []).forEach(function (a) { var ac = C.ACHIEVEMENTS[a]; if (ac) toast(ac.icon + ' Achievement: ' + ac.name, 'ach'); }); if (r && r.stageUp) toast('🎉 Stage ' + r.stageUp + ': ' + C.STAGES[r.stageUp].name, 'ach'); }
 
   function onClick(ev) {
     var hs = ev.target.closest && ev.target.closest('#scene [data-hotspot]');
