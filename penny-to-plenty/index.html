@@ -386,6 +386,139 @@ body.on-title .update-banner { display: none; }
 .goal { margin: 10px 0; }
 .rank-chip { border-color: rgba(246, 196, 83, .8); color: #ffe08a; font-weight: 700; }
 
+/* =====================================================================
+   1.8.0 — App shell: notch/home-bar safe areas, compact header, iOS tab bar,
+   pages as sheets, bottom-sheet dialogs, press feedback. Works in every build.
+   ===================================================================== */
+:root { --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px); --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px); --toph: 60px; --tabh: 62px; --tint: #8cc4ff; }
+html, body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Avenir Next", "Segoe UI", system-ui, Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+body { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+input, textarea, .np-input { -webkit-user-select: text; user-select: text; }
+.drawer, .decision, .modal, .title-wrap, .page { scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.drawer::-webkit-scrollbar, .decision::-webkit-scrollbar, .modal::-webkit-scrollbar, .title-wrap::-webkit-scrollbar, .page::-webkit-scrollbar { display: none; }
+.btn, .choice, .navbtn, .gate-key { transition: transform .14s cubic-bezier(.2, .8, .2, 1), background .15s, box-shadow .15s, opacity .15s; }
+.btn:active:not(:disabled), .choice:active:not(:disabled), .gate-key:active { transform: scale(.96); }
+.btn:hover:not(:disabled) { transform: none; }
+
+/* ---------- header ---------- */
+.topbar { height: calc(var(--toph) + var(--safe-t)); padding: calc(6px + var(--safe-t)) calc(10px + var(--safe-r)) 6px calc(10px + var(--safe-l)); gap: 10px;
+  background: rgba(9, 14, 24, .78); -webkit-backdrop-filter: saturate(170%) blur(18px); backdrop-filter: saturate(170%) blur(18px); border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.tb-me { display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 0; }
+.tb-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 17px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .28), 0 2px 8px rgba(0, 0, 0, .35); flex-shrink: 0; }
+.tb-me-txt { display: flex; flex-direction: column; line-height: 1.08; min-width: 0; }
+.tb-name { font-size: 11px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .07em; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-cash { font-size: 20px; font-weight: 900; color: #7ef0b0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tb-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
+.tb-day { font-weight: 800; font-size: 15px; white-space: nowrap; }
+.tb-where { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; max-width: 100%; }
+.tb-where > span { overflow: hidden; text-overflow: ellipsis; }
+.tb-tag { color: var(--gold); font-weight: 800; }
+.tb-clock2 { display: none; }
+.tb-actions { gap: 6px; align-items: center; }
+.icon-btn { min-width: 40px; min-height: 40px; padding: 6px 9px; border-radius: 12px; font-size: 17px; }
+.icon-btn .ms-count { margin-left: 3px; font-size: 12px; }
+.btn.bed-now { box-shadow: 0 0 0 0 rgba(78, 161, 255, .6); animation: bedPulse 2.2s ease-in-out infinite; }
+@keyframes bedPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(78, 161, 255, .55); } 50% { box-shadow: 0 0 0 6px rgba(78, 161, 255, 0); } }
+.tb-energy { position: relative; width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ering { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ering-bg { fill: none; stroke: rgba(255, 255, 255, .13); stroke-width: 4; }
+.ering-fg { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .5s ease; }
+.ering-ic { font-size: 14px; position: relative; }
+@media (max-width: 820px) {
+  .wide-btn { display: none; }
+  .tb-where .tb-tag { display: none; }
+  .tb-actions .btn { padding: 6px 8px; font-size: 17px; }
+  .tb-actions [data-act="future"] { display: none; } /* the tab bar has Future */
+  .tb-day { font-size: 15px; }
+  .tb-mid { align-items: flex-start; overflow: hidden; }
+  .tb-clock, .tb-place { display: none; }
+  .tb-clock2 { display: inline; color: var(--text); font-weight: 700; flex-shrink: 0; overflow: visible !important; }
+  .tb-where { gap: 4px; font-size: 12px; overflow: visible; }
+  .tb-actions { gap: 5px; }
+  .tb-energy { width: 34px; height: 34px; }
+  .topbar { gap: 8px; }
+}
+@media (max-width: 370px) { .tb-name { display: none; } .tb-cash { font-size: 18px; } }
+
+/* ---------- tab bar ---------- */
+.sidenav { position: absolute; left: 0; right: 0; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; align-items: stretch; gap: 0;
+  padding: 5px calc(6px + var(--safe-r)) calc(5px + var(--safe-b)) calc(6px + var(--safe-l));
+  background: rgba(9, 14, 24, .82); -webkit-backdrop-filter: saturate(170%) blur(20px); backdrop-filter: saturate(170%) blur(20px); border-top: 1px solid rgba(255, 255, 255, .08); z-index: 35; }
+.navbtn { flex: 1; width: auto; min-width: 0; background: none; border: 0; box-shadow: none; padding: 4px 2px; border-radius: 12px; gap: 2px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.navbtn .ic { font-size: 23px; line-height: 1.1; filter: grayscale(.7) opacity(.7); transition: transform .18s cubic-bezier(.2, .8, .2, 1), filter .18s; }
+.navbtn .nl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.navbtn:hover { background: rgba(255, 255, 255, .04); border: 0; }
+.navbtn.on { background: none; border: 0; color: var(--tint); }
+.navbtn.on .ic { filter: none; transform: translateY(-1px) scale(1.1); }
+.navbtn.future, .navbtn.future.locked { background: none; border: 0; }
+.navbtn.future .nl { color: var(--gold); }
+.navbtn.future.locked .ic { filter: none; }
+.navbtn small { font-size: 1em; color: var(--gold); }
+@media (min-width: 821px) {
+  .sidenav { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(12px + var(--safe-b)); width: min(640px, calc(100% - 24px)); border-radius: 24px; border: 1px solid rgba(255, 255, 255, .12); padding: 6px 10px; box-shadow: 0 12px 34px rgba(0, 0, 0, .5); }
+  .navbtn { font-size: 12px; }
+}
+
+/* ---------- decision card ---------- */
+.decision { left: 50%; transform: translateX(-50%); margin-left: 0; width: min(980px, calc(100% - 20px)); bottom: calc(var(--tabh) + var(--safe-b) + 10px); max-height: min(52vh, calc(100% - var(--toph) - var(--safe-t) - var(--tabh) - var(--safe-b) - 40px));
+  border-radius: 24px; background: rgba(14, 22, 36, .9); -webkit-backdrop-filter: saturate(160%) blur(16px); backdrop-filter: saturate(160%) blur(16px); border: 1px solid rgba(255, 255, 255, .1); }
+@media (min-width: 821px) { .decision { bottom: calc(var(--tabh) + var(--safe-b) + 26px); } }
+.choice { border-radius: 16px; }
+
+/* ---------- pages (panels) ---------- */
+.drawer { top: calc(var(--toph) + var(--safe-t)); bottom: calc(var(--tabh) + var(--safe-b)); padding: 0 calc(18px + var(--safe-r)) 30px 18px; background: #101a2a; border-left: 1px solid rgba(255, 255, 255, .07); animation: pageIn .22s cubic-bezier(.2, .8, .2, 1); }
+@keyframes pageIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 821px) { .drawer { bottom: 0; padding-bottom: calc(var(--tabh) + 40px); } }
+@media (max-width: 820px) { .drawer, .drawer.wide { left: 0; width: 100%; border-left: 0; padding-left: calc(16px + var(--safe-l)); padding-right: calc(16px + var(--safe-r)); } }
+.sheet-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 -18px 10px; padding: 14px 18px 10px;
+  background: rgba(16, 26, 42, .9); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.sheet-title { font-size: 22px; font-weight: 900; letter-spacing: -.01em; }
+.sheet-head .close-x { position: static; float: none; color: var(--tint); background: none; border: 0; font-weight: 800; font-size: 16px; min-height: 36px; padding: 6px 4px; }
+.sheet-head + h2 { display: none; }
+.card, .stat { border-radius: 16px; border-color: rgba(255, 255, 255, .09); }
+
+/* ---------- dialogs: bottom sheets on phones ---------- */
+.modal-back { background: rgba(0, 0, 0, .55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.modal { border-radius: 24px; border-color: rgba(255, 255, 255, .1); }
+@media (max-width: 820px) {
+  .modal-back { align-items: flex-end; padding: 0; }
+  .modal, .modal.wide { width: 100%; max-height: calc(100% - var(--safe-t) - 24px); border-radius: 26px 26px 0 0; padding: 26px calc(18px + var(--safe-r)) calc(20px + var(--safe-b)) calc(18px + var(--safe-l)); animation: sheetUp .3s cubic-bezier(.2, .85, .25, 1); position: relative; }
+  .modal::before { content: ''; position: absolute; top: 8px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: rgba(255, 255, 255, .25); }
+  .game-menu .gm-row { flex-direction: column; align-items: stretch; }
+  .game-menu .gm-row .btn { min-width: 0; width: 100%; }
+}
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+
+/* ---------- title screen, toasts ---------- */
+.title-wrap { padding: calc(20px + var(--safe-t)) calc(16px + var(--safe-r)) calc(20px + var(--safe-b)) calc(16px + var(--safe-l)); justify-content: flex-start; }
+.title-wrap > :first-child { margin-top: auto; } .title-wrap > :last-child { margin-bottom: auto; }
+.toasts { top: calc(var(--toph) + var(--safe-t) + 10px); width: calc(100% - 32px); }
+.toast { border-radius: 16px; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); text-align: center; max-width: 100%; }
+.pill-ok { display: inline-flex; align-items: center; padding: 7px 12px; border-radius: 999px; background: rgba(246, 196, 83, .18); border: 1px solid rgba(246, 196, 83, .6); color: #ffe08a; font-weight: 800; font-size: .9em; }
+html.native-app .title-version { opacity: .6; }
+html.native-app .news-update, html.native-app .update-banner { display: none !important; }
+
+/* ---------- parental gate ---------- */
+.gate { text-align: center; }
+.gate-kicker { color: var(--gold); font-weight: 900; letter-spacing: .14em; font-size: 12px; }
+.gate-ask { font-size: 1.05em; line-height: 1.5; }
+.gate-ask b { font-size: 1.35em; color: #fff; letter-spacing: .02em; }
+.gate-dots { display: flex; justify-content: center; gap: 12px; margin: 6px 0 14px; }
+.gate-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .4); }
+.gate-dots i.on { background: var(--gold); border-color: var(--gold); }
+.gate-pad { display: grid; grid-template-columns: repeat(3, 76px); gap: 10px; justify-content: center; }
+.gate-pad .gate-key:last-child { grid-column: 2; }
+.gate-key { height: 62px; border-radius: 18px; background: var(--card2); border: 1px solid var(--line); font-size: 26px; font-weight: 800; }
+
+/* ---------- paywall ---------- */
+.paywall { text-align: center; }
+.pw-hero { font-size: 40px; letter-spacing: .1em; margin: 4px 0 6px; }
+.paywall h2 { font-size: 1.6em; }
+.pw-list { text-align: left; list-style: none; padding: 0; margin: 12px auto; max-width: 420px; }
+.pw-list li { padding: 8px 12px; margin: 6px 0; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+.pw-fine { color: var(--muted); font-size: .92em; }
+.free-days { margin: 10px 0; padding: 10px 14px; border-radius: 14px; background: rgba(246, 196, 83, .12); border: 1px solid rgba(246, 196, 83, .5); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
 </style>
 </head>
 <body>
@@ -426,14 +559,15 @@ body.on-title .update-banner { display: none; }
 /* ==== src/core/config.js ==== */
 /* FN.Config — the one place for release settings.
    GAME_VERSION: bump for every release (also names the offline cache in site/sw.js).
-   FEEDBACK_URL: tester feedback form; empty hides the button. "{version}" is replaced with GAME_VERSION. */
+   FEEDBACK_URL: tester feedback form; empty hides the button. "{version}" is replaced with GAME_VERSION.
+   PAYWALL: free-to-try + Full Game unlock. Only the App Store build turns it on (see build.py build_app).
+   SUPPORT_URL: help & privacy page, opened from the app only behind the grown-up check. */
 window.FN = window.FN || {};
-FN.Config = { GAME_VERSION: '1.7.0', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
+FN.Config = { GAME_VERSION: '1.8.0', PAYWALL: false, SUPPORT_URL: 'https://penny-to-plenty.vercel.app/support', FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSeMfJSA9bnBxMd0RIuUCx_DInv1UQ72gbI_cjqecehSMzVLUw/viewform?usp=pp_url&entry.1490680224={version}' };
 // Shown once as a headline on the title screen after an update (keep it short and kid-friendly).
 FN.Config.WHATS_NEW = [
-  '🎯 Big Goals: new goals that never run out (net worth, business empire, giving, investing and more). Each one pays a cash reward and raises your Rank, from Penny Pincher to Tycoon to Legend.',
-  '🏷️ Grown businesses go by their new name: once your Lemonade Stand becomes a Lemonade Franchise, that\'s what it\'s called, in bold.',
-  '🃏 Over 80 new cards, most of them for the start of the game, plus 14 new kinds of money challenges. Cards and questions you already saw today stay away.'
+  '📱 A cleaner, app-style look: a tab bar at the bottom (Play, Money, Me, Business, Map, Future), a compact top bar with an energy ring, and pages that slide up with a Done button.',
+  '👆 Bigger, easier taps on phones and tablets, and pop-ups that open from the bottom of the screen.'
 ];
 
 /* ==== src/core/rng.js ==== */
@@ -10323,6 +10457,159 @@ window.FN = window.FN || {};
   FN.Effects = X;
 })();
 
+/* ==== src/ui/native.js ==== */
+/* FN.Native (1.8.0) — the thin bridge between the game and the iPhone/iPad app shell (Capacitor).
+   Everything here is optional: in a browser or the double-click file, every call quietly does nothing
+   (or uses the normal web fallback), so the web build keeps working exactly as before.
+   Plugins are reached through window.Capacitor.Plugins (no bundler, no ES modules). */
+window.FN = window.FN || {};
+(function () {
+  var N = {};
+  function cap() { return window.Capacitor || null; }
+  N.isApp = function () {
+    var c = cap();
+    return !!(window.FN_APP_BUILD || (c && typeof c.isNativePlatform === 'function' && c.isNativePlatform()));
+  };
+  N.isNative = function () { var c = cap(); return !!(c && typeof c.isNativePlatform === 'function' && c.isNativePlatform()); };
+  N.plugin = function (name) { var c = cap(); return (c && c.Plugins && c.Plugins[name]) || null; };
+  function quiet(p) { if (p && typeof p.catch === 'function') p.catch(function () { }); return p; }
+
+  /* ---------- haptics: light taps on buttons, a happy buzz for wins ---------- */
+  var lastTap = 0;
+  N.haptic = function (kind) {
+    if (window.FN_TEST) return;
+    var H = N.plugin('Haptics');
+    try {
+      if (H) {
+        if (kind === 'success') quiet(H.notification({ type: 'SUCCESS' }));
+        else if (kind === 'warn') quiet(H.notification({ type: 'WARNING' }));
+        else if (kind === 'heavy') quiet(H.impact({ style: 'HEAVY' }));
+        else { var now = Date.now(); if (now - lastTap < 60) return; lastTap = now; quiet(H.impact({ style: 'LIGHT' })); }
+      } else if (navigator.vibrate && N.isApp()) {
+        navigator.vibrate(kind === 'success' ? [12, 40, 18] : kind === 'warn' ? 30 : 8);
+      }
+    } catch (e) { }
+  };
+
+  /* ---------- open an outside web page (only ever behind the parental gate) ---------- */
+  N.openUrl = function (url) {
+    var B = N.plugin('Browser');
+    if (B) return quiet(B.open({ url: url, presentationStyle: 'popover' }));
+    window.open(url, '_blank', 'noopener');
+  };
+
+  /* ---------- save a backup file: share sheet in the app, normal download on the web ---------- */
+  N.canShareFiles = function () { return !!(N.plugin('Filesystem') && N.plugin('Share')); };
+  N.shareFile = function (name, text) {
+    var FS = N.plugin('Filesystem'), SH = N.plugin('Share');
+    if (!FS || !SH) return null;
+    return FS.writeFile({ path: name, data: text, directory: 'CACHE', encoding: 'utf8' }).then(function (r) {
+      return SH.share({ title: name, dialogTitle: 'Save your backup', url: r.uri }).then(function () { return true; }, function () { return false; });
+    });
+  };
+
+  /* ---------- app start: status bar, launch screen, no-zoom, app styling ---------- */
+  N.init = function () {
+    if (!N.isApp()) return;
+    document.documentElement.classList.add('native-app');
+    var SB = N.plugin('StatusBar');
+    if (SB) { quiet(SB.setStyle({ style: 'DARK' })); }
+    // stop iOS from zooming the game on double-tap or pinch
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+    var lastTouch = 0;
+    document.addEventListener('touchend', function (e) {
+      var now = Date.now();
+      if (now - lastTouch < 300 && !(e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) e.preventDefault();
+      lastTouch = now;
+    }, { passive: false });
+  };
+  // hide the native launch screen once the first screen has drawn
+  N.ready = function () {
+    var SP = N.plugin('SplashScreen');
+    if (SP) setTimeout(function () { quiet(SP.hide({ fadeOutDuration: 300 })); }, 120);
+  };
+  FN.Native = N;
+})();
+
+/* ==== src/ui/store.js ==== */
+/* FN.Store (1.8.0) — free-to-try + one-time "Full Game" unlock for the App Store version.
+   Only active in the app build (FN.Config.PAYWALL true and running as the app). The web and double-click
+   versions are always fully unlocked. Purchases go straight through Apple (StoreKit) using the
+   @capgo/native-purchases plugin: no accounts, no servers, no third-party services.
+   The unlock is per device and Apple ID (Restore Purchase brings it back on a new device). */
+window.FN = window.FN || {};
+(function () {
+  var KEY = 'fromnothing_v1_fullgame';
+  var St = {
+    PRODUCT_ID: 'com.tenexglobal.pennytoplenty.fullgame',
+    FREE_DAYS: 10,
+    FALLBACK_PRICE: '$4.99',
+    price: null,
+    busy: false
+  };
+  function P() { return FN.Native && FN.Native.plugin('NativePurchases'); }
+  function get() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+  function set(v) { try { if (v) localStorage.setItem(KEY, '1'); else localStorage.removeItem(KEY); } catch (e) { } }
+
+  St.enabled = function () { return !!(FN.Config && FN.Config.PAYWALL) && !!(FN.Native && FN.Native.isApp()); };
+  St.unlocked = function () { return !St.enabled() || get(); };
+  St.freeDaysLeft = function (s) { return Math.max(0, St.FREE_DAYS - ((s && s.day) || 1)); };
+  // the free part is over when a player would start day FREE_DAYS + 1
+  St.locked = function (s) { return St.enabled() && !get() && s && s.day >= St.FREE_DAYS; };
+  St.priceText = function () { return St.price || St.FALLBACK_PRICE; };
+
+  function owns(list) {
+    return (list || []).some(function (t) { return t && t.productIdentifier === St.PRODUCT_ID && t.isActive !== false; });
+  }
+  // On launch: load the local price and check Apple for an existing purchase (quietly).
+  St.init = function (onChange) {
+    if (!St.enabled()) return;
+    var p = P(); if (!p) return;
+    p.getProducts({ productIdentifiers: [St.PRODUCT_ID], productType: 'inapp' }).then(function (r) {
+      var pr = r && r.products && r.products[0]; if (pr && pr.priceString) { St.price = pr.priceString; if (onChange) onChange(); }
+    }).catch(function () { });
+    p.getPurchases({ productType: 'inapp' }).then(function (r) {
+      if (owns(r && r.purchases) && !get()) { set(true); if (onChange) onChange(); }
+    }).catch(function () { });
+  };
+  // Returns a promise of {ok, msg}
+  St.buy = function () {
+    var p = P();
+    if (!p) {
+      if (window.FN_MOCK_STORE) { set(true); return Promise.resolve({ ok: true }); }
+      return Promise.resolve({ ok: false, msg: 'Purchases work in the App Store version of the game.' });
+    }
+    St.busy = true;
+    return p.purchaseProduct({ productIdentifier: St.PRODUCT_ID, productType: 'inapp', quantity: 1 }).then(function (t) {
+      St.busy = false;
+      if (t && (t.productIdentifier === St.PRODUCT_ID || t.transactionId)) { set(true); return { ok: true }; }
+      return { ok: false, msg: 'The purchase did not finish.' };
+    }, function (e) {
+      St.busy = false;
+      var m = String((e && (e.message || e.code)) || '');
+      if (/cancel/i.test(m)) return { ok: false, cancelled: true, msg: 'No problem, nothing was charged.' };
+      return { ok: false, msg: 'The App Store could not finish the purchase. Please try again.' };
+    });
+  };
+  St.restore = function () {
+    var p = P();
+    if (!p) {
+      if (window.FN_MOCK_STORE) return Promise.resolve({ ok: get(), msg: get() ? '' : 'No purchase found.' });
+      return Promise.resolve({ ok: false, msg: 'Restoring works in the App Store version of the game.' });
+    }
+    St.busy = true;
+    return p.restorePurchases().then(function () {
+      return p.getPurchases({ productType: 'inapp' });
+    }).then(function (r) {
+      St.busy = false;
+      if (owns(r && r.purchases)) { set(true); return { ok: true }; }
+      return { ok: false, msg: 'No Full Game purchase was found for this Apple ID.' };
+    }, function () { St.busy = false; return { ok: false, msg: 'The App Store could not be reached. Please try again.' }; });
+  };
+  St._set = set; // tests
+  FN.Store = St;
+})();
+
 /* ==== src/ui/app.js ==== */
 /* FN.App — screens, panels and input. All buttons use data-act="<action>" with one
    delegated click handler, so every visible button maps to a real action in ACTIONS. */
@@ -10361,6 +10648,7 @@ window.FN = window.FN || {};
 
   /* ---------------- toasts & modal ---------------- */
   function toast(msg, cls) {
+    if (FN.Native) FN.Native.haptic(cls === 'ach' ? 'success' : cls === 'err' ? 'warn' : '');
     var t = document.createElement('div'); t.className = 'toast ' + (cls || ''); t.textContent = msg;
     $('toasts').appendChild(t);
     setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 2800);
@@ -10393,7 +10681,9 @@ window.FN = window.FN || {};
     }).join('');
     cards += '<div class="pcard newcard"><div class="avatar plus">+</div><h2>New Player</h2><div class="sub">Start a brand-new life<br>with $0 and a tent</div><br>' + btn('newPlayer', null, '+ NEW PLAYER', 'big gold block') + '</div>';
     $('title-cards').innerHTML = cards;
-    var fb = $('title-feedback'); if (fb) fb.innerHTML = feedbackUrl() ? btn('feedback', null, '💬 Send feedback', 'small') : '';
+    var fb = $('title-feedback');
+    if (fb) fb.innerHTML = (FN.Store && FN.Store.enabled() ? (FN.Store.unlocked() ? '<span class="pill-ok">⭐ Full Game</span>' : btn('unlockInfo', null, '⭐ Unlock Full Game', 'small gold')) : '') +
+      (gateNeeded() ? (FN.Config.SUPPORT_URL ? btn('feedback', null, '💬 Help & contact', 'small') : '') : (feedbackUrl() ? btn('feedback', null, '💬 Send feedback', 'small') : ''));
     var tv = $('title-version'); if (tv) tv.textContent = 'Version ' + FN.Config.GAME_VERSION;
     renderNews();
   }
@@ -10475,32 +10765,37 @@ window.FN = window.FN || {};
   }
   function renderTop() {
     var s = A.s, w = C.WEATHER[s.weather.today] || {}, pl = C.PLACES[s.place];
-    var placeName = s.place === 'home' ? 'Home' : pl.name;
-    $('topbar').innerHTML = '<div class="tb-info">' +
-      '<span class="chip name" style="border-color:' + esc(S.look(s).color) + '">' + esc(s.name) + '</span>' +
-      '<span class="chip money" id="cash" title="Cash in your pocket">💵 ' + fmt(s.cash) + '</span>' +
-      '<span class="chip" title="Day and time">📅 Day ' + s.day + ' · ' + G.clockText(s.hour) + '</span>' +
-      '<span class="chip" title="Where you are">📍 ' + esc(placeName) + '</span>' +
-      '<span class="chip" title="Your home">🏠 ' + esc(C.HOMES[s.home].short) + '</span>' +
-      '<span class="chip" title="Weather today. Tomorrow: ' + esc((C.WEATHER[s.weather.tomorrow] || {}).name) + '">' + C.SEASONS[C.seasonOf(s.day)].icon + ' ' + (w.icon || '') + ' ' + esc(w.name || '') + '</span>' +
-      '<span class="chip" title="Energy">⚡ <span class="energy"><i style="width:' + s.energy + '%"></i></span></span>' +
-      (s.stage >= 5 && FN.Goals ? (function () { var rk = FN.Goals.rank(s); return '<span class="chip rank-chip" title="Your rank from Big Goals. ' + rk.total + ' goals reached. Open 🏠 My Home &amp; Me to see your Big Goals.">' + rk.icon + ' ' + esc(rk.name) + '</span>'; })()
-        : '<span class="chip" title="' + esc(C.STAGES[s.stage].goal) + '">⭐ Stage ' + s.stage + '<span class="wide-only">: ' + esc(C.STAGES[s.stage].name) + '</span></span>') +
-      '</div><div class="tb-actions">' +
-      (FN.Milestones.isUnlocked(s) ? btn('future', null, '🔮<span class="lbl"> SEE MY FUTURE</span>', 'gold small', false, 'See my future — 10 years later')
-        : btn('future', null, '🔒<span class="lbl"> SEE MY FUTURE</span> <span class="ms-count">' + FN.Milestones.count(s) + '/5</span>', 'small locked-future', false, 'Complete 5 milestones to unlock your future')) +
-      (G.sleepReason(s) ? btn('nextDay', null, '🌙<span class="lbl"> Bed at ' + G.clockText(C.BEDTIME) + '</span>', 'small bed-later', false, G.sleepReason(s)) : btn('nextDay', null, '🌙<span class="lbl"> Next Day</span>', 'primary small', false, 'Sleep and start the next day')) +
-      btn('saveGame', null, '💾<span class="lbl"> Save</span>', 'small save-btn', false, 'Save Game — saves your progress on this device' + (A.lastSaved ? ' (last saved ' + A.lastSaved + ')' : '')) +
-      btn('mute', null, A.muted ? '🔇' : '🔊', 'small', false, A.muted ? 'Sound off' : 'Sound on') + btn('gameMenu', null, '☰<span class="lbl"> Menu</span>', 'small', false, 'Menu') + '</div>';
+    var placeName = s.place === 'home' ? 'Home' : pl.name, look = S.look(s);
+    var e = Math.max(0, Math.min(100, Math.round(s.energy))), R = 15, CIRC = 2 * Math.PI * R;
+    var ring = '<svg class="ering" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="' + R + '" class="ering-bg"/><circle cx="18" cy="18" r="' + R + '" class="ering-fg" style="stroke-dasharray:' + CIRC.toFixed(1) + ';stroke-dashoffset:' + (CIRC * (1 - e / 100)).toFixed(1) + ';stroke:' + (e > 50 ? '#39c27a' : e > 20 ? '#f6c453' : '#ff6b6b') + '"/></svg><span class="ering-ic">⚡</span>';
+    var rank = s.stage >= 5 && FN.Goals ? FN.Goals.rank(s) : null;
+    var status = rank ? '<span class="tb-tag rank-chip" title="Your rank from Big Goals">' + rank.icon + ' ' + esc(rank.name) + '</span>'
+      : '<span class="tb-tag" title="' + esc(C.STAGES[s.stage].goal) + '">⭐ Stage ' + s.stage + '<span class="wide-only">: ' + esc(C.STAGES[s.stage].name) + '</span></span>';
+    $('topbar').innerHTML =
+      '<div class="tb-me"><span class="tb-avatar" style="background:' + esc(look.color) + '">' + esc(s.name.charAt(0).toUpperCase()) + '</span>' +
+        '<div class="tb-me-txt"><span class="tb-name">' + esc(s.name) + '</span><span class="tb-cash" id="cash" title="Cash in your pocket">' + fmt(s.cash) + '</span></div></div>' +
+      '<div class="tb-mid"><div class="tb-day">Day ' + s.day + '<span class="tb-clock"> · ' + G.clockText(s.hour) + '</span></div>' +
+        '<div class="tb-where"><span class="tb-clock2">' + G.clockText(s.hour) + '</span><span class="tb-place" title="Where you are">📍 ' + esc(placeName) + '</span><span class="tb-wx" title="Weather today. Tomorrow: ' + esc((C.WEATHER[s.weather.tomorrow] || {}).name) + '">' + C.SEASONS[C.seasonOf(s.day)].icon + (w.icon || '') + '<span class="wide-only"> ' + esc(w.name || '') + '</span></span>' +
+        '<span class="wide-only tb-home">🏠 ' + esc(C.HOMES[s.home].short) + '</span>' + status + '</div></div>' +
+      '<div class="tb-actions">' +
+        '<span class="tb-energy" title="Energy ' + e + '%">' + ring + '</span>' +
+        (FN.Milestones.isUnlocked(s) ? btn('future', null, '🔮<span class="lbl"> MY FUTURE</span>', 'gold small icon-btn', false, 'See my future — 10 years later')
+          : btn('future', null, '🔒<span class="ms-count">' + FN.Milestones.count(s) + '/5</span>', 'small icon-btn locked-future', false, 'Complete 5 milestones to unlock your future')) +
+        (G.sleepReason(s) ? btn('nextDay', null, '🌙<span class="lbl"> Bed at ' + G.clockText(C.BEDTIME) + '</span>', 'small icon-btn bed-later', false, G.sleepReason(s)) : btn('nextDay', null, '🌙<span class="lbl"> Next Day</span>', 'primary small icon-btn bed-now', false, 'Sleep and start the next day')) +
+        btn('saveGame', null, '💾', 'small icon-btn save-btn wide-btn', false, 'Save Game — saves your progress on this device' + (A.lastSaved ? ' (last saved ' + A.lastSaved + ')' : '')) +
+        btn('gameMenu', null, '☰', 'small icon-btn', false, 'Menu') + '</div>';
     FN.Effects.cashTick($('cash'), s.cash, fmt);
   }
+  /* 1.8.0: an app-style tab bar. "Play" closes any open page and goes back to the decision. */
   function renderNav() {
-    var items = [['money', '💵', 'My Money'], ['home', '🏠', 'My Home & Me'], ['business', '🏪', 'My Business'], ['map', '🗺️', 'World Map']];
+    var items = [[null, '🎮', 'Play'], ['money', '💵', 'Money'], ['home', '🏠', 'Me'], ['business', '🏪', 'Business'], ['map', '🗺️', 'Map']];
     $('sidenav').innerHTML = items.map(function (it) {
-      return '<button class="navbtn ' + (A.panel === it[0] ? 'on' : '') + '" data-act="panel" data-arg="' + it[0] + '"><span class="ic">' + it[1] + '</span>' + it[2] + '</button>';
-    }).join('') + (FN.Milestones.isUnlocked(A.s) ? '<button class="navbtn future" data-act="future"><span class="ic">🔮</span>My Future</button>'
-      : '<button class="navbtn future locked" data-act="future" title="Complete 5 milestones to unlock"><span class="ic">🔒</span>My Future <small>' + FN.Milestones.count(A.s) + '/5</small></button>');
+      var on = A.panel === it[0];
+      return '<button class="navbtn ' + (on ? 'on' : '') + '" data-act="' + (it[0] ? 'panel' : 'closePanel') + '"' + (it[0] ? ' data-arg="' + it[0] + '"' : '') + ' aria-label="' + it[2] + '"><span class="ic">' + it[1] + '</span><span class="nl">' + it[2] + '</span></button>';
+    }).join('') + (FN.Milestones.isUnlocked(A.s) ? '<button class="navbtn future" data-act="future"><span class="ic">🔮</span><span class="nl">Future</span></button>'
+      : '<button class="navbtn future locked" data-act="future" title="Complete 5 milestones to unlock"><span class="ic">🔒</span><span class="nl">Future <small>' + FN.Milestones.count(A.s) + '/5</small></span></button>');
   }
+
 
   // choice details say e.g. "· 2 hours"; show the real (scaled) time
   function scaleHours(str) {
@@ -10589,7 +10884,8 @@ window.FN = window.FN || {};
     if (!A.panel) { d.classList.add('hidden'); d.innerHTML = ''; return; }
     d.classList.remove('hidden');
     d.classList.toggle('wide', A.panel === 'map');
-    var html = btn('closePanel', null, '✕ Close', 'small close-x');
+    var titles = { money: '💵 My Money', home: '🏠 My Home & Me', business: '🏪 My Work & Business', map: '🗺️ World Map' };
+    var html = '<div class="sheet-head"><span class="sheet-title">' + esc(titles[A.panel] || '') + '</span>' + btn('closePanel', null, 'Done', 'small close-x') + '</div>';
     html += safe(function () { return PANELS[A.panel](A.s); }, '<p>Something went wrong showing this panel.</p>');
     var st = d.scrollTop; d.innerHTML = html; d.scrollTop = st;
   }
@@ -10855,6 +11151,7 @@ window.FN = window.FN || {};
   function showMorning(rep) {
     var s = A.s, w = C.WEATHER[s.weather.today], t = C.WEATHER[s.weather.tomorrow];
     var h = '<h2>☀️ Good morning! Day ' + s.day + '</h2><p>Today: <b>' + w.icon + ' ' + w.name + '</b> · Forecast for tomorrow: ' + t.icon + ' ' + t.name + ' · ' + esc(C.PHASES[s.economy.phase].name) + '</p>';
+    if (FN.Store && FN.Store.enabled() && !FN.Store.unlocked()) { var fl = FN.Store.freeDaysLeft(s); h += '<div class="free-days">🎁 ' + (fl > 0 ? 'Free days left: <b>' + fl + '</b>' : '<b>Last free day!</b>') + ' ' + btn('unlockInfo', null, 'Unlock Full Game', 'small gold') + '</div>'; }
     if (s.economy.changed) { h += '<div class="event">📰 <b>Economy news:</b> ' + (s.economy.changed === 'boom' ? 'Business is booming! Customers are spending more and investments tend to rise.' : s.economy.changed === 'slow' ? 'The economy is slowing down. Fewer customers, and investments may fall.' : 'The economy is back to normal.') + '</div>'; delete s.economy.changed; }
     h += '<h3>Overnight</h3><div class="lines">' + rep.lines.map(function (l) {
       return '<div><span>' + (l.icon || '') + ' ' + esc(l.text) + '</span>' + (l.amount !== null && l.amount !== undefined ? '<b class="' + (l.amount >= 0 ? 'good' : 'bad') + '">' + (l.amount >= 0 ? '+' : '') + fmt(l.amount) + '</b>' : '') + '</div>';
@@ -11054,6 +11351,9 @@ window.FN = window.FN || {};
   A.hotspot = hotspot;
 
   function download(data, name) {
+    if (FN.Native && FN.Native.canShareFiles()) {
+      return FN.Native.shareFile(name, data).then(function (ok) { if (ok) toast('✅ Backup ready: ' + name); return ok; }, function () { toast('⚠️ Could not save the backup file.', 'err'); return false; });
+    }
     if (window.claude && typeof window.claude.use === 'function') {
       return window.claude.use('downloads').then(function (d) {
         if (!d) { toast('⚠️ Downloads are not available here. Try the game file on your computer.', 'err'); return false; }
@@ -11076,10 +11376,48 @@ window.FN = window.FN || {};
       '<div class="gm-row"><div><b>💾 Save Game</b><div class="muted">Saves ' + esc(s.name) + '\'s progress <b>' + (FN.Cloud && FN.Cloud.ready ? 'to your account (online)' : 'on this device') + '</b> right now. (The game also saves automatically after every action.)' + (A.lastSaved ? ' Last saved at ' + A.lastSaved + '.' : '') + '</div></div>' + btn('saveGame', null, '💾 Save Game', 'green') + '</div>' +
       '<div class="gm-row"><div><b>⬇️ Export Backup</b><div class="muted">Downloads a <b>portable backup file</b> of ' + esc(s.name) + '\'s game, to keep safe or move to another computer.</div></div>' + btn('exportPlayer', null, '⬇️ Export Backup', 'primary') + '</div>' +
       '<div class="gm-row"><div><b>⬆️ Load Backup</b><div class="muted">Restores a backup file. It replaces only the player(s) inside that file.</div></div>' + btn('importInGame', null, '⬆️ Load Backup', '') + '</div>' +
+      (FN.Store && FN.Store.enabled() ? '<div class="gm-row"><div><b>⭐ Full Game</b><div class="muted">' + (FN.Store.unlocked() ? 'Unlocked on this device. Thank you!' : 'Free days left: ' + FN.Store.freeDaysLeft(s) + '. One-time purchase, no ads, no subscriptions.') + '</div></div><div class="row">' + (FN.Store.unlocked() ? '' : btn('unlockInfo', null, '⭐ Unlock', 'gold')) + btn('restoreFull', null, 'Restore Purchase', 'small') + '</div></div>' : '') +
       '<div class="gm-row"><div><b>🧮 Calculator</b><div class="muted">A pop-up calculator for money math. Close it any time with the ✕.</div></div>' + btn('calcOpen', null, '🧮 Open', 'gold') + '</div>' +
       '<input type="file" id="importFile" accept=".json,application/json" class="hidden">' +
-      '<div class="row" style="margin-top:14px">' + btn('help', null, '❓ How to play', 'small') + btn('muteMenu', null, A.muted ? '🔇 Sound: off' : '🔊 Sound: on', 'small') + btn('menu', null, '🏠 Back to title screen', 'small') + (feedbackUrl() ? btn('feedback', null, '💬 Send feedback', 'small') : '') + btn('closeModal', null, '▶ Keep playing', 'small gold') + '</div><p class="muted gm-version">Version ' + esc(FN.Config.GAME_VERSION) + '</p></div>');
+      '<div class="row" style="margin-top:14px">' + btn('help', null, '❓ How to play', 'small') + btn('muteMenu', null, A.muted ? '🔇 Sound: off' : '🔊 Sound: on', 'small') + btn('menu', null, '🏠 Back to title screen', 'small') + (gateNeeded() ? (FN.Config.SUPPORT_URL ? btn('feedback', null, '💬 Help & contact', 'small') : '') : (feedbackUrl() ? btn('feedback', null, '💬 Send feedback', 'small') : '')) + btn('closeModal', null, '▶ Keep playing', 'small gold') + '</div><p class="muted gm-version">Version ' + esc(FN.Config.GAME_VERSION) + '</p></div>');
   }
+
+  /* ---------------- 1.8.0: parental gate (App Store Kids rules) ---------------- */
+  // Anything that leaves the game, spends real money or handles files waits behind a grown-up check:
+  // tap three numbers that are written out in words. Easy for a reading adult, hard to guess for a young child.
+  var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  function gateNeeded() { return !!(FN.Native && FN.Native.isApp()); }
+  function gate(why, next) {
+    if (!gateNeeded()) { next(); return; }
+    var d = []; while (d.length < 3) { var n = 1 + Math.floor(Math.random() * 9); if (d.indexOf(n) < 0) d.push(n); }
+    A._gate = { digits: d, typed: [], next: next, why: why };
+    gateRender();
+  }
+  function gateRender(wrong) {
+    var g = A._gate; if (!g) return;
+    var pad = '';
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].forEach(function (n) { pad += '<button class="gate-key" data-act="gateKey" data-arg="' + n + '">' + n + '</button>'; });
+    modal('<div class="gate"><div class="gate-kicker">👋 FOR GROWN-UPS</div><h2>Ask a grown-up</h2><p class="muted">' + esc(g.why) + '</p>' +
+      '<p class="gate-ask">Tap these numbers in order:<br><b>' + g.digits.map(function (n) { return WORDS[n]; }).join(', ') + '</b></p>' +
+      '<div class="gate-dots">' + [0, 1, 2].map(function (i) { return '<i class="' + (i < g.typed.length ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+      (wrong ? '<div class="warn">That wasn\'t right. Here are new numbers.</div>' : '') +
+      '<div class="gate-pad">' + pad + '</div><div class="row" style="margin-top:12px;justify-content:center">' + btn('gateCancel', null, 'Cancel') + '</div></div>');
+  }
+  A.gate = gate;
+
+  /* ---------------- 1.8.0: free-to-try + Full Game unlock ---------------- */
+  function paywall(reason) {
+    var St = FN.Store, s = A.s;
+    modal('<div class="paywall"><div class="pw-hero">🌱 ➜ 🏡 ➜ 🏙️</div>' +
+      '<h2>' + (reason === 'end' ? 'Your free days are done!' : 'Penny to Plenty: Full Game') + '</h2>' +
+      (reason === 'end' ? '<p>' + esc(s ? s.name : 'You') + ' played the first ' + St.FREE_DAYS + ' days for free. Unlock the full game to keep building ' + (s ? 'their' : 'your') + ' future.</p>' : '<p>Unlock every day of the game, for every player on this device.</p>') +
+      '<ul class="pw-list"><li>🏪 Grow businesses all the way to franchises and factories</li><li>🎯 Big Goals and Ranks, from Penny Pincher to Legend</li><li>🔮 See My Future, 10 years later</li><li>🧠 Hundreds of real-life money choices and challenges</li></ul>' +
+      '<p class="pw-fine">One-time purchase of <b>' + esc(St.priceText()) + '</b>. No ads. No subscriptions. No data collected.</p>' +
+      btn('buyFull', null, '⭐ Unlock the Full Game · ' + esc(St.priceText()), 'big gold block') +
+      '<div class="row" style="margin-top:10px;justify-content:center">' + btn('restoreFull', null, 'Restore Purchase', 'small') + btn('closeModal', null, reason === 'end' ? 'Not now' : 'Close', 'small') + '</div></div>', false);
+  }
+  A.paywall = paywall;
+  function storeChanged() { if (A.screen === 'title') renderTitle(); else if (A.s) renderGame(); }
 
   /* ---------------- milestones: journey to the future ---------------- */
   function journeyModal() {
@@ -11160,16 +11498,20 @@ window.FN = window.FN || {};
     newsClose: function () { seenVersion(FN.Config.GAME_VERSION); renderNews(); },
     muteMenu: function () { ACTIONS.mute(); gameMenu(); },
     exportPlayer: function () {
+      if (gateNeeded() && !A._gateOk) { gate('This saves a backup file that can be shared or stored outside the game.', function () { A._gateOk = true; try { ACTIONS.exportPlayer(); } finally { A._gateOk = false; } }); return; }
       var r = S.saveChecked(A.s); // save first so the backup matches the game
       var data = S.exportPlayer(A.s);
       var p = download(data, 'PennyToPlenty-' + A.s.name + '-backup-' + new Date().toISOString().slice(0, 10) + '.json');
       if (!p || !p.then) toast('⬇️ ' + A.s.name + '\'s backup file downloaded' + (r.ok ? '' : ' (note: saving on this device failed — keep this file safe!)'));
     },
-    importInGame: function () { var f = $('importFile'); if (f) f.click(); },
+    importInGame: function () {
+      if (gateNeeded() && !A._gateOk) { gate('This loads a backup file from outside the game.', function () { gameMenu(); setTimeout(function () { var f = $('importFile'); if (f) f.click(); }, 50); }); return; }
+      var f = $('importFile'); if (f) f.click();
+    },
     introOk: function () { A.s.flags.seen_intro = true; S.save(A.s); closeModal(); },
     modalBack: function (arg, el, ev) { if (ev.target === el) closeModal(); },
     closeModal: function () { closeModal(); renderGame(); },
-    panel: function (p) { A.panel = A.panel === p ? null : p; renderGame(); },
+    panel: function (p) { A.panel = A.panel === p && !(FN.Native && FN.Native.isApp()) ? null : p; var d = $('drawer'); if (d) d.scrollTop = 0; renderGame(); },
     closePanel: function () { A.panel = null; renderGame(); },
     future: function () {
       if (!FN.Milestones.isUnlocked(A.s)) { journeyModal(); return; }
@@ -11186,6 +11528,7 @@ window.FN = window.FN || {};
     nextDay: function () {
       if (A.sleeping) return;
       var notYet = G.sleepReason(A.s); if (notYet) { toast('🌙 ' + notYet); return; }
+      if (FN.Store && FN.Store.locked(A.s)) { paywall('end'); return; }
       A.result = null; A.panel = null; A.sleeping = true;
       closeModal();
       FN.Effects.sleep(A.s.day + 1, function () {
@@ -11275,12 +11618,16 @@ window.FN = window.FN || {};
       milestoneNews(r);
     },
     exportSave: function () {
+      if (gateNeeded() && !A._gateOk) { gate('This saves a backup file that can be shared or stored outside the game.', function () { A._gateOk = true; try { ACTIONS.exportSave(); } finally { A._gateOk = false; } }); return; }
       if (A.s && A.screen === 'game') S.saveChecked(A.s);
       var data = S.exportAll();
       var p = download(data, 'PennyToPlenty-backup-' + new Date().toISOString().slice(0, 10) + '.json');
       if (!p || !p.then) toast('⬇️ Backup downloaded — check your Downloads folder');
     },
-    importSave: function () { var f = $('importFile'); if (f) f.click(); },
+    importSave: function () {
+      if (gateNeeded() && !A._gateOk) { gate('This loads a backup file from outside the game.', function () { ACTIONS.backup(); setTimeout(function () { var f = $('importFile'); if (f) f.click(); }, 50); }); return; }
+      var f = $('importFile'); if (f) f.click();
+    },
     removeAsk: function (id) { var n = esc(S.nameOf(id)); modal('<h2>⚠️ Remove ' + n + '?</h2><p>This deletes ' + n + '\'s player card and saved game from this device. It cannot be undone unless you have a backup file. Other players are not affected.</p><div class="row">' + btn('removeYes', id, 'Yes, remove ' + n, 'red') + btn('backup', null, 'Cancel') + '</div>'); },
     removeYes: function (id) { var n = S.nameOf(id); S.removeProfile(id); if (A.s && A.s.id === id) A.s = null; closeModal(); renderTitle(); show('title'); toast(n + ' was removed.'); },
     resetAsk: function (id) { modal('<h2>⚠️ Erase ' + esc(S.nameOf(id)) + '\'s game?</h2><p>This cannot be undone unless you have a backup file. Other players\' games are not affected.</p><div class="row">' + btn('resetYes', id, 'Yes, start ' + esc(S.nameOf(id)) + ' over', 'red') + btn('backup', null, 'Cancel') + '</div>'); },
@@ -11294,7 +11641,40 @@ window.FN = window.FN || {};
       if (!r.ok) { newPlayerModal(r.error); return; }
       A.np = null; closeModal(); A.start(r.profile.id);
     },
-    feedback: function () { var u = feedbackUrl(); if (u) window.open(u, '_blank', 'noopener'); },
+    feedback: function () {
+      var u = feedbackUrl();
+      if (gateNeeded()) { var sup = FN.Config.SUPPORT_URL; if (sup) gate('This opens our help & contact page in a web browser.', function () { closeModal(); FN.Native.openUrl(sup); }); return; }
+      if (u) window.open(u, '_blank', 'noopener');
+    },
+    gateKey: function (n) {
+      var g = A._gate; if (!g) return;
+      g.typed.push(+n);
+      if (g.typed.length < 3) { gateRender(); return; }
+      var ok = g.typed.join() === g.digits.join();
+      if (ok) { var nx = g.next; A._gate = null; closeModal(); nx(); }
+      else { if (FN.Native) FN.Native.haptic('warn'); var keep = g.next, why = g.why; A._gate = null; gate(why, keep); gateRender(true); }
+    },
+    gateCancel: function () { A._gate = null; closeModal(); },
+    unlockInfo: function () { paywall('info'); },
+    buyFull: function (arg, el) {
+      gate('This buys the Full Game from the App Store.', function () {
+        paywall('info');
+        var b = document.querySelector('#modal [data-act="buyFull"]'); if (b) { b.disabled = true; b.textContent = 'Talking to the App Store…'; }
+        FN.Store.buy().then(function (r) {
+          if (r.ok) { closeModal(); toast('🎉 Full Game unlocked! Thank you!', 'ach'); FN.Effects.confetti(160); storeChanged(); }
+          else { paywall('info'); if (r.msg) toast(r.cancelled ? r.msg : '⚠️ ' + r.msg, r.cancelled ? '' : 'err'); }
+        });
+      });
+    },
+    restoreFull: function () {
+      gate('This checks the App Store for a Full Game purchase.', function () {
+        toast('Checking the App Store…');
+        FN.Store.restore().then(function (r) {
+          if (r.ok) { closeModal(); toast('✅ Full Game restored!', 'ach'); storeChanged(); }
+          else toast('⚠️ ' + (r.msg || 'Nothing to restore.'), 'err');
+        });
+      });
+    },
   };
   A.ACTIONS = ACTIONS;
   function announce(r) { milestoneNews(r); announce0(r); }
@@ -11309,6 +11689,7 @@ window.FN = window.FN || {};
     if (!el || el.disabled) return;
     var act = el.getAttribute('data-act');
     var fn = ACTIONS[act];
+    if (FN.Native && act !== 'modalBack') FN.Native.haptic('tap');
     if (!fn) { if (window.console) console.warn('No action', act); return; }
     try { fn(el.getAttribute('data-arg'), el, ev); } catch (e) { if (window.console) console.error(e); toast('Oops — something went wrong. Your game is safe.'); }
   }
@@ -11411,7 +11792,10 @@ window.FN = window.FN || {};
         A.cmp[slot] = v; renderCompare();
       }
     });
+    if (FN.Native) FN.Native.init();
     renderTitle(); show('title');
+    if (FN.Native) FN.Native.ready();
+    if (FN.Store) FN.Store.init(storeChanged);
     FN.Cloud.init(function (changed) {
       if (A.screen === 'title') renderTitle();
       else if (A.s && changed.indexOf(A.s.id) >= 0) { A.start(A.s.id); toast('☁️ Loaded ' + A.s.name + '\'s newest save from your account.'); }
