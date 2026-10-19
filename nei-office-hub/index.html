@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta name="robots" content="noindex, nofollow"><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="NEI Projects"><meta name="theme-color" content="#0d0d0d"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"></head><body>
+<!doctype html><html lang="en"><head><meta name="robots" content="noindex, nofollow"><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="NEI Projects"><meta name="theme-color" content="#0d0d0d"><link rel="icon" type="image/png" sizes="64x64" href="favicon.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"></head><body>
 <title>NEI Office and Customer Projects</title>
 <meta name="description" content="Northeast International office and customer projects, test version">
 <link rel="manifest" href="manifest.webmanifest">
@@ -345,6 +345,13 @@ textarea{min-height:70px;resize:vertical}
 .who button{margin-left:6px}
 .syncdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-left:8px;vertical-align:1px}
 .syncdot.busy{background:var(--warn)}.syncdot.off{background:var(--red)}
+.hist summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;min-height:36px}
+.hist summary::-webkit-details-marker{display:none}
+.hist summary::before{content:"›";font-size:18px;line-height:1;transition:transform .15s}
+.hist[open] summary::before{transform:rotate(90deg)}
+.hlist{display:grid;gap:6px;max-height:240px;overflow:auto}
+.hi{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:7px 10px;background:var(--note);border-radius:8px}
+.hi .hw{flex:none;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);padding-top:2px}
 .empty-state{color:var(--muted);padding:24px;border:1px dashed var(--line);border-radius:12px;text-align:center}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}}
 </style>
@@ -635,10 +642,12 @@ function openSheet(p,isNew){
     <div class="field"><label class="flabel" for="fNext">Next action</label><input type="text" id="fNext" value="${esc(draft.next)}" placeholder="What has to happen next"></div>
     <div class="field"><label class="flabel" for="fFu">Follow up</label><div class="quick"><button type="button" data-q="1">Tomorrow</button><button type="button" data-q="3">3 days</button><button type="button" data-q="7">1 week</button><button type="button" data-q="14">2 weeks</button><button type="button" data-q="0">Clear</button></div><input type="date" id="fFu" value="${esc(draft.fu)}"></div>
     <div class="row2"><div class="field"><label class="flabel" for="fVendor">Factory / vendor</label><input type="text" id="fVendor" value="${esc(draft.vendor)}"></div><div class="field"><label class="flabel" for="fFolder">OneDrive link</label><input type="url" id="fFolder" value="${esc(draft.folder)}" placeholder="Paste folder link"></div></div>
+    ${isNew?"":`<details class="field hist" id="hist"><summary class="flabel">Change history</summary><div class="hlist" id="hlist">Loading…</div></details>`}
     <div class="actions"><button class="btn ghost" id="cancel">Cancel</button><button class="btn primary" id="saveBtn">${isNew?"Add project":"Save"}</button></div>
   </div>`;
   const host=$("#sheetHost");
   const live=()=>isNew?draft:state.projects.find(x=>x.id===draft.id);
+  if(!isNew) $("#hist").addEventListener("toggle",e=>{ if(e.target.open) loadHistory(draft.id); });
   // opening the project marks your tags as seen
   if(!isNew){ live().notes.forEach(m=>{ if(m.mentions.includes(state.me)&&!m.seen.includes(state.me)) m.seen.push(state.me); }); save(); render(); }
   const drawNotes=()=>{ const th=$("#thread"); const ms=live().notes;
@@ -683,6 +692,19 @@ function openSheet(p,isNew){
   };
 }
 
+/* change history: recorded by the database on every save */
+const H_LABEL={status:"status",waiting:"waiting on",next:"next action",fu:"follow-up",vendor:"factory / vendor",name:"product",customer:"customer",folder:"OneDrive link"};
+const hVal=(f,v)=>{ if(v==null||v==="") return "blank"; if(f==="waiting") return (LANE_LABEL[v]||v).replace("Waiting on ","").replace("Not waiting on anyone","nobody"); if(f==="fu") return fmt(v); if(f==="name") return split(v)[1]; return v; };
+async function loadHistory(id){
+  const el=$("#hlist"); if(!el) return;
+  const {data,error}=await sb.from("project_history").select("*").eq("project_id",id).order("at",{ascending:false}).limit(60);
+  if(!$("#hlist")) return;
+  if(error){ el.textContent="Couldn't load the history. Try again."; return; }
+  el.innerHTML=data.length?data.map(h=>{ const who=h.actor==="Automatic"?"Set automatically":esc(TEAM_LABEL[h.actor]||h.actor||"Someone");
+    const what=h.field==="created"?"created this project":h.field==="next"?`changed the next action to “${esc(h.new_value||"")}”`:`changed ${H_LABEL[h.field]||h.field} from ${esc(hVal(h.field,h.old_value))} to ${esc(hVal(h.field,h.new_value))}`;
+    return `<div class="hi"><span>${h.actor==="Automatic"?`<b>Follow-up set automatically</b> to ${esc(hVal("fu",h.new_value))} after the stage changed`:`<b>${who}</b> ${what}`}</span><span class="hw">${esc(whenTxt(h.at))}</span></div>`; }).join("")
+    :`<div class="hi" style="color:var(--muted)">No changes recorded yet. Changes made from now on show up here.</div>`;
+}
 function addCustomer(name,code,folder){
   name=String(name||"").trim(); if(!name) throw new Error("Customer name is empty");
   const ex=state.customers.find(c=>c.toLowerCase()===name.toLowerCase()); if(ex) return ex;
