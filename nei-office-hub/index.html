@@ -433,6 +433,11 @@ const split=n=>{ const m=n.match(/^(\d{4}-\d{2}-\d{2})\s+(.*)$/); return m?[m[1]
 const unseenFor=(p,who)=>p.notes.filter(m=>m.mentions.includes(who)&&!m.seen.includes(who)&&m.by!==who).length;
 const whenTxt=at=>{ if(!at) return "From tracker"; const d=new Date(at); const sameDay=d.toDateString()===new Date().toDateString(); const t=d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}); return sameDay?t:(d.getMonth()+1)+"/"+d.getDate()+" "+t; };
 const mentionHTML=t=>{ let h=esc(t); TEAM.forEach(n=>{ h=h.split("@"+esc(n)).join('<span class="mention">@'+esc(TEAM_LABEL[n])+'</span>'); }); return h; };
+// Tags work however the name is typed: @Kristin, @kristen, @Daniel G, @Glick, @Lapp D, @Lapp, @Patty
+const ALIAS=[["D Lapp",["lapp d","d lapp","lapp","daniel l"]],["D Glick",["daniel g","d glick","glick"]],["Kristen",["kristin","kristen"]],["Patty",["patty"]]];
+const normTags=t=>String(t||"").replace(/@([a-z][a-z.]*(?: [a-z]\b)?)/gi,(m,w)=>{
+  const tryK=x=>{ const k=x.toLowerCase().replace(/\.$/,""); const hit=ALIAS.find(([,a])=>a.includes(k)); return hit?"@"+hit[0]+(x.endsWith(".")?".":""):null; };
+  const full=tryK(w); if(full) return full; const sp=w.indexOf(" "); if(sp>0){ const first=tryK(w.slice(0,sp)); if(first) return first+w.slice(sp); } return m; });
 const parseMentions=t=>TEAM.filter(n=>t.includes("@"+n));
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 
@@ -575,7 +580,7 @@ function openReq(t,isNew){
   host.querySelectorAll(".chips").forEach(c=>c.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;c.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));d[c.dataset.f]=b.dataset.v;}));
   host.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>{$("#rDue").value=+b.dataset.q<0?"":plus(+b.dataset.q)}));
   $("#close").onclick=$("#scrim").onclick=close; if($("#cancel")) $("#cancel").onclick=close;
-  if($("#rComAdd")) $("#rComAdd").onclick=()=>{ const v=$("#rCom").value.trim(); if(!v) return; const live=state.office.tasks.find(x=>x.id===d.id); const c={by:state.me,at:new Date().toISOString(),text:v,mentions:parseMentions(v)}; live.comments.push(c); d.comments.push(c); save(); openReq(d,false); render(); if(c.mentions.length) toast("Tagged "+c.mentions.map(n=>TEAM_LABEL[n]).join(", ")); };
+  if($("#rComAdd")) $("#rComAdd").onclick=()=>{ const v=normTags($("#rCom").value.trim()); if(!v) return; const live=state.office.tasks.find(x=>x.id===d.id); const c={by:state.me,at:new Date().toISOString(),text:v,mentions:parseMentions(v)}; live.comments.push(c); d.comments.push(c); save(); openReq(d,false); render(); if(c.mentions.length) toast("Tagged "+c.mentions.map(n=>TEAM_LABEL[n]).join(", ")); };
   if($("#rDel")) $("#rDel").onclick=e=>{ const b=e.currentTarget; if(!b.classList.contains("arm")){ b.classList.add("arm"); b.textContent="Tap again to delete"; return; } state.office.tasks=state.office.tasks.filter(x=>x.id!==d.id); save(); close(); render(); toast("Request deleted"); };
   $("#rSave").onclick=()=>{ d.title=$("#rTitle").value.trim(); if(!d.title){ $("#rTitle").focus(); toast("Say what needs doing"); return; }
     d.due=$("#rDue").value; d.details=$("#rDet").value.trim(); delete d.ex;
@@ -637,7 +642,7 @@ function openSheet(p,isNew){
   // opening the project marks your tags as seen
   if(!isNew){ live().notes.forEach(m=>{ if(m.mentions.includes(state.me)&&!m.seen.includes(state.me)) m.seen.push(state.me); }); save(); render(); }
   const drawNotes=()=>{ const th=$("#thread"); const ms=live().notes;
-    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${m.img?`<img class="mimg" src="${m.img}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">✉ Email to ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:14px">No messages yet. Start the conversation below.</span>`;
+    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${m.img?`<img class="mimg" src="${m.img}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">Notified ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:14px">No messages yet. Start the conversation below.</span>`;
     th.scrollTop=th.scrollHeight; };
   drawNotes();
   const box=$("#fNote"), sug=$("#suggest");
@@ -646,7 +651,7 @@ function openSheet(p,isNew){
   const showPend=()=>{ pend.hidden=!pendImg; pend.innerHTML=pendImg?`<img src="${pendImg}" alt="Photo to send"><span>Photo ready to send</span><button type="button" id="rmPic">Remove</button>`:""; };
   $("#fPic").addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const k=Math.min(1,1000/Math.max(im.width,im.height)); const c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); pendImg=c.toDataURL("image/jpeg",0.72); showPend(); }; im.src=r.result; }; r.readAsDataURL(f); e.target.value=""; });
   pend.addEventListener("click",e=>{ if(e.target.id==="rmPic"){ pendImg=null; showPend(); } });
-  const sendMsg=()=>{ const t=box.value.trim(); if(!t&&!pendImg) return; const mentions=parseMentions(t);
+  const sendMsg=()=>{ const t=normTags(box.value.trim()); if(!t&&!pendImg) return; const mentions=parseMentions(t);
     live().notes.push({id:uid(),at:new Date().toISOString(),by:state.me,text:t,mentions,seen:[],...(pendImg?{img:pendImg}:{})});
     pendImg=null; showPend();
     if(!isNew) save();
@@ -771,7 +776,7 @@ const AI_TOOLS=[
   execute:({item,qty,link,note})=>{ const x={id:uid(),item:String(item),qty:Math.max(1,parseInt(qty)||1),by:state.me,got:false,link:String(link||""),note:String(note||"")}; state.office.supplies.push(x); save(); render(); aiLogChange(`Wish list: ${x.item} ×${x.qty}`,()=>{ state.office.supplies=state.office.supplies.filter(y=>y.id!==x.id); }); return "Added"; }},
  {name:"post_announcement",description:"Post an update on the office board for everyone.",
   inputSchema:{type:"object",properties:{text:{type:"string"}},required:["text"]},
-  execute:({text})=>{ const x={id:uid(),by:state.me,at:new Date().toISOString(),text:String(text),mentions:parseMentions(String(text))}; state.office.posts.push(x); save(); render(); aiLogChange("Posted to the office board",()=>{ state.office.posts=state.office.posts.filter(y=>y.id!==x.id); }); return "Posted"; }},
+  execute:({text})=>{ const x={id:uid(),by:state.me,at:new Date().toISOString(),text:normTags(String(text)),mentions:parseMentions(normTags(String(text)))}; state.office.posts.push(x); save(); render(); aiLogChange("Posted to the office board",()=>{ state.office.posts=state.office.posts.filter(y=>y.id!==x.id); }); return "Posted"; }},
 ];
 function openAI(){
   if($("#aiPanel")){ $("#aiPanel").remove(); return; }
@@ -830,7 +835,7 @@ document.addEventListener("click",e=>{
   const rs=e.target.closest("[data-rmsup]"); if(rs){ state.office.supplies=state.office.supplies.filter(y=>y.id!==rs.dataset.rmsup); save(); render(); return; }
   if(e.target.id==="clrGot"){ state.office.supplies=state.office.supplies.filter(y=>!y.got); save(); render(); toast("Cleared ordered items"); return; }
   if(e.target.id==="supAdd"){ const it=$("#supItem").value.trim(); if(!it){ $("#supItem").focus(); return; } state.office.supplies.push({id:uid(),item:it,qty:Math.max(1,parseInt($("#supQty").value)||1),by:state.me,got:false,link:$("#supLink").value.trim(),note:""}); save(); render(); $("#supItem").focus(); toast("Added to the wish list"); return; }
-  if(e.target.id==="postAdd"){ const v=$("#postBox").value.trim(); if(!v) return; const m=parseMentions(v); state.office.posts.push({id:uid(),by:state.me,at:new Date().toISOString(),text:v,mentions:m}); save(); render(); toast(m.length?"Posted and tagged "+m.map(n=>TEAM_LABEL[n]).join(", "):"Posted to the office board"); return; }
+  if(e.target.id==="postAdd"){ const v=normTags($("#postBox").value.trim()); if(!v) return; const m=parseMentions(v); state.office.posts.push({id:uid(),by:state.me,at:new Date().toISOString(),text:v,mentions:m}); save(); render(); toast(m.length?"Posted and tagged "+m.map(n=>TEAM_LABEL[n]).join(", "):"Posted to the office board"); return; }
   if(e.target.id==="add"&&state.view==="office"){ openReq({id:uid(),title:"",cat:"Office",to:"Anyone",from:state.me,due:"",status:"Open",details:"",comments:[]},true); return; }
   if(e.target.closest("#aiOpen")){ openAI(); return; }
   const ask=e.target.closest("[data-ask]"); if(ask){ askAI(ask.dataset.ask); return; }
@@ -877,7 +882,8 @@ async function doSync(){
   if(!last) return;
   const cur=toRows(); setDot("busy");
   for(const t of TABLES){ const k=PK[t]||"id"; const ups=cur[t].filter(r=>last[t].get(r[k])!==JSON.stringify(r));
-    if(ups.length){ const outgoing=ups.flatMap(r=>notices(t,r,last[t].get(r[k]))); const {error}=await sb.from(t).upsert(ups,{onConflict:k}); if(error) throw error; ups.forEach(r=>last[t].set(r[k],JSON.stringify(r))); outgoing.forEach(n=>{ if(!n.inAppOnly) sendNotice(n); addInApp(n); }); } }
+    // alerts (bell, phone, email) are created by the database when these rows save, so the page sends none itself
+    if(ups.length){ const {error}=await sb.from(t).upsert(ups,{onConflict:k}); if(error) throw error; ups.forEach(r=>last[t].set(r[k],JSON.stringify(r))); } }
   for(const t of [...TABLES].reverse()){ const k=PK[t]||"id"; const ids=new Set(cur[t].map(r=>r[k])); const del=[...last[t].keys()].filter(x=>!ids.has(x));
     if(del.length){ const {error}=await sb.from(t).delete().in(k,del); if(error) throw error; del.forEach(x=>last[t].delete(x)); } }
   setDot("");
