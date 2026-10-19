@@ -388,8 +388,10 @@ textarea{min-height:70px;resize:vertical}
     <div class="llogo"><img id="lLogo" alt="Northeast International"></div>
     <h1 id="lTitle">Sign in</h1>
     <p id="lMsg">Use your Northeast email.</p>
-    <label for="lEmail">Email<input type="email" id="lEmail" autocomplete="username" required></label>
-    <label for="lPass">Password<input type="password" id="lPass" autocomplete="current-password" minlength="6" required></label>
+    <label for="lEmail" id="lEmailL">Email<input type="email" id="lEmail" autocomplete="username" required></label>
+    <label for="lPass"><span id="lPassT">Password</span><input type="password" id="lPass" autocomplete="current-password" minlength="6" required></label>
+    <label for="lPass2" id="lPass2L" hidden>Confirm new password<input type="password" id="lPass2" autocomplete="new-password" minlength="8"></label>
+    <button class="linkbtn" id="lForgot" type="button" style="justify-self:end;margin-top:-6px">Forgot password?</button>
     <button class="btn ms" id="lMs" type="button" hidden><svg viewBox="0 0 21 21" width="18" height="18" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>Sign in with Microsoft</button>
     <div class="lor" id="lOr" hidden><span>or use email and password</span></div>
     <button class="btn primary" id="lGo" type="submit">Sign in</button>
@@ -883,6 +885,10 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#lb")) $("#
 /* ---------- Supabase: login, shared data, live updates ---------- */
 const SB_URL="https://regdgwfnrtznyfmxtwqu.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlZ2Rnd2ZucnR6bnlmbXh0d3F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NDg0OTIsImV4cCI6MjEwNzUyNDQ5Mn0.cIhT4-LMiMbGtz9HbVJCwUrI1deZSFYXq9y6c3NFRug";
+// Read the link type before supabase-js consumes the URL hash (password reset emails land here with type=recovery)
+const URL_HASH=new URLSearchParams(location.hash.slice(1));
+let inReset=URL_HASH.get("type")==="recovery";
+const LINK_ERR=URL_HASH.get("error_description")||URL_HASH.get("error")||"";
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 const TABLES=["customers","projects","messages","office_tasks","supplies","posts"];
 const PK={customers:"name"};
@@ -1112,17 +1118,38 @@ let lMode="in";
 if(MS_LOGIN){ $("#lMs").hidden=false; $("#lOr").hidden=false; }
 $("#lMs").onclick=async()=>{ const {error}=await sb.auth.signInWithOAuth({provider:"azure",options:{scopes:"email",redirectTo:location.origin+location.pathname}}); if(error) showLogin("Microsoft sign-in isn't available right now. Use email and password.",true); };
 function showLogin(msg,err){ $("#lLogo").src=document.querySelector(".mark img").src; $("#login").hidden=false; if(msg){ $("#lMsg").textContent=msg; $("#lMsg").className=err?"err":""; } }
-function setMode(m){ lMode=m; $("#lTitle").textContent=m==="in"?"Sign in":"Create your login"; $("#lGo").textContent=m==="in"?"Sign in":"Create login"; $("#lMode").textContent=m==="in"?"First time here? Create your login":"Already have a login? Sign in"; $("#lPass").autocomplete=m==="in"?"current-password":"new-password"; $("#lMsg").className=""; $("#lMsg").textContent=m==="in"?"Use your Northeast email.":"Use your Northeast email and pick a password (6+ characters)."; }
+function goLabel(){ return lMode==="in"?"Sign in":lMode==="reset"?"Save password":"Create login"; }
+function setMode(m){ lMode=m; const r=m==="reset";
+  $("#lEmailL").hidden=r; $("#lEmail").required=!r; $("#lPass2L").hidden=!r; $("#lPass2").required=r; $("#lPass").minLength=r?8:6; $("#lPassT").textContent=r?"New password":"Password";
+  $("#lForgot").hidden=m!=="in"; $("#lMode").hidden=r; $("#lMs").hidden=r||!MS_LOGIN; $("#lOr").hidden=r||!MS_LOGIN;
+  if(r){ $("#lTitle").textContent="Set a new password"; $("#lGo").textContent=goLabel(); $("#lPass").autocomplete="new-password"; $("#lPass").value=""; $("#lPass2").value=""; $("#lMsg").className=""; $("#lMsg").textContent="Pick a new password (8+ characters)."; return; }
+  $("#lTitle").textContent=m==="in"?"Sign in":"Create your login"; $("#lGo").textContent=m==="in"?"Sign in":"Create login"; $("#lMode").textContent=m==="in"?"First time here? Create your login":"Already have a login? Sign in"; $("#lPass").autocomplete=m==="in"?"current-password":"new-password"; $("#lMsg").className=""; $("#lMsg").textContent=m==="in"?"Use your Northeast email.":"Use your Northeast email and pick a password (6+ characters)."; }
 $("#lMode").onclick=()=>setMode(lMode==="in"?"up":"in");
+function cleanUrl(){ if(location.href.includes("#")||location.search) history.replaceState(null,"",location.pathname); }
+function startReset(){ inReset=true; setMode("reset"); showLogin(); }
+sb.auth.onAuthStateChange(ev=>{ if(ev==="PASSWORD_RECOVERY") startReset(); });
+$("#lForgot").onclick=async()=>{ const em=$("#lEmail"), email=em.value.trim();
+  if(!email||!em.checkValidity()){ showLogin("Type your email above, then tap Forgot password.",true); em.focus(); return; }
+  const b=$("#lForgot"); b.disabled=true;
+  try{ const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}); if(error) throw error;
+    showLogin("Check your email for a reset link. It may land in junk."); }
+  catch(err){ const m=String(err.message||err); showLogin(err.status===429||/rate limit|too many|seconds/i.test(m)?"Too many reset requests. Wait a few minutes, then try again.":"Couldn't send the reset email. Check the address and try again.",true); }
+  finally{ b.disabled=false; } };
 $("#lForm").addEventListener("submit",async e=>{ e.preventDefault(); const email=$("#lEmail").value.trim(), password=$("#lPass").value;
+  if(lMode==="reset"){ const p2=$("#lPass2").value;
+    if(password.length<8){ showLogin("Use at least 8 characters.",true); return; }
+    if(password!==p2){ showLogin("Those passwords don't match.",true); return; } }
   $("#lGo").disabled=true; $("#lGo").textContent="One moment...";
   try{
+    if(lMode==="reset"){ const {error}=await sb.auth.updateUser({password}); if(error) throw error;
+      inReset=false; cleanUrl(); setMode("in"); showLogin("Password updated. Signing you in..."); toast("Password updated");
+      await afterLogin(); return; }
     if(lMode==="up"){ const {data,error}=await sb.auth.signUp({email,password}); if(error) throw error;
       if(!data.session){ showLogin("Your login was created, but Supabase is asking to confirm the email first. Ask Lapp D to turn off email confirmation, then sign in.",true); setMode("in"); return; } }
     else { const {error}=await sb.auth.signInWithPassword({email,password}); if(error) throw error; }
     await afterLogin();
-  }catch(err){ const m=String(err.message||err); showLogin(/Invalid login/i.test(m)?"That email and password don't match. First time? Tap Create your login.":/already registered/i.test(m)?"You already have a login. Sign in instead.":m,true); }
-  finally{ $("#lGo").disabled=false; $("#lGo").textContent=lMode==="in"?"Sign in":"Create login"; }
+  }catch(err){ const m=String(err.message||err); if(lMode==="reset"){ showLogin(/session|expired|jwt/i.test(m)?"That reset link has expired. Close this and tap Forgot password again.":/different from the old/i.test(m)?"Pick a password different from your old one.":m,true); return; } showLogin(/Invalid login/i.test(m)?"That email and password don't match. First time? Tap Create your login.":/already registered/i.test(m)?"You already have a login. Sign in instead.":m,true); }
+  finally{ $("#lGo").disabled=false; $("#lGo").textContent=goLabel(); }
 });
 async function afterLogin(){
   const {data:me,error}=await sb.rpc("my_member");
@@ -1133,7 +1160,10 @@ async function afterLogin(){
   loadNotifs(); subscribe(); syncPushOnLogin();
 }
 document.addEventListener("click",async e=>{ if(e.target.id==="signOut"){ try{ if(pushSub){ const ep=pushSub.endpoint; await pushSub.unsubscribe(); await sb.from("push_subs").delete().eq("endpoint",ep); } }catch(err){} await sb.auth.signOut(); location.reload(); } });
-(async()=>{ render(); const {data:{session}}=await sb.auth.getSession(); if(session) await afterLogin(); else showLogin(); })();
+(async()=>{ render(); const {data:{session}}=await sb.auth.getSession();
+  if(inReset&&session){ startReset(); cleanUrl(); return; } // came from a reset email: ask for the new password before opening the app
+  if(inReset||LINK_ERR){ inReset=false; cleanUrl(); }
+  if(session) await afterLogin(); else if(LINK_ERR) showLogin("That reset link has expired or was already used. Type your email and tap Forgot password to get a new one.",true); else showLogin(); })();
 </script>
 
 </body></html>
