@@ -77,6 +77,9 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .clear{background:var(--chip);border:0;border-radius:999px;padding:7px 12px;min-height:36px;font-weight:500;font-size:13px}
 
 .group h2{font-family:var(--f-display);font-weight:600;font-size:20px;text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;display:flex;align-items:baseline;gap:10px}
+.orders-break{display:flex;align-items:center;gap:12px;margin:8px 0 2px;font-family:var(--f-display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink)}
+.orders-break::after{content:"";flex:1;height:2px;background:var(--red);opacity:.7}
+.orders-break b{font-family:var(--f-mono);font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
 .group h2 span{font-family:var(--f-mono);font-size:13px;color:var(--muted);letter-spacing:0}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:left;display:grid;gap:10px;min-width:0;align-content:start}
@@ -300,8 +303,13 @@ textarea{min-height:70px;resize:vertical}
 .sup{display:flex;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);min-height:52px}
 .sup:last-child{border-bottom:0}
 .sup .chk{width:26px;height:26px;font-size:13px}
-.sup.got .chk{background:var(--ok);border-color:var(--ok);color:#fff}
-.sup.got .s-name{text-decoration:line-through;color:var(--muted)}
+.sup .steps2{display:flex;gap:6px;flex:none}
+.sup .stp{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;padding:0 2px;font-size:10px;font-weight:600;color:var(--muted);min-width:52px;cursor:pointer}
+.sup .stp .chk{pointer-events:none}
+.sup .stp.on .chk{background:var(--ok);border-color:var(--ok);color:#fff}
+.sup .stp.on{color:var(--ok)}
+.sup.dlv .s-name{text-decoration:line-through;color:var(--muted)}
+.sup.dlv{opacity:.7}
 .s-main{flex:1;min-width:0;display:grid}
 .s-name{font-weight:500;overflow-wrap:anywhere}
 .s-by{font-size:12px;color:var(--muted)}
@@ -505,6 +513,9 @@ function renderGroups(){
   } else {
     const f=TABS.find(t=>t[0]===state.tab)[2]; ps=ps.filter(p=>f(p.status));
   }
+  // In progress keeps going: open orders follow below the waiting groups, so one scroll shows everything still open
+  let orders=[];
+  if(!tileFilter&&state.tab==="progress"){ const fo=TABS.find(t=>t[0]==="ordered")[2]; orders=scoped().slice().sort((a,b)=>a.name.localeCompare(b.name)).filter(p=>fo(p.status)); }
   const showCust=!custFilter;
   const archive=!tileFilter&&(state.tab==="completed"||state.tab==="dead");
   let gb=state.groupBy; if(archive&&gb==="waiting") gb="customer";
@@ -514,8 +525,13 @@ function renderGroups(){
   else groups=STAGE_GROUPS.map(([l,ss])=>[l,ps.filter(p=>ss.includes(p.status))]);
   const sc=gb!=="customer"&&showCust;
   const emptyMsg={progress:"Nothing in progress here.",ordered:"No open orders here.",completed:"No completed projects yet. Set a project to Delivered or Completed and it lands here.",dead:"No dead projects. Set a project to Dead and it moves here."}[state.tab];
-  $("#groups").innerHTML=groups.filter(g=>g[1].length).map(([l,g])=>`<section class="group"><h2>${esc(l)}<span>${g.length}</span></h2><div class="cards">${g.map(p=>cardHTML(p,sc)).join("")}</div></section>`).join("")
-    ||`<div class="empty-state">${tileFilter||query?"Nothing matches. Tap Clear filters.":emptyMsg}</div>`;
+  const grp=([l,g])=>`<section class="group"><h2>${esc(l)}<span>${g.length}</span></h2><div class="cards">${g.map(p=>cardHTML(p,sc)).join("")}</div></section>`;
+  let html=groups.filter(g=>g[1].length).map(grp).join("");
+  if(orders.length){
+    const og=gb==="customer"?state.customers.map(c=>["Ordered · "+c,orders.filter(p=>p.customer===c)]):STAGE_GROUPS.filter(([,ss])=>ss.some(x=>OPEN_ORDER.includes(x))).map(([l,ss])=>["Ordered · "+l.toLowerCase(),orders.filter(p=>ss.includes(p.status))]);
+    html+=`<div class="orders-break"><span>Ordered</span><b>${orders.length}</b></div>`+og.filter(g=>g[1].length).map(grp).join("");
+  }
+  $("#groups").innerHTML=html||`<div class="empty-state">${tileFilter||query?"Nothing matches. Tap Clear filters.":emptyMsg}</div>`;
 }
 function renderWho(){ $("#who").innerHTML=state.me?`<span class="syncdot" id="syncdot" title="Synced"></span> Signed in as <b style="color:var(--ink)">${esc(TEAM_LABEL[state.me])}</b> <button id="signOut">Sign out</button>`:""; }
 function renderView(){
@@ -545,7 +561,7 @@ function renderOffice(){
   const gl=[["mine","Projects waiting on you",lane?open.filter(p=>p.waiting===lane).length:0,false],["tagged","Projects you're tagged in",open.filter(p=>unseenFor(p,me)).length,true],["late","Overdue follow-ups",open.filter(isLate).length,true],["orders","Open orders",open.filter(p=>OPEN_ORDER.includes(p.status)).length,false]];
   const cats=["All",...OCATS];
   const shown=O.tasks.filter(t=>officeCat==="All"||t.cat===officeCat).sort((a,b)=>(a.status==="Done")-(b.status==="Done")||byDue(a,b));
-  const need=O.supplies.filter(x=>!x.got).length;
+  const need=O.supplies.filter(x=>!x.got).length, onOrder=O.supplies.filter(x=>x.got&&!x.dlv).length;
   $("#officeView").innerHTML=`
   <section class="o-hello"><div><h1>${greet}, ${esc(TEAM_LABEL[me]||"")}</h1><p>${TODAY.toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"})} · Here's what's going on in the office.</p></div></section>
   <div class="o-grid">
@@ -559,10 +575,10 @@ function renderOffice(){
     <div class="o-col">
       <section class="panel"><div class="ph"><h2>Projects at a glance</h2></div>
         <div class="glance">${gl.map(([k,l,n,a])=>`<button class="gl ${a&&n?"alert":""} ${n?"":"zero"}" data-glance="${k}"><span class="n">${n}</span><span class="l">${l}</span></button>`).join("")}</div></section>
-      <section class="panel"><div class="ph"><h2>Supply wish list<span>${need} needed</span></h2>${O.supplies.some(x=>x.got)?`<button class="linkbtn" id="clrGot">Clear ordered</button>`:""}</div>
+      <section class="panel" id="supPanel"><div class="ph"><h2>Supply wish list<span>${need} needed${onOrder?` · ${onOrder} on order`:""}</span></h2>${O.supplies.some(x=>x.dlv)?`<button class="linkbtn" id="clrGot">Clear delivered</button>`:""}</div>
         <div class="supadd"><div class="addrow"><input type="text" id="supItem" placeholder="Add an item" aria-label="Item"><input type="number" id="supQty" value="1" min="1" aria-label="Quantity"><button type="button" id="supAdd">Add</button></div>
         <input type="url" id="supLink" placeholder="Link (Amazon, Staples...) optional" aria-label="Link"></div>
-        <div class="sups">${O.supplies.map(x=>`<div class="sup ${x.got?"got":""}"><button class="chk" data-got="${x.id}" aria-label="${x.got?"Mark needed":"Mark ordered"}">✓</button><div class="s-main"><span class="s-name" data-esup="${x.id}">${esc(x.item)}${x.ex?'<span class="ex">Example</span>':""}</span><span class="s-sub"><span>Added by ${esc(TEAM_LABEL[x.by]||x.by)}${x.got?" · ordered":""}</span>${x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener">Open link ↗</a>`:""}<button class="linkbtn" style="padding:0;font-size:12px" data-esup="${x.id}">${x.note?"Edit":"Add note"}</button></span>${x.note?`<span class="s-note">${esc(x.note)}</span>`:""}</div><span class="s-qty">×${x.qty}</span><button class="s-x" data-rmsup="${x.id}" aria-label="Remove">×</button></div>`).join("")||`<div class="empty-state">The list is empty.</div>`}</div></section>
+        <div class="sups">${O.supplies.map(x=>`<div class="sup ${x.got?"got":""} ${x.dlv?"dlv":""}"><div class="s-main"><span class="s-name" data-esup="${x.id}">${esc(x.item)}${x.ex?'<span class="ex">Example</span>':""}</span><span class="s-sub"><span>Added by ${esc(TEAM_LABEL[x.by]||x.by)}${x.dlv?" · delivered":x.got?" · ordered":""}</span>${x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener">Open link ↗</a>`:""}<button class="linkbtn" style="padding:0;font-size:12px" data-esup="${x.id}">${x.note?"Edit":"Add note"}</button></span>${x.note?`<span class="s-note">${esc(x.note)}</span>`:""}</div><span class="s-qty">×${x.qty}</span><span class="steps2"><button class="stp ${x.got?"on":""}" data-got="${x.id}" aria-label="${x.got?"Unmark ordered":"Mark ordered"}"><span class="chk">✓</span>Ordered</button><button class="stp ${x.dlv?"on":""}" data-dlv="${x.id}" aria-label="${x.dlv?"Unmark delivered":"Mark delivered"}"><span class="chk">✓</span>Delivered</button></span><button class="s-x" data-rmsup="${x.id}" aria-label="Remove">×</button></div>`).join("")||`<div class="empty-state">The list is empty.</div>`}</div></section>
       <section class="panel"><div class="ph"><h2>Office board</h2><span class="note">Updates for everyone</span></div>
         <div class="cbox"><textarea id="postBox" placeholder="Post an update for the office. Type @ to tag someone."></textarea><button type="button" class="send" id="postAdd">Post</button></div>
         <div class="posts">${O.posts.slice().reverse().map(x=>`<div class="post"><span class="avt ${x.by===me?"me":""}">${avIni(x.by)}</span><div class="pb"><span class="pm"><b>${esc(TEAM_LABEL[x.by])}</b> · ${esc(whenTxt(x.at))}</span><span class="pt">${mentionHTML(x.text)}</span></div></div>`).join("")||`<div style="color:var(--muted);font-size:14px">No posts yet. Closed early Friday? Vendor visit tomorrow? Post it here.</div>`}</div></section>
@@ -743,7 +759,7 @@ ${JSON.stringify(state.projects.map(compact))}
 
 The app has two sections: Customer Projects (the projects above) and Office Projects, which everyone checks each morning. Office Projects holds office requests (tasks anyone can assign to a teammate, e.g. booking travel or placing a Staples order), a supply wish list, and an office board for announcements.
 Office requests (JSON): ${JSON.stringify(state.office.tasks.map(t=>({id:t.id,title:t.title,type:t.cat,assignedTo:t.to==="Anyone"?"Anyone":TEAM_LABEL[t.to],from:TEAM_LABEL[t.from],due:t.due||null,status:t.status,details:t.details})))}
-Supply wish list (JSON): ${JSON.stringify(state.office.supplies.map(x=>({id:x.id,item:x.item,qty:x.qty,addedBy:TEAM_LABEL[x.by],ordered:x.got,link:x.link||null,note:x.note||null})))}`;
+Supply wish list (JSON): ${JSON.stringify(state.office.supplies.map(x=>({id:x.id,item:x.item,qty:x.qty,addedBy:TEAM_LABEL[x.by],ordered:x.got,delivered:!!x.dlv,link:x.link||null,note:x.note||null})))}`;
 }
 let aiUndo=[];
 function aiLogChange(desc,undo){ const id=uid(); aiUndo.push({id,undo}); const log=$("#aiLog"); if(log){ log.insertAdjacentHTML("beforeend",`<div class="ai-act" data-act="${id}"><span>✓ ${esc(desc)}</span><button type="button" data-undo="${id}">Undo</button></div>`); log.scrollTop=log.scrollHeight; } }
@@ -854,10 +870,11 @@ document.addEventListener("click",e=>{
   const gl=e.target.closest("[data-glance]"); if(gl){ const k=gl.dataset.glance; state.view="projects"; custFilter=null; query="";
     if(k==="mine"){ const ln=LANE_OF[state.me]; tileFilter=ln?"w:"+ln:null; } else if(k==="orders"){ tileFilter=null; state.tab="ordered"; } else tileFilter=k;
     save(); render(); window.scrollTo(0,0); return; }
-  const gt=e.target.closest("[data-got]"); if(gt){ const x=state.office.supplies.find(y=>y.id===gt.dataset.got); x.got=!x.got; save(); render(); return; }
+  const gt=e.target.closest("[data-got]"); if(gt){ const x=state.office.supplies.find(y=>y.id===gt.dataset.got); x.got=!x.got; if(!x.got) x.dlv=false; save(); render(); toast(x.got?"Marked ordered":"Marked needed"); return; }
+  const dv=e.target.closest("[data-dlv]"); if(dv){ const x=state.office.supplies.find(y=>y.id===dv.dataset.dlv); x.dlv=!x.dlv; if(x.dlv) x.got=true; save(); render(); toast(x.dlv?"Delivered, crossed off":"Marked not delivered"); return; }
   const es=e.target.closest("[data-esup]"); if(es){ openSup(state.office.supplies.find(y=>y.id===es.dataset.esup)); return; }
   const rs=e.target.closest("[data-rmsup]"); if(rs){ state.office.supplies=state.office.supplies.filter(y=>y.id!==rs.dataset.rmsup); save(); render(); return; }
-  if(e.target.id==="clrGot"){ state.office.supplies=state.office.supplies.filter(y=>!y.got); save(); render(); toast("Cleared ordered items"); return; }
+  if(e.target.id==="clrGot"){ state.office.supplies=state.office.supplies.filter(y=>!y.dlv); save(); render(); toast("Cleared delivered items"); return; }
   if(e.target.id==="supAdd"){ const it=$("#supItem").value.trim(); if(!it){ $("#supItem").focus(); return; } state.office.supplies.push({id:uid(),item:it,qty:Math.max(1,parseInt($("#supQty").value)||1),by:state.me,got:false,link:$("#supLink").value.trim(),note:""}); save(); render(); $("#supItem").focus(); toast("Added to the wish list"); return; }
   if(e.target.id==="postAdd"){ const v=normTags($("#postBox").value.trim()); if(!v) return; const m=parseMentions(v); state.office.posts.push({id:uid(),by:state.me,at:new Date().toISOString(),text:v,mentions:m}); save(); render(); toast(m.length?"Posted and tagged "+m.map(n=>TEAM_LABEL[n]).join(", "):"Posted to the office board"); return; }
   if(e.target.id==="add"&&state.view==="office"){ openReq({id:uid(),title:"",cat:"Office",to:"Anyone",from:state.me,due:"",status:"Open",details:"",comments:[]},true); return; }
@@ -900,7 +917,7 @@ function toRows(){
     projects:P.map(p=>({id:p.id,customer:p.customer,name:p.name,vendor:p.vendor||"",status:p.status,waiting:p.waiting,next:p.next||"",fu:p.fu||null,folder:p.folder||"",steps:p.steps||{}})),
     messages:P.flatMap(p=>p.notes.map(m=>({id:m.id,project_id:p.id,author:m.by||"",at:m.at||null,body:m.text||"",mentions:m.mentions||[],seen:m.seen||[],img:m.img||null}))),
     office_tasks:state.office.tasks.map(t=>({id:t.id,title:t.title,cat:t.cat,assigned_to:t.to,assigned_by:t.from||"",due:t.due||null,status:t.status,details:t.details||"",comments:t.comments||[]})),
-    supplies:state.office.supplies.map(x=>({id:x.id,item:x.item,qty:x.qty||1,added_by:x.by||"",got:!!x.got,link:x.link||"",note:x.note||""})),
+    supplies:state.office.supplies.map(x=>({id:x.id,item:x.item,qty:x.qty||1,added_by:x.by||"",got:!!x.got,delivered:!!x.dlv,link:x.link||"",note:x.note||""})),
     posts:state.office.posts.map(x=>({id:x.id,author:x.by,at:x.at,body:x.text,mentions:x.mentions||[]}))
   };
 }
@@ -1088,6 +1105,7 @@ function openAnchor(h){
   if(!h) return false;
   if(h.startsWith("p-")){ const p=state.projects.find(x=>x.id===h.slice(2)); if(p){ state.view="projects"; render(); openSheet(p); return true; } }
   else if(h.startsWith("r-")){ const t=state.office.tasks.find(x=>x.id===h.slice(2)); if(t){ state.view="office"; render(); openReq(t,false); return true; } }
+  else if(h==="supplies"){ state.view="office"; render(); const b=document.getElementById("supPanel"); if(b) b.scrollIntoView({behavior:"smooth",block:"start"}); return true; }
   else if(h==="board"){ state.view="office"; render(); const b=document.getElementById("postBox"); if(b) b.scrollIntoView({behavior:"smooth",block:"center"}); return true; }
   return false;
 }
@@ -1100,7 +1118,7 @@ async function loadAll(){
   state.projects=p.map(r=>byId[r.id]={id:r.id,customer:r.customer,name:r.name,vendor:r.vendor,status:r.status,waiting:r.waiting,next:r.next,fu:r.fu||"",folder:r.folder,steps:r.steps||{},notes:[]});
   m.forEach(r=>{ const pr=byId[r.project_id]; if(pr) pr.notes.push({id:r.id,at:r.at||"",by:r.author,text:r.body,mentions:r.mentions||[],seen:r.seen||[],...(r.img?{img:r.img}:{})}); });
   state.office.tasks=o.map(r=>({id:r.id,title:r.title,cat:r.cat,to:r.assigned_to,from:r.assigned_by,due:r.due||"",status:r.status,details:r.details,comments:r.comments||[]}));
-  state.office.supplies=s.map(r=>({id:r.id,item:r.item,qty:r.qty,by:r.added_by,got:r.got,link:r.link,note:r.note}));
+  state.office.supplies=s.map(r=>({id:r.id,item:r.item,qty:r.qty,by:r.added_by,got:r.got,dlv:!!r.delivered,link:r.link,note:r.note}));
   state.office.posts=po.map(r=>({id:r.id,by:r.author,at:r.at,text:r.body,mentions:r.mentions||[]}));
   last=snap(toRows());
   safeRender();
