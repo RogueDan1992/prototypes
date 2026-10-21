@@ -69,6 +69,8 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .tile.zero .n{color:var(--muted)}
 
 .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.tright{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn.rep{min-height:46px;padding:8px 16px;font-size:14px}
 .seg{display:inline-flex;background:var(--chip);border-radius:10px;padding:3px}
 .seg button{border:0;background:transparent;border-radius:8px;padding:8px 14px;min-height:40px;font-weight:500;font-size:14px}
 .seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
@@ -381,7 +383,7 @@ textarea{min-height:70px;resize:vertical}
   <nav class="custs" id="custs" aria-label="Customers"></nav>
   <div class="tabs" id="tabs" role="tablist" aria-label="Project lists"></div>
   <section class="tiles" id="tiles" aria-label="Summary"></section>
-  <div class="toolbar"><div class="scope" id="scope"></div><div class="seg" id="seg" role="group" aria-label="Group by"></div></div>
+  <div class="toolbar"><div class="scope" id="scope"></div><div class="tright"><div class="seg" id="seg" role="group" aria-label="Group by"></div><button class="btn ghost rep" id="repBtn" type="button">Report</button></div></div>
   <div id="groups" style="display:grid;gap:26px"></div>
   </div>
 </main>
@@ -1130,6 +1132,88 @@ let reloadT=null;
 function scheduleReload(){ clearTimeout(reloadT); reloadT=setTimeout(async()=>{ await syncChain; try{ await loadAll(); }catch(e){ console.error(e); } },600); }
 function subscribe(){ sb.channel("hub").on("postgres_changes",{event:"*",schema:"public"},pl=>{ if(pl.table==="notifications"){ if(pl.eventType==="INSERT") onNotifInsert(pl.new); return; } scheduleReload(); }).subscribe(); }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&state.me) loadNotifs(); });
+
+
+// ---- Customer Projects report: Excel download (built in the browser, no extra service) ----
+let xlsxLoading=null;
+function loadXLSX(){
+  if(window.XLSX&&XLSX.utils) return Promise.resolve();
+  return xlsxLoading||(xlsxLoading=new Promise((res,rej)=>{ const s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js";
+    s.onload=()=>res(); s.onerror=()=>{ xlsxLoading=null; rej(new Error("Could not load the Excel tool")); }; document.head.appendChild(s); }));
+}
+const laneShort=w=>{ const t=(LANE_LABEL[w]||w||"").replace(/^Waiting on /,""); return t.charAt(0).toUpperCase()+t.slice(1); };
+const plainTags=t=>{ let h=String(t||""); TEAM.forEach(n=>{ h=h.split("@"+n).join("@"+TEAM_LABEL[n]); }); return h; };
+function reportCustomers(ps){ const order=[...state.customers]; ps.forEach(p=>{ if(!order.includes(p.customer)) order.push(p.customer); }); return order.filter(c=>ps.some(p=>p.customer===c)); }
+function buildReport(ps,filterText){
+  const H=["Project","Requested","Vendor","Stage","Who has it","Next step","Follow-up","Steps done","Latest message","OneDrive"];
+  const N=H.length, border={bottom:{style:"thin",color:{rgb:"E2DFD9"}}};
+  const S={
+    title:{font:{bold:true,sz:16,color:{rgb:"C8102E"}}},
+    sub:{font:{sz:10,color:{rgb:"6B6862"}}},
+    cust:{font:{bold:true,sz:12,color:{rgb:"FFFFFF"}},fill:{fgColor:{rgb:"1C1B1A"}},alignment:{vertical:"center"}},
+    head:{font:{bold:true,sz:10},fill:{fgColor:{rgb:"EFEEEA"}},border},
+    cell:{font:{sz:10},alignment:{vertical:"top",wrapText:true},border},
+    late:{font:{sz:10,bold:true,color:{rgb:"C8102E"}},alignment:{vertical:"top",wrapText:true},border},
+    link:{font:{sz:10,color:{rgb:"0563C1"},underline:true},alignment:{vertical:"top"},border},
+    total:{font:{bold:true,sz:11}}
+  };
+  const c=(v,s)=>({v:v??"",t:"s",s});
+  const rows=[], merges=[], heights=[];
+  const custs=reportCustomers(ps);
+  const who=TEAM_LABEL[state.me]||state.me||"";
+  rows.push([c("NEI Customer Projects: Open Projects Report",S.title)]); merges.push({s:{r:0,c:0},e:{r:0,c:N-1}});
+  rows.push([c(`Generated ${new Date().toLocaleDateString()}${who?" by "+who:""} · ${filterText}`,S.sub)]); merges.push({s:{r:1,c:0},e:{r:1,c:N-1}});
+  rows.push([]);
+  custs.forEach(cu=>{
+    const list=ps.filter(p=>p.customer===cu).sort((a,b)=>STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status)||a.name.localeCompare(b.name));
+    const r=rows.length; rows.push([c(`${cu}   (${list.length} open)`,S.cust),...Array(N-1).fill(0).map(()=>c("",S.cust))]); merges.push({s:{r,c:0},e:{r,c:N-1}}); heights[r]={hpt:22};
+    rows.push(H.map(h=>c(h,S.head)));
+    list.forEach(p=>{ const [d,n]=split(p.name); const last=p.notes[p.notes.length-1]; const late=isLate(p);
+      rows.push([c(n,S.cell),c(d,S.cell),c(p.vendor,S.cell),c(p.status,S.cell),c(laneShort(p.waiting||"Nobody"),S.cell),c(p.next,S.cell),
+        c(p.fu?p.fu+(late?" (due)":""):"",late?S.late:S.cell),
+        c(STEPS.filter(s=>p.steps[s]==="Yes").join(", "),S.cell),
+        c(last?((last.by?(TEAM_LABEL[last.by]||last.by)+": ":"")+plainTags(last.text)).slice(0,500):"",S.cell),
+        p.folder?{v:"Open folder",t:"s",l:{Target:p.folder},s:S.link}:c("",S.cell)]); });
+    rows.push([]);
+  });
+  rows.push([c(`Total: ${ps.length} open project${ps.length===1?"":"s"} across ${custs.length} customer${custs.length===1?"":"s"}`,S.total)]);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws["!merges"]=merges; ws["!rows"]=heights;
+  ws["!cols"]=[34,11,16,15,15,34,13,26,42,12].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Open projects");
+  return wb;
+}
+function openReportSheet(){
+  const open=state.projects.filter(isOpen);
+  const custs=reportCustomers(open), stages=STATUSES.filter(s=>!CLOSED.includes(s)&&open.some(p=>p.status===s)), lanes=LANES;
+  const sel={c:new Set(),s:new Set(),w:new Set()};
+  const grp=(k,label,opts,labels)=>`<div class="field"><span class="flabel">${label}</span><div class="chips" data-rf="${k}"><button type="button" data-all="1" aria-pressed="true">All</button>${opts.map((o,i)=>`<button type="button" aria-pressed="false" data-v="${esc(o)}">${esc(labels?labels[i]:o)}</button>`).join("")}</div></div>`;
+  $("#sheetHost").innerHTML=`<div class="scrim" id="scrim"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Download report">
+    <div class="grab"></div><div class="shead"><h3>Open projects report</h3><button class="x" id="close" aria-label="Close">×</button></div>
+    <p style="margin:6px 0 0;color:var(--muted);font-size:14px">Excel file, grouped by customer. Pick one or more of each, or leave them on All.</p>
+    ${grp("c","Customer",custs)}${grp("s","Stage",stages)}${grp("w","Who has it",lanes,lanes.map(laneShort))}
+    <p id="repCount" style="margin:18px 0 0;font-weight:600"></p>
+    <div class="actions"><button class="btn ghost" id="repFull">Full report (everything open)</button><button class="btn primary" id="repGo">Download report</button></div></div>`;
+  const pick=()=>open.filter(p=>(!sel.c.size||sel.c.has(p.customer))&&(!sel.s.size||sel.s.has(p.status))&&(!sel.w.size||sel.w.has(p.waiting||"Nobody")));
+  const upd=()=>{ const n=pick().length; $("#repCount").textContent=`${n} open project${n===1?"":"s"} match`; $("#repGo").disabled=!n; };
+  document.querySelectorAll("[data-rf]").forEach(g=>g.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; const set=sel[g.dataset.rf];
+    if(b.dataset.all) set.clear(); else { const v=b.dataset.v; set.has(v)?set.delete(v):set.add(v); }
+    g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.all?String(!set.size):String(set.has(x.dataset.v))));
+    upd(); });
+  const close=()=>$("#sheetHost").innerHTML="";
+  $("#close").onclick=$("#scrim").onclick=close;
+  const desc=()=>{ const f=(k,l,m)=>`${l}: ${sel[k].size?[...sel[k]].map(m||(x=>x)).join(", "):"All"}`; return [f("c","Customer"),f("s","Stage"),f("w","Who has it",laneShort)].join(" · "); };
+  const go=async(full)=>{ const ps=full?open:pick(); if(!ps.length){ toast("No open projects match"); return; }
+    try{ toast("Building report…"); await loadXLSX();
+      const one=!full&&sel.c.size===1?[...sel.c][0]:null; const code=one&&state.custInfo[one]?.code;
+      const name=`${iso(new Date())} Open projects report${one?" "+(code||one):""}.xlsx`.replace(/[\\/:*?"<>|_]/g," ");
+      XLSX.writeFile(buildReport(ps,full?"Full report: all open projects":desc()),name); close(); toast("Downloaded "+name);
+    }catch(err){ console.error(err); toast("Couldn't build the report. Check your connection and try again."); } };
+  $("#repGo").onclick=()=>go(false); $("#repFull").onclick=()=>go(true);
+  upd();
+}
+document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest("#repBtn")) openReportSheet(); });
 
 const MS_LOGIN=false; // flips on once the Microsoft (Azure) connection is set up in Supabase
 let lMode="in";
