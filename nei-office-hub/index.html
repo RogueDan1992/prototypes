@@ -248,6 +248,11 @@ textarea{min-height:70px;resize:vertical}
 .ai-act{justify-self:start;font-size:13px;display:flex;gap:8px;align-items:center;background:var(--ok-soft);color:var(--ok);border-radius:8px;padding:6px 10px;flex-wrap:wrap}
 .ai-act button{border:0;background:transparent;color:inherit;text-decoration:underline;font-size:13px;padding:0}
 .ai-act.undone{background:var(--chip);color:var(--muted)}
+.ai-confirm{justify-self:stretch;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;font-size:14px;display:grid;gap:10px}
+.ai-confirm .row{display:flex;gap:8px;flex-wrap:wrap}
+.ai-confirm button{min-height:44px;padding:0 18px;border-radius:10px;font-size:14.5px;border:1px solid var(--line);background:var(--surface)}
+.ai-confirm button.ok{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.ai-confirm.done .row{font-size:13px;color:var(--muted)}
 .ai-sugg{display:flex;flex-wrap:wrap;gap:8px}
 .ai-sugg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;min-height:40px;font-size:13.5px;text-align:left}
 .ai-foot{border-top:1px solid var(--line);padding:12px 16px;display:grid;gap:8px}
@@ -372,7 +377,7 @@ textarea{min-height:70px;resize:vertical}
     <nav class="appnav" aria-label="Sections"><button data-view="office">Office Projects</button><button data-view="projects">Customer Projects</button></nav>
     <div class="hright"><div class="search"><input type="search" id="q" placeholder="Search customers or products" autocomplete="off" aria-label="Search customers or products"><button class="clr" id="qclr" aria-label="Clear search" hidden>×</button></div>
     <button class="bell" id="bell" hidden aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="badge" id="bellBadge" hidden></span></button>
-    <button class="aibtn" id="aiOpen" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Ask AI</button></div>
+    <button class="aibtn" id="aiOpen" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Ask Claude</button></div>
   </div>
 </header>
 
@@ -754,7 +759,7 @@ function aiRules(){
 Projects move through statuses: ${STATUSES.join(", ")}. Lists: In progress, Ordered (Order Placed through Shipped), Completed (Delivered/Completed), Dead.
 "Waiting on" is one of: NEI D Lapp, NEI D Glick, Factory, Customer, Freight, Nobody. A follow-up date on or before today is overdue.
 Customers: ${state.customers.map(c=>c+(state.custInfo[c]?.code?" ("+state.custInfo[c].code+")":"")).join(", ")}.
-Use the tools to read details or make changes. Only change things the person asked for. When you change something, say in one short line what changed. Keep answers short and plain, a few lines or a short list, written for someone on an iPad. Refer to projects by product name and customer, never by id. You cannot reach OneDrive, email or anything outside this tracker yet; say so if asked.
+You can read everything in the tracker. You can NOT edit, move or delete anything that already exists: no status changes, reassignments or edits. If asked to change an existing item, say that edits are switched off for now and tell them what to change by hand. You can only add NEW items (projects, customers, office requests, supply list items, office board posts, messages in a project conversation), and every add shows the person a Confirm button first; nothing saves until they tap it. Only add what the person asked for. If they paste a quote, proforma or email, pull out the customer, product and next step and propose a new project. If they tap Cancel, do not try again unless they ask. Keep answers short and plain, a few lines or a short list, written for someone on an iPad. Refer to projects by product name and customer, never by id. You cannot reach OneDrive, email or anything outside this tracker yet; say so if asked.
 
 Current projects (JSON):
 ${JSON.stringify(state.projects.map(compact))}
@@ -770,18 +775,6 @@ const AI_TOOLS=[
  {name:"get_project",description:"Full details of one project, including its whole conversation (last 15 messages) and milestones. Returns an object.",
   inputSchema:{type:"object",properties:{id:{type:"string",description:"Project id from the list"}},required:["id"]},
   execute:({id})=>{ const p=findP(id); return {...compact(p),milestones:p.steps,conversation:p.notes.slice(-15).map(m=>({by:m.by?TEAM_LABEL[m.by]:"note from old tracker",when:m.at||null,text:m.text}))}; }},
- {name:"update_project",description:"Change fields on one project. Only pass the fields to change. status must be one of the listed statuses; waitingOn one of the waiting-on values; followUp is YYYY-MM-DD or empty string to clear. Returns what changed.",
-  inputSchema:{type:"object",properties:{id:{type:"string"},status:{type:"string"},waitingOn:{type:"string"},next:{type:"string"},followUp:{type:"string"},vendor:{type:"string"}},required:["id"]},
-  execute:(a)=>{ const p=findP(a.id); const before=JSON.parse(JSON.stringify(p)); const ch=[];
-    if(a.status!=null){ const st=STATUSES.find(x=>x.toLowerCase()===String(a.status).toLowerCase()); if(!st) throw new Error("Unknown status "+a.status); if(st!==p.status){ ch.push(`status ${p.status} → ${st}`); p.status=st; } }
-    if(a.waitingOn!=null){ let w=String(a.waitingOn); if(state.customers.includes(w)) w="Customer"; const lw=LANES.find(x=>x.toLowerCase()===w.toLowerCase()||x.toLowerCase()==="nei "+w.toLowerCase()); if(!lw) throw new Error("Unknown waiting-on "+a.waitingOn); if(lw!==p.waiting){ ch.push(`waiting on ${LANE_LABEL[lw].replace("Waiting on ","").replace("Not waiting on anyone","nobody")}`); p.waiting=lw; } }
-    if(a.next!=null){ p.next=String(a.next); ch.push("next action updated"); }
-    if(a.followUp!=null){ const f=String(a.followUp); if(f&&!/^\d{4}-\d{2}-\d{2}$/.test(f)) throw new Error("followUp must be YYYY-MM-DD"); p.fu=f; ch.push(f?"follow up "+fmt(f):"follow-up cleared"); }
-    if(a.vendor!=null){ p.vendor=String(a.vendor); ch.push("vendor "+p.vendor); }
-    if(!ch.length) return "Nothing changed";
-    save(); render(); const [,n]=split(p.name);
-    aiLogChange(`${n} (${p.customer}): ${ch.join(", ")}`,()=>{ const i=state.projects.findIndex(x=>x.id===p.id); state.projects[i]=before; });
-    return {changed:ch,nowIn:TABS.find(t=>t[0]===tabOf(p.status))[1]}; }},
  {name:"post_message",description:"Post a message in a project's conversation as the person you are talking with. To tag teammates pass their names in tag (Lapp D, Daniel G, Kristin, Patty); tagged people get emailed.",
   inputSchema:{type:"object",properties:{id:{type:"string"},text:{type:"string"},tag:{type:"array",items:{type:"string"}}},required:["id","text"]},
   execute:({id,text,tag})=>{ const p=findP(id); const names=(Array.isArray(tag)?tag:[]).map(t=>TEAM.find(n=>n.toLowerCase()===String(t).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(t).toLowerCase())).filter(Boolean);
@@ -806,13 +799,6 @@ const AI_TOOLS=[
     const cat=OCATS.find(c=>c.toLowerCase()===String(type||"").toLowerCase())||"Other"; const dd=/^\d{4}-\d{2}-\d{2}$/.test(String(due||""))?String(due):"";
     const t={id:uid(),title:String(title),cat,to:who,from:state.me,due:dd,status:"Open",details:String(details||""),comments:[]}; state.office.tasks.push(t); save(); render();
     aiLogChange(`New request: ${t.title} for ${who==="Anyone"?"anyone":TEAM_LABEL[who]}`,()=>{ state.office.tasks=state.office.tasks.filter(x=>x.id!==t.id); }); return {id:t.id}; }},
- {name:"update_request",description:"Change an office request: status (Open, In progress, Done), assignTo, or due (YYYY-MM-DD).",
-  inputSchema:{type:"object",properties:{id:{type:"string"},status:{type:"string"},assignTo:{type:"string"},due:{type:"string"}},required:["id"]},
-  execute:(a)=>{ const t=state.office.tasks.find(x=>x.id===String(a.id)); if(!t) throw new Error("No request "+a.id); const before={...t}; const ch=[];
-    if(a.status){ const st=["Open","In progress","Done"].find(x=>x.toLowerCase()===String(a.status).toLowerCase()); if(!st) throw new Error("Bad status"); t.status=st; ch.push(st); }
-    if(a.assignTo){ const w=TEAM.find(n=>n.toLowerCase()===String(a.assignTo).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(a.assignTo).toLowerCase())||"Anyone"; t.to=w; ch.push("assigned to "+(w==="Anyone"?"anyone":TEAM_LABEL[w])); }
-    if(a.due!=null){ t.due=/^\d{4}-\d{2}-\d{2}$/.test(String(a.due))?String(a.due):""; ch.push(t.due?"due "+fmt(t.due):"no due date"); }
-    save(); render(); aiLogChange(`${t.title}: ${ch.join(", ")}`,()=>{ Object.assign(t,before); }); return ch; }},
  {name:"add_supply",description:"Add an item to the office supply wish list.",
   inputSchema:{type:"object",properties:{item:{type:"string"},qty:{type:"number"},link:{type:"string"},note:{type:"string"}},required:["item"]},
   execute:({item,qty,link,note})=>{ const x={id:uid(),item:String(item),qty:Math.max(1,parseInt(qty)||1),by:state.me,got:false,link:String(link||""),note:String(note||"")}; state.office.supplies.push(x); save(); render(); aiLogChange(`Wish list: ${x.item} ×${x.qty}`,()=>{ state.office.supplies=state.office.supplies.filter(y=>y.id!==x.id); }); return "Added"; }},
@@ -820,13 +806,32 @@ const AI_TOOLS=[
   inputSchema:{type:"object",properties:{text:{type:"string"}},required:["text"]},
   execute:({text})=>{ const x={id:uid(),by:state.me,at:new Date().toISOString(),text:normTags(String(text)),mentions:parseMentions(normTags(String(text)))}; state.office.posts.push(x); save(); render(); aiLogChange("Posted to the office board",()=>{ state.office.posts=state.office.posts.filter(y=>y.id!==x.id); }); return "Posted"; }},
 ];
+function confirmAI(desc,signal){
+  return new Promise(res=>{ const log=$("#aiLog"); if(!log||signal?.aborted){ res(false); return; }
+    const id=uid(); log.insertAdjacentHTML("beforeend",`<div class="ai-confirm" id="cf-${id}"><div>${esc(desc)}</div><div class="row"><button type="button" class="ok">Confirm</button><button type="button" class="no">Cancel</button></div></div>`);
+    const el=document.getElementById("cf-"+id); log.scrollTop=1e9; let settled=false;
+    const done=v=>{ if(settled) return; settled=true; el.classList.add("done"); el.querySelector(".row").innerHTML=`<span>${v?"Confirmed":"Cancelled, nothing saved"}</span>`; res(v); };
+    el.querySelector(".ok").onclick=()=>done(true); el.querySelector(".no").onclick=()=>done(false);
+    signal?.addEventListener("abort",()=>done(false),{once:true}); });
+}
+const who_=x=>{ const n=TEAM.find(m=>m.toLowerCase()===String(x||"").toLowerCase()||TEAM_LABEL[m].toLowerCase()===String(x||"").toLowerCase()); return n?TEAM_LABEL[n]:"anyone"; };
+const AI_CONFIRM={
+  add_project:a=>`Add new project for ${a.customer}: ${a.product}${a.next?"\nNext step: "+a.next:""}`,
+  add_customer:a=>`Add new customer: ${a.name}${a.code?" ("+a.code+")":""}`,
+  post_message:a=>{ let n="a project"; try{ const p=findP(a.id); n=split(p.name)[1]+" ("+p.customer+")"; }catch(e){} return `Post in ${n}:\n"${a.text}"${Array.isArray(a.tag)&&a.tag.length?"\nTags and emails: "+a.tag.join(", "):""}`; },
+  add_request:a=>`New office request: ${a.title}\nFor ${who_(a.assignTo)}${a.due?", due "+a.due:""}${a.details?"\n"+a.details:""}`,
+  add_supply:a=>`Add to supply list: ${a.item} ×${Math.max(1,parseInt(a.qty)||1)}`,
+  post_announcement:a=>`Post on the office board:\n"${a.text}"`,
+};
+AI_TOOLS.forEach(t=>{ const d=AI_CONFIRM[t.name]; if(!d) return; const ex=t.execute;
+  t.execute=async(a,o={})=>{ const ok=await confirmAI(d(a||{}),o.signal); if(!ok) return "Not saved. The person tapped Cancel. Do not retry unless they ask."; return ex(a,o); }; });
 function openAI(){
   if($("#aiPanel")){ $("#aiPanel").remove(); return; }
   $("#aiHost").innerHTML=`<aside class="ai" id="aiPanel" role="dialog" aria-label="AI assistant">
-    <div class="ai-head"><div><h3>Ask AI</h3><small>Reads and updates the tracker for you</small></div><button class="x" id="aiClose" aria-label="Close">×</button></div>
+    <div class="ai-head"><div><h3>Ask Claude</h3><small>Reads the tracker and adds new items after you confirm</small></div><button class="x" id="aiClose" aria-label="Close">×</button></div>
     <div class="ai-log" id="aiLog"></div>
-    <div class="ai-foot"><div class="cbox"><textarea id="aiBox" placeholder="Ask about projects or tell it what to change"></textarea><button type="button" class="send" id="aiSend">Send</button></div>
-    <div class="ai-note">Runs on the company Claude account. Changes it makes show here with an Undo.</div></div></aside>`;
+    <div class="ai-foot"><div class="cbox"><textarea id="aiBox" placeholder="Ask a question, or paste a quote or email to start a project"></textarea><button type="button" class="send" id="aiSend">Send</button></div>
+    <div class="ai-note">Runs on the company Claude account. Nothing saves until you tap Confirm, and each save has an Undo.</div></div></aside>`;
   drawAI();
   $("#aiClose").onclick=()=>{ aiBusy?.abort(); $("#aiPanel").remove(); };
   $("#aiSend").onclick=()=>askAI($("#aiBox").value);
@@ -835,8 +840,8 @@ function openAI(){
 function drawAI(){
   const log=$("#aiLog"); if(!log) return;
   log.innerHTML=aiTurns.length?aiTurns.map(t=>`<div class="ai-msg ${t.role==="user"?"u":"a"}">${esc(t.content)}</div>`).join(""):
-   `<div class="ai-msg a">Hi ${esc(TEAM_LABEL[state.me])}. I can answer questions about projects and office requests, update statuses and follow-ups, assign requests, add to the supply list, post updates and tag people.</div>
-    <div class="ai-sugg">${["What's on my plate today?","What's overdue right now?","Add 2 boxes of printer paper to the supply list","Have Kristin book a hotel in Ningbo, due next Friday","Give me a quick rundown of each customer"].map(q=>`<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
+   `<div class="ai-msg a">Hi ${esc(TEAM_LABEL[state.me])}. I can answer questions about projects and office requests, and add new projects, requests, supply items and posts. Paste a factory quote or customer email and I'll set up the project. I won't edit or delete anything, and nothing saves until you tap Confirm.</div>
+    <div class="ai-sugg">${["What's on my plate today?","What's overdue right now?","Give me a quick rundown of each customer","Add 2 boxes of printer paper to the supply list","Draft a status update for Pro Fence"].map(q=>`<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
   log.scrollTop=log.scrollHeight;
 }
 async function askAI(q){
@@ -1096,7 +1101,7 @@ async function claudeFn(turns,opts={}){
   return {text:text||"Done."};
 }
 /* ---------- links from emails open the right item ---------- */
-const AI_ON=false; // AI assistant tabled for now; flip on once the company Claude key is added
+const AI_ON=true; // company Claude key is set in Supabase (ANTHROPIC_API_KEY)
 let deepDone=false;
 function openDeepLink(){
   if(deepDone) return; deepDone=true; const h=location.hash.slice(1); if(!h) return;
