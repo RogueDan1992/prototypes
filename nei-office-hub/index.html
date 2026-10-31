@@ -759,7 +759,7 @@ function aiRules(){
 Projects move through statuses: ${STATUSES.join(", ")}. Lists: In progress, Ordered (Order Placed through Shipped), Completed (Delivered/Completed), Dead.
 "Waiting on" is one of: NEI D Lapp, NEI D Glick, Factory, Customer, Freight, Nobody. A follow-up date on or before today is overdue.
 Customers: ${state.customers.map(c=>c+(state.custInfo[c]?.code?" ("+state.custInfo[c].code+")":"")).join(", ")}.
-You can read everything in the tracker. You can NOT edit, move or delete anything that already exists: no status changes, reassignments or edits. If asked to change an existing item, say that edits are switched off for now and tell them what to change by hand. You can only add NEW items (projects, customers, office requests, supply list items, office board posts, messages in a project conversation), and every add shows the person a Confirm button first; nothing saves until they tap it. Only add what the person asked for. If they paste a quote, proforma or email, pull out the customer, product and next step and propose a new project. If they tap Cancel, do not try again unless they ask. Keep answers short and plain, a few lines or a short list, written for someone on an iPad. Refer to projects by product name and customer, never by id. You cannot reach OneDrive, email or anything outside this tracker yet; say so if asked.
+You can read everything in the tracker. You can edit existing projects and office requests (status, waiting on, next step, follow-up, vendor, assignee, due date) and add NEW items. You can NOT delete anything, mark a project Delivered, Completed or Dead, or mark a request Done; if asked, say that is done by hand. You can also add NEW items (projects, customers, office requests, supply list items, office board posts, messages in a project conversation), and every add or edit shows the person a Confirm button first; nothing saves until they tap it. Only add what the person asked for. If they paste a quote, proforma or email, pull out the customer, product and next step and propose a new project. If they tap Cancel, do not try again unless they ask. Keep answers short and plain, a few lines or a short list, written for someone on an iPad. Refer to projects by product name and customer, never by id. You cannot reach OneDrive, email or anything outside this tracker yet; say so if asked.
 
 Current projects (JSON):
 ${JSON.stringify(state.projects.map(compact))}
@@ -775,6 +775,18 @@ const AI_TOOLS=[
  {name:"get_project",description:"Full details of one project, including its whole conversation (last 15 messages) and milestones. Returns an object.",
   inputSchema:{type:"object",properties:{id:{type:"string",description:"Project id from the list"}},required:["id"]},
   execute:({id})=>{ const p=findP(id); return {...compact(p),milestones:p.steps,conversation:p.notes.slice(-15).map(m=>({by:m.by?TEAM_LABEL[m.by]:"note from old tracker",when:m.at||null,text:m.text}))}; }},
+ {name:"update_project",description:"Change fields on one project. Only pass the fields to change. You cannot set Delivered, Completed or Dead. status must be one of the listed statuses; waitingOn one of the waiting-on values; followUp is YYYY-MM-DD or empty string to clear. Returns what changed.",
+  inputSchema:{type:"object",properties:{id:{type:"string"},status:{type:"string"},waitingOn:{type:"string"},next:{type:"string"},followUp:{type:"string"},vendor:{type:"string"}},required:["id"]},
+  execute:(a)=>{ const p=findP(a.id); const before=JSON.parse(JSON.stringify(p)); const ch=[];
+    if(a.status!=null){ const st=STATUSES.find(x=>x.toLowerCase()===String(a.status).toLowerCase()); if(!st) throw new Error("Unknown status "+a.status); if(CLOSED.includes(st)) throw new Error("Marking a project "+st+" is off for the assistant. The person has to do that by hand."); if(st!==p.status){ ch.push(`status ${p.status} → ${st}`); p.status=st; } }
+    if(a.waitingOn!=null){ let w=String(a.waitingOn); if(state.customers.includes(w)) w="Customer"; const lw=LANES.find(x=>x.toLowerCase()===w.toLowerCase()||x.toLowerCase()==="nei "+w.toLowerCase()); if(!lw) throw new Error("Unknown waiting-on "+a.waitingOn); if(lw!==p.waiting){ ch.push(`waiting on ${LANE_LABEL[lw].replace("Waiting on ","").replace("Not waiting on anyone","nobody")}`); p.waiting=lw; } }
+    if(a.next!=null){ p.next=String(a.next); ch.push("next action updated"); }
+    if(a.followUp!=null){ const f=String(a.followUp); if(f&&!/^\d{4}-\d{2}-\d{2}$/.test(f)) throw new Error("followUp must be YYYY-MM-DD"); p.fu=f; ch.push(f?"follow up "+fmt(f):"follow-up cleared"); }
+    if(a.vendor!=null){ p.vendor=String(a.vendor); ch.push("vendor "+p.vendor); }
+    if(!ch.length) return "Nothing changed";
+    save(); render(); const [,n]=split(p.name);
+    aiLogChange(`${n} (${p.customer}): ${ch.join(", ")}`,()=>{ const i=state.projects.findIndex(x=>x.id===p.id); state.projects[i]=before; });
+    return {changed:ch,nowIn:TABS.find(t=>t[0]===tabOf(p.status))[1]}; }},
  {name:"post_message",description:"Post a message in a project's conversation as the person you are talking with. To tag teammates pass their names in tag (Lapp D, Daniel G, Kristin, Patty); tagged people get emailed.",
   inputSchema:{type:"object",properties:{id:{type:"string"},text:{type:"string"},tag:{type:"array",items:{type:"string"}}},required:["id","text"]},
   execute:({id,text,tag})=>{ const p=findP(id); const names=(Array.isArray(tag)?tag:[]).map(t=>TEAM.find(n=>n.toLowerCase()===String(t).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(t).toLowerCase())).filter(Boolean);
@@ -799,6 +811,13 @@ const AI_TOOLS=[
     const cat=OCATS.find(c=>c.toLowerCase()===String(type||"").toLowerCase())||"Other"; const dd=/^\d{4}-\d{2}-\d{2}$/.test(String(due||""))?String(due):"";
     const t={id:uid(),title:String(title),cat,to:who,from:state.me,due:dd,status:"Open",details:String(details||""),comments:[]}; state.office.tasks.push(t); save(); render();
     aiLogChange(`New request: ${t.title} for ${who==="Anyone"?"anyone":TEAM_LABEL[who]}`,()=>{ state.office.tasks=state.office.tasks.filter(x=>x.id!==t.id); }); return {id:t.id}; }},
+ {name:"update_request",description:"Change an office request: status (Open or In progress only, never Done), assignTo, or due (YYYY-MM-DD).",
+  inputSchema:{type:"object",properties:{id:{type:"string"},status:{type:"string"},assignTo:{type:"string"},due:{type:"string"}},required:["id"]},
+  execute:(a)=>{ const t=state.office.tasks.find(x=>x.id===String(a.id)); if(!t) throw new Error("No request "+a.id); const before={...t}; const ch=[];
+    if(a.status){ const st=["Open","In progress","Done"].find(x=>x.toLowerCase()===String(a.status).toLowerCase()); if(!st) throw new Error("Bad status"); if(st==="Done") throw new Error("Marking a request Done is off for the assistant. The person has to do that by hand."); t.status=st; ch.push(st); }
+    if(a.assignTo){ const w=TEAM.find(n=>n.toLowerCase()===String(a.assignTo).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(a.assignTo).toLowerCase())||"Anyone"; t.to=w; ch.push("assigned to "+(w==="Anyone"?"anyone":TEAM_LABEL[w])); }
+    if(a.due!=null){ t.due=/^\d{4}-\d{2}-\d{2}$/.test(String(a.due))?String(a.due):""; ch.push(t.due?"due "+fmt(t.due):"no due date"); }
+    save(); render(); aiLogChange(`${t.title}: ${ch.join(", ")}`,()=>{ Object.assign(t,before); }); return ch; }},
  {name:"add_supply",description:"Add an item to the office supply wish list.",
   inputSchema:{type:"object",properties:{item:{type:"string"},qty:{type:"number"},link:{type:"string"},note:{type:"string"}},required:["item"]},
   execute:({item,qty,link,note})=>{ const x={id:uid(),item:String(item),qty:Math.max(1,parseInt(qty)||1),by:state.me,got:false,link:String(link||""),note:String(note||"")}; state.office.supplies.push(x); save(); render(); aiLogChange(`Wish list: ${x.item} ×${x.qty}`,()=>{ state.office.supplies=state.office.supplies.filter(y=>y.id!==x.id); }); return "Added"; }},
@@ -816,6 +835,8 @@ function confirmAI(desc,signal){
 }
 const who_=x=>{ const n=TEAM.find(m=>m.toLowerCase()===String(x||"").toLowerCase()||TEAM_LABEL[m].toLowerCase()===String(x||"").toLowerCase()); return n?TEAM_LABEL[n]:"anyone"; };
 const AI_CONFIRM={
+  update_project:a=>{ let n="a project"; try{ const p=findP(a.id); n=split(p.name)[1]+" ("+p.customer+")"; }catch(e){} const c=[a.status!=null&&"status → "+a.status,a.waitingOn!=null&&"waiting on → "+a.waitingOn,a.next!=null&&"next step → "+a.next,a.followUp!=null&&(a.followUp?"follow up → "+a.followUp:"clear follow-up"),a.vendor!=null&&"vendor → "+a.vendor].filter(Boolean); return `Update ${n}:\n${c.join("\n")}`; },
+  update_request:a=>{ const t=state.office.tasks.find(x=>x.id===String(a.id)); const c=[a.status&&"status → "+a.status,a.assignTo&&"assign to → "+who_(a.assignTo),a.due!=null&&(a.due?"due → "+a.due:"clear due date")].filter(Boolean); return `Update request ${t?t.title:""}:\n${c.join("\n")}`; },
   add_project:a=>`Add new project for ${a.customer}: ${a.product}${a.next?"\nNext step: "+a.next:""}`,
   add_customer:a=>`Add new customer: ${a.name}${a.code?" ("+a.code+")":""}`,
   post_message:a=>{ let n="a project"; try{ const p=findP(a.id); n=split(p.name)[1]+" ("+p.customer+")"; }catch(e){} return `Post in ${n}:\n"${a.text}"${Array.isArray(a.tag)&&a.tag.length?"\nTags and emails: "+a.tag.join(", "):""}`; },
@@ -824,11 +845,11 @@ const AI_CONFIRM={
   post_announcement:a=>`Post on the office board:\n"${a.text}"`,
 };
 AI_TOOLS.forEach(t=>{ const d=AI_CONFIRM[t.name]; if(!d) return; const ex=t.execute;
-  t.execute=async(a,o={})=>{ const ok=await confirmAI(d(a||{}),o.signal); if(!ok) return "Not saved. The person tapped Cancel. Do not retry unless they ask."; return ex(a,o); }; });
+  t.execute=async(a,o={})=>{ a=a||{}; const st=String(a.status||"").toLowerCase(); if((t.name==="update_project"&&CLOSED.some(x=>x.toLowerCase()===st))||(t.name==="update_request"&&st==="done")) throw new Error("That status is off for the assistant. The person has to do that by hand."); const ok=await confirmAI(d(a||{}),o.signal); if(!ok) return "Not saved. The person tapped Cancel. Do not retry unless they ask."; return ex(a,o); }; });
 function openAI(){
   if($("#aiPanel")){ $("#aiPanel").remove(); return; }
   $("#aiHost").innerHTML=`<aside class="ai" id="aiPanel" role="dialog" aria-label="AI assistant">
-    <div class="ai-head"><div><h3>Ask Claude</h3><small>Reads the tracker and adds new items after you confirm</small></div><button class="x" id="aiClose" aria-label="Close">×</button></div>
+    <div class="ai-head"><div><h3>Ask Claude</h3><small>Reads, updates and adds items after you confirm</small></div><button class="x" id="aiClose" aria-label="Close">×</button></div>
     <div class="ai-log" id="aiLog"></div>
     <div class="ai-foot"><div class="cbox"><textarea id="aiBox" placeholder="Ask a question, or paste a quote or email to start a project"></textarea><button type="button" class="send" id="aiSend">Send</button></div>
     <div class="ai-note">Runs on the company Claude account. Nothing saves until you tap Confirm, and each save has an Undo.</div></div></aside>`;
@@ -840,7 +861,7 @@ function openAI(){
 function drawAI(){
   const log=$("#aiLog"); if(!log) return;
   log.innerHTML=aiTurns.length?aiTurns.map(t=>`<div class="ai-msg ${t.role==="user"?"u":"a"}">${esc(t.content)}</div>`).join(""):
-   `<div class="ai-msg a">Hi ${esc(TEAM_LABEL[state.me])}. I can answer questions about projects and office requests, and add new projects, requests, supply items and posts. Paste a factory quote or customer email and I'll set up the project. I won't edit or delete anything, and nothing saves until you tap Confirm.</div>
+   `<div class="ai-msg a">Hi ${esc(TEAM_LABEL[state.me])}. I can answer questions, update projects and requests, and add new projects, requests, supply items and posts. Paste a factory quote or customer email and I'll set up the project. I won't delete anything or mark things completed, and nothing saves until you tap Confirm.</div>
     <div class="ai-sugg">${["What's on my plate today?","What's overdue right now?","Give me a quick rundown of each customer","Add 2 boxes of printer paper to the supply list","Draft a status update for Pro Fence"].map(q=>`<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
   log.scrollTop=log.scrollHeight;
 }
