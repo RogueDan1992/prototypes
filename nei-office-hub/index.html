@@ -1161,53 +1161,95 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 
 
 // ---- Customer Projects report: Excel download (built in the browser, no extra service) ----
+// Northeast-branded layout to match the printed "Open Projects" sheet: black header band with logo,
+// black column headers, zebra rows, Arial at readable sizes, contact line in the print footer.
 let xlsxLoading=null;
 function loadXLSX(){
-  if(window.XLSX&&XLSX.utils) return Promise.resolve();
+  if(window.ExcelJS) return Promise.resolve();
   return xlsxLoading||(xlsxLoading=new Promise((res,rej)=>{ const s=document.createElement("script");
-    s.src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js";
+    s.src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
     s.onload=()=>res(); s.onerror=()=>{ xlsxLoading=null; rej(new Error("Could not load the Excel tool")); }; document.head.appendChild(s); }));
 }
-const laneShort=w=>{ const t=(LANE_LABEL[w]||w||"").replace(/^Waiting on /,""); return t.charAt(0).toUpperCase()+t.slice(1); };
+let reportLogo=null;
+async function loadReportLogo(){
+  if(reportLogo) return reportLogo;
+  try{ const r=await fetch("report-logo.png",{cache:"force-cache"}); if(!r.ok) return null; const b=await r.blob();
+    reportLogo=await new Promise(ok=>{ const fr=new FileReader(); fr.onload=()=>ok(fr.result); fr.readAsDataURL(b); }); }catch(e){ reportLogo=null; }
+  return reportLogo;
+}
+const laneShort=w=>{ if(!w||w==="Nobody") return "Nobody"; const t=(LANE_LABEL[w]||w).replace(/^Waiting on /,""); return t.charAt(0).toUpperCase()+t.slice(1); };
 const plainTags=t=>{ let h=String(t||""); TEAM.forEach(n=>{ h=h.split("@"+n).join("@"+TEAM_LABEL[n]); }); return h; };
 function reportCustomers(ps){ const order=[...state.customers]; ps.forEach(p=>{ if(!order.includes(p.customer)) order.push(p.customer); }); return order.filter(c=>ps.some(p=>p.customer===c)); }
-function buildReport(ps,filterText){
-  const H=["Project","Requested","Vendor","Stage","Who has it","Next step","Follow-up","Steps done","Latest message","OneDrive"];
-  const N=H.length, border={bottom:{style:"thin",color:{rgb:"E2DFD9"}}};
-  const S={
-    title:{font:{bold:true,sz:16,color:{rgb:"C8102E"}}},
-    sub:{font:{sz:10,color:{rgb:"6B6862"}}},
-    cust:{font:{bold:true,sz:12,color:{rgb:"FFFFFF"}},fill:{fgColor:{rgb:"1C1B1A"}},alignment:{vertical:"center"}},
-    head:{font:{bold:true,sz:10},fill:{fgColor:{rgb:"EFEEEA"}},border},
-    cell:{font:{sz:10},alignment:{vertical:"top",wrapText:true},border},
-    late:{font:{sz:10,bold:true,color:{rgb:"C8102E"}},alignment:{vertical:"top",wrapText:true},border},
-    link:{font:{sz:10,color:{rgb:"0563C1"},underline:true},alignment:{vertical:"top"},border},
-    total:{font:{bold:true,sz:11}}
-  };
-  const c=(v,s)=>({v:v??"",t:"s",s});
-  const rows=[], merges=[], heights=[];
+async function buildReport(ps,filterText,oneCustomer){
+  const BLACK="FF0A0A0A", TEXT="FF262626", GREY="FF666666", ZEBRA="FFF2F2F2", LINE="FFD9D9D9", RED="FFE23B28", REDTXT="FFC42A18", WHITE="FFFFFFFF";
+  const us=d=>{ const m=String(d||"").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?`${m[2]}/${m[3]}/${m[1]}`:(d||""); };
+  const F=(o)=>Object.assign({name:"Arial",size:12,color:{argb:TEXT}},o);
+  const fill=a=>({type:"pattern",pattern:"solid",fgColor:{argb:a}});
+  const COLS=[["#",5],["Project",34],["Status",16],["Who has it",15],["Next step",38],["Follow-up",14],["Vendor",18],["Requested",13],["Steps done",28],["Latest message",46],["OneDrive",14]];
+  const N=COLS.length, colL=n=>String.fromCharCode(64+n);
+  const wb=new ExcelJS.Workbook(); wb.creator="Northeast International";
+  const ws=wb.addWorksheet("Open Projects",{views:[{showGridLines:false}]});
+  ws.columns=COLS.map(([,w])=>({width:w}));
   const custs=reportCustomers(ps);
   const who=TEAM_LABEL[state.me]||state.me||"";
-  rows.push([c("NEI Customer Projects: Open Projects Report",S.title)]); merges.push({s:{r:0,c:0},e:{r:0,c:N-1}});
-  rows.push([c(`Generated ${new Date().toLocaleDateString()}${who?" by "+who:""} · ${filterText}`,S.sub)]); merges.push({s:{r:1,c:0},e:{r:1,c:N-1}});
-  rows.push([]);
+  const today=new Date().toLocaleDateString("en-US",{month:"2-digit",day:"2-digit",year:"numeric"});
+
+  // Header band (rows 1-3): logo left, title + subtitle right, all on black
+  [34,30,24].forEach((h,i)=>{ const r=ws.getRow(i+1); r.height=h; for(let c=1;c<=N;c++) r.getCell(c).fill=fill(BLACK); });
+  const tFrom=colL(5);
+  ws.mergeCells(`${tFrom}1:${colL(N)}2`); ws.mergeCells(`${tFrom}3:${colL(N)}3`);
+  const title=ws.getCell(`${tFrom}1`);
+  title.value="OPEN PROJECTS - "+(oneCustomer?oneCustomer:custs.length===1?custs[0]:"ALL CUSTOMERS").toUpperCase();
+  title.font=F({size:24,bold:true,color:{argb:WHITE}}); title.alignment={horizontal:"right",vertical:"bottom",indent:1};
+  const sub=ws.getCell(`${tFrom}3`);
+  sub.value=`Status as of ${today}${who?" · Prepared by "+who:""}`;
+  sub.font=F({size:12,color:{argb:WHITE}}); sub.alignment={horizontal:"right",vertical:"top",indent:1};
+  const logo=await loadReportLogo();
+  if(logo){ const id=wb.addImage({base64:logo,extension:"png"}); ws.addImage(id,{tl:{col:0.25,row:0.45},ext:{width:250,height:63},editAs:"absolute"}); }
+
+  // Thin red rule, then the filter line
+  const rule=ws.getRow(4); rule.height=4; for(let c=1;c<=N;c++) rule.getCell(c).fill=fill(RED);
+  ws.getRow(5).height=8;
+  const info=ws.getCell("A6"); info.value=filterText; info.font=F({size:11,color:{argb:GREY}}); ws.getRow(6).height=20;
+  ws.getRow(7).height=8;
+
+  // Column headers (one row, frozen, filterable)
+  const HR=8, hr=ws.getRow(HR); hr.height=30;
+  COLS.forEach(([h],i)=>{ const c=hr.getCell(i+1); c.value=h; c.fill=fill(BLACK); c.font=F({size:12,bold:true,color:{argb:WHITE}});
+    c.alignment={horizontal:i===0?"center":"left",vertical:"middle",indent:i===0?0:1}; });
+  ws.views=[{state:"frozen",ySplit:HR,showGridLines:false}];
+
+  const showBands=custs.length>1;
+  let r=HR+1;
   custs.forEach(cu=>{
     const list=ps.filter(p=>p.customer===cu).sort((a,b)=>STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status)||a.name.localeCompare(b.name));
-    const r=rows.length; rows.push([c(`${cu}   (${list.length} open)`,S.cust),...Array(N-1).fill(0).map(()=>c("",S.cust))]); merges.push({s:{r,c:0},e:{r,c:N-1}}); heights[r]={hpt:22};
-    rows.push(H.map(h=>c(h,S.head)));
-    list.forEach(p=>{ const [d,n]=split(p.name); const last=p.notes[p.notes.length-1]; const late=isLate(p);
-      rows.push([c(n,S.cell),c(d,S.cell),c(p.vendor,S.cell),c(p.status,S.cell),c(laneShort(p.waiting||"Nobody"),S.cell),c(p.next,S.cell),
-        c(p.fu?p.fu+(late?" (due)":""):"",late?S.late:S.cell),
-        c(STEPS.filter(s=>p.steps[s]==="Yes").join(", "),S.cell),
-        c(last?((last.by?(TEAM_LABEL[last.by]||last.by)+": ":"")+plainTags(last.text)).slice(0,500):"",S.cell),
-        p.folder?{v:"Open folder",t:"s",l:{Target:p.folder},s:S.link}:c("",S.cell)]); });
-    rows.push([]);
+    if(showBands){ const br=ws.getRow(r); br.height=30;
+      const c=br.getCell(1); c.value=`${cu.toUpperCase()}   (${list.length} open)`; c.font=F({size:14,bold:true}); c.alignment={vertical:"bottom"};
+      for(let k=1;k<=N;k++) br.getCell(k).border={bottom:{style:"medium",color:{argb:RED}}};
+      r++; }
+    list.forEach((p,i)=>{ const [d,n]=split(p.name); const last=p.notes[p.notes.length-1]; const late=isLate(p);
+      const row=ws.getRow(r);
+      const vals=[i+1,n,p.status,laneShort(p.waiting),p.next||"",p.fu?us(p.fu)+(late?" (due)":""):"",p.vendor||"",us(d),
+        STEPS.filter(s=>p.steps[s]==="Yes").join(", "),
+        last?((last.by?(TEAM_LABEL[last.by]||last.by)+": ":"")+plainTags(last.text)).slice(0,500):"",
+        p.folder?{text:"Open folder",hyperlink:p.folder}:""];
+      vals.forEach((v,k)=>{ const c=row.getCell(k+1); c.value=v;
+        c.font=F(k===0||k===1?{bold:true}:k===5&&late?{bold:true,color:{argb:REDTXT}}:k===10&&p.folder?{color:{argb:"FF0563C1"},underline:true}:{});
+        c.alignment={vertical:"middle",wrapText:k!==0,horizontal:k===0?"center":"left",indent:k===0?0:1};
+        c.border={bottom:{style:"thin",color:{argb:LINE}}};
+        if(i%2===1) c.fill=fill(ZEBRA); });
+      const longest=Math.max(...[[n,34],[p.next||"",38],[vals[8],28],[vals[9],46]].map(([t,w])=>Math.ceil(String(t).length/(w*0.85))));
+      row.height=Math.max(34,Math.min(longest,8)*17+10);
+      r++; });
+    if(showBands){ ws.getRow(r).height=12; r++; }
   });
-  rows.push([c(`Total: ${ps.length} open project${ps.length===1?"":"s"} across ${custs.length} customer${custs.length===1?"":"s"}`,S.total)]);
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws["!merges"]=merges; ws["!rows"]=heights;
-  ws["!cols"]=[34,11,16,15,15,34,13,26,42,12].map(w=>({wch:w}));
-  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Open projects");
+  const tot=ws.getCell(`A${r+1}`); tot.value=`Total: ${ps.length} open project${ps.length===1?"":"s"}${custs.length>1?` across ${custs.length} customers`:""}`;
+  tot.font=F({size:12,bold:true});
+
+  ws.autoFilter={from:{row:HR,column:1},to:{row:HR,column:N}};
+  ws.pageSetup={orientation:"landscape",paperSize:1,fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:`${HR}:${HR}`,horizontalCentered:true,
+    margins:{left:0.4,right:0.4,top:0.5,bottom:0.6,header:0.3,footer:0.3}};
+  ws.headerFooter={oddFooter:'&L&"Arial"&8&K666666Northeast International · 11 Kennedy Street, Lancaster, PA 17602 · 717-945-6331 · northeast-intl.com&R&"Arial"&8&K666666Page &P of &N'};
   return wb;
 }
 function openReportSheet(){
@@ -1234,7 +1276,10 @@ function openReportSheet(){
     try{ toast("Building report…"); await loadXLSX();
       const one=!full&&sel.c.size===1?[...sel.c][0]:null; const code=one&&state.custInfo[one]?.code;
       const name=`${iso(new Date())} Open projects report${one?" "+(code||one):""}.xlsx`.replace(/[\\/:*?"<>|_]/g," ");
-      XLSX.writeFile(buildReport(ps,full?"Full report: all open projects":desc()),name); close(); toast("Downloaded "+name);
+      const wb=await buildReport(ps,full?"Full report: all open projects":desc(),one);
+      const buf=await wb.xlsx.writeBuffer(); const url=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+      const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+      close(); toast("Downloaded "+name);
     }catch(err){ console.error(err); toast("Couldn't build the report. Check your connection and try again."); } };
   $("#repGo").onclick=()=>go(false); $("#repFull").onclick=()=>go(true);
   upd();
