@@ -10,3 +10,4 @@ Shareable prototypes and games. Each folder is one prototype, published with Git
 | Northeast Customer Portal (clickable demo, sample data) | https://roguedan1992.github.io/prototypes/nei-portal/ |
 | Northeast Operations Console (staff back end demo, sample data) | https://roguedan1992.github.io/prototypes/nei-console/ |
 | NEI Office and Customer Projects (office dashboard + customer projects, sign-in required) | https://roguedan1992.github.io/prototypes/nei-office-hub/ |
+| NEI Door Builder (configure entry doors, build customer orders, edit the door catalog; sign-in with NEI Hub login) | https://roguedan1992.github.io/prototypes/nei-door-builder/ |

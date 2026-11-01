@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>NEI Door Builder</title>
+<meta name="description" content="Northeast International door builder: configure entry door units, build customer orders, manage the door catalog">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="NEI Doors">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: black app bar (logo, customer, tabs) · Build: drawing left / options right / build sheet · Orders: list + order detail · Catalog: tabbed editors with live preview */
+:root{
+  color-scheme:light;
+  --bg:#f3f2ef; --surface:#ffffff; --ink:#1c1b1a; --muted:#6b6862; --line:#e2dfd9;
+  --red:#c8102e; --red-soft:#fbe7ea; --chip:#efeeea; --wall:#d9d3c7; --ok:#2f7d4f;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 var(--f-body)}
+img{max-width:100%}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+.bar{background:#0d0d0d;color:#fff;position:sticky;top:0;z-index:20}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:#0d0d0d;z-index:30}
+.bar .in{max-width:1200px;margin:0 auto;padding:10px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.brand{font:700 22px var(--f-display);letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.brand i{width:10px;height:22px;background:var(--red);display:inline-block}
+.bar select{background:#1f1f1f;color:#fff;border:1px solid #3a3a3a;padding:6px 8px;font:inherit;font-size:14px}
+.who{margin-left:auto;font-size:13px;color:#bbb;display:flex;gap:10px;align-items:center}
+.who button{background:none;border:1px solid #444;color:#ddd;padding:4px 10px;cursor:pointer;font-size:13px}
+.tabs{flex-basis:100%;display:flex;gap:2px;overflow-x:auto}
+.tabs a{color:#bbb;text-decoration:none;padding:9px 14px;font:600 15px var(--f-display);letter-spacing:.08em;text-transform:uppercase;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs a[aria-current="page"]{color:#fff;border-color:var(--red)}
+main{max-width:1200px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+h2{font:700 26px var(--f-display);text-transform:uppercase;letter-spacing:.03em;margin:0}
+h3{font:700 18px var(--f-display);text-transform:uppercase;letter-spacing:.05em;margin:0}
+.sub{color:var(--muted);font-size:13px}
+.mono,code{font-family:var(--f-mono);font-size:12px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;align-items:start}
+@media (max-width:840px){.grid2{grid-template-columns:1fr}}
+.left{display:flex;flex-direction:column;gap:12px;min-width:0;position:sticky;top:110px}
+@media (max-width:840px){.left{position:static}}
+.stage{background:var(--wall);border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.stage svg{width:100%;max-width:470px;height:auto;display:block}
+.cap{font-size:13px;font-weight:600;text-align:center}
+.card{background:var(--surface);border:1px solid var(--line)}
+.pad{padding:12px}
+.pricebar{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big{font:700 32px var(--f-display);color:var(--red);font-variant-numeric:tabular-nums}
+.k{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.gcard{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px}
+.gcard img{width:100px;border:1px solid var(--line);display:block}
+.gcard p{margin:0 0 6px;font-size:13px}
+.opts{display:flex;flex-direction:column;gap:16px;min-width:0}
+fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:6px}
+legend{font:600 15px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0;margin-bottom:4px}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1px solid var(--line);background:var(--surface);padding:7px 10px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0;font-size:13.5px}
+.opt b{font:500 11.5px var(--f-mono);color:var(--muted)}
+.opt span{color:var(--muted);font-size:12px}
+.opt .pr{color:var(--ink);font-variant-numeric:tabular-nums}
+.opt[aria-pressed="true"]{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.opt[aria-pressed="true"] b{color:var(--red)}
+.opt.thumb{flex-direction:row;align-items:center;gap:8px}
+.opt.thumb img{width:28px;height:58px;object-fit:cover;border:1px solid var(--line)}
+.opt i.sw{display:block;height:8px;margin-top:3px;border:1px solid var(--line);background-size:cover}
+.note{font-size:12.5px;color:var(--muted)}
+.flag{font:500 10.5px var(--f-mono);color:var(--red);letter-spacing:.04em}
+.plan{width:100%;max-width:240px;height:auto}
+.addrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.stepper{display:flex;border:1px solid var(--line);background:var(--surface)}
+.stepper button{background:var(--chip);border:0;width:40px;font-size:18px;cursor:pointer}
+.stepper input{width:56px;border:0;text-align:center;font:inherit;font-size:16px;background:var(--surface)}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;font-weight:600;font-size:14px;cursor:pointer}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.ghost{background:none;color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:default}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.kv th{width:28%;font-size:13px;white-space:normal}
+input.q{width:58px;padding:3px 5px;font:inherit;border:1px solid var(--line)}
+.rm{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px}
+.secthead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.olist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.ocard{background:var(--surface);border:1px solid var(--line);padding:12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px}
+.ocard[aria-current="true"]{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.pill{display:inline-block;font:600 11px var(--f-mono);padding:2px 7px;background:var(--chip);letter-spacing:.04em;text-transform:uppercase}
+.pill.Draft{background:#fbf0d9;color:#7a4d00}.pill.Sent{background:#e6eef8;color:#1d4b85}.pill.Ordered{background:#e3f2e8;color:var(--ok)}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.subtabs button{border:1px solid var(--line);background:var(--surface);padding:7px 12px;cursor:pointer;font:600 14px var(--f-display);letter-spacing:.06em;text-transform:uppercase}
+.subtabs button[aria-pressed="true"]{background:#0d0d0d;color:#fff;border-color:#0d0d0d}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.item{background:var(--surface);border:1px solid var(--line);padding:10px;cursor:pointer;text-align:left;display:flex;gap:10px;align-items:center}
+.item img,.item .ph{width:34px;height:70px;object-fit:cover;border:1px solid var(--line);background:var(--chip);flex:none}
+.item.off{opacity:.55}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);font-weight:500}
+.form input,.form select,.form textarea{font:inherit;font-size:14px;color:var(--ink);border:1px solid var(--line);padding:7px 8px;background:var(--surface);width:100%}
+.form textarea{font-family:var(--f-mono);font-size:12px;min-height:70px}
+.form .wide{grid-column:1/-1}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--ink)}
+.form .checks label{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:14px}
+.form input[type=checkbox]{width:auto}
+.editor{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-top:12px}
+@media (max-width:840px){.editor{grid-template-columns:1fr}}
+input.pr{width:92px;text-align:right;font:inherit;border:1px solid var(--line);padding:4px 6px;font-variant-numeric:tabular-nums}
+input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0d0d0d;color:#fff;padding:10px 16px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
+.login{max-width:380px;margin:60px auto;background:var(--surface);border:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:12px}
+.login input{font:inherit;padding:10px;border:1px solid var(--line)}
+.err{color:var(--red);font-size:13.5px}
+.empty{padding:18px 12px;color:var(--muted)}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="bar" id="bar" hidden>
+  <div class="in">
+    <div class="brand"><i></i>NEI Door Builder</div>
+    <label class="sub" style="color:#bbb">Customer <select id="cust" aria-label="Customer"></select></label>
+    <div class="who"><span id="me"></span><button type="button" id="signOut">Sign out</button></div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#build" data-v="build">Build</a>
+      <a href="#orders" data-v="orders">Orders</a>
+      <a href="#catalog" data-v="catalog">Catalog</a>
+    </nav>
+  </div>
+</header>
+
+<form class="login" id="login" hidden>
+  <div class="brand" style="color:var(--ink)"><i></i>NEI Door Builder</div>
+  <div class="sub">Sign in with your NEI Hub email and password.</div>
+  <input id="lEmail" type="email" autocomplete="email" placeholder="Work email" required>
+  <input id="lPass" type="password" autocomplete="current-password" placeholder="Password" required>
+  <button class="btn red" id="lGo" type="submit">Sign in</button>
+  <button class="btn ghost" id="lForgot" type="button">Forgot password</button>
+  <div class="err" id="lMsg" role="alert"></div>
+</form>
+
+<main id="app" hidden>
+  <!-- BUILD -->
+  <section id="v-build" hidden>
+    <div class="grid2">
+      <div class="left">
+        <div class="stage"><svg id="door" viewBox="0 0 470 470" role="img" aria-label="Scale drawing of the selected unit, viewed from outside"></svg><div class="cap" id="caption"></div></div>
+        <div class="card pad pricebar"><div><div class="k" id="pk"></div><div class="big" id="pbig"></div></div><div class="k" id="pcost"></div></div>
+        <div class="card pad gcard" id="gcard" hidden></div>
+      </div>
+      <div class="opts">
+        <div class="card pad btns" style="justify-content:space-between">
+          <div><div class="sub">Adding to</div><strong id="curOrder">New order</strong></div>
+          <div class="btns"><button type="button" class="btn" id="newOrder">Start new order</button><label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="showCost">Show FOB &amp; margin</label></div>
+        </div>
+        <fieldset><legend>1 · Door style</legend><div class="row" id="o-line"></div></fieldset>
+        <fieldset><legend>2 · Unit</legend><div class="row" id="o-cfg"></div></fieldset>
+        <fieldset id="f-side"><legend>Sidelite position</legend><div class="row" id="o-side"></div></fieldset>
+        <fieldset id="f-glass"><legend>3 · Glass</legend><div class="row" id="o-glass"></div><div class="note" id="glassnote"></div></fieldset>
+        <fieldset><legend>4 · Finish preview</legend><div class="row" id="o-fin"></div><div class="note">Units ship unfinished woodgrain unless a finish is priced. Stains marked PREVIEW are not in the price.</div></fieldset>
+        <fieldset><legend>5 · Handing &amp; swing</legend><div class="row" id="o-hand"></div>
+          <div class="note">Stand outside facing the door. Hinges on your left = left hand (LH). Opens into the house = inswing.</div>
+          <svg id="plan" viewBox="0 0 240 120" class="plan" role="img" aria-label="Top view of the door swing"></svg></fieldset>
+        <div class="addrow">
+          <span class="sub">Qty</span>
+          <div class="stepper"><button type="button" id="qm" aria-label="One less">−</button><input id="qty" type="number" min="1" value="1" inputmode="numeric" aria-label="Quantity"><button type="button" id="qp" aria-label="One more">+</button></div>
+          <button type="button" class="btn red" id="add">Add to order</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:18px"><div class="secthead"><h3>Build sheet</h3><span class="mono" id="bsid" style="color:var(--red)"></span></div><div class="tbl"><table class="kv" id="bs"></table></div></div>
+  </section>
+
+  <!-- ORDERS -->
+  <section id="v-orders" hidden>
+    <div class="btns" style="justify-content:space-between;margin-bottom:12px"><h2>Orders</h2><button class="btn" type="button" id="newOrder2">Start new order</button></div>
+    <div class="olist" id="olist"></div>
+    <div class="card" id="odetail" style="margin-top:16px" hidden></div>
+  </section>
+
+  <!-- CATALOG -->
+  <section id="v-catalog" hidden>
+    <h2>Catalog</h2>
+    <div class="sub">Everything the builder offers comes from here. Changes save to the shared database and show for everyone right away.</div>
+    <div class="subtabs" id="ctabs">
+      <button type="button" data-t="lines" aria-pressed="true">Door styles</button>
+      <button type="button" data-t="glass" aria-pressed="false">Glass</button>
+      <button type="button" data-t="fin" aria-pressed="false">Finishes</button>
+      <button type="button" data-t="prices" aria-pressed="false">Prices</button>
+    </div>
+    <div id="cbody"></div>
+  </section>
+</main>
+<div id="toastHost"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+const SB_URL="https://regdgwfnrtznyfmxtwqu.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlZ2Rnd2ZucnR6bnlmbXh0d3F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NDg0OTIsImV4cCI6MjEwNzUyNDQ5Mn0.cIhT4-LMiMbGtz9HbVJCwUrI1deZSFYXq9y6c3NFRug";
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=v=>v==null||isNaN(v)?"—":"$"+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+const r2=v=>Math.round(v*100)/100;
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const src=p=>!p?"":p;
+function toast(t){const h=$("#toastHost");h.innerHTML=`<div class="toast" role="status">${esc(t)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>h.innerHTML="",3500)}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+
+const CFG={A:{name:"Single door",n:0},B:{name:"Door + 1 sidelite",n:1},C:{name:"Door + 2 sidelites",n:2}};
+const HAND=[{id:"LHIS",name:"LH Inswing",sub:"hinges left, opens in"},{id:"RHIS",name:"RH Inswing",sub:"hinges right, opens in"},{id:"LHOS",name:"LH Outswing",sub:"hinges left, opens out"},{id:"RHOS",name:"RH Outswing",sub:"hinges right, opens out"}];
+const SKINS={M:"Mahogany woodgrain",K:"Oak woodgrain",LS:"Smooth",F:"Fir woodgrain"};
+const DOOR_PRESETS={
+ "3/4 lite, 1 panel":{lite:[7,7,22,48],panels:[[7,60,22,11]]},
+ "Craftsman lite, 2 panels, shelf":{lite:[7,6,22,15],panels:[[7,27,9.5,45],[19.5,27,9.5,45]],shelf:[6,22.5,24,2.2]},
+ "Full lite":{lite:[7,8,22,64],panels:[]},
+ "1/2 lite, 2 panels":{lite:[7,6,22,36],panels:[[6.5,49,10,25],[19.5,49,10,25]]},
+ "6 panel":{lite:null,panels:[[6.5,5,10,7],[19.5,5,10,7],[6.5,17,10,27],[19.5,17,10,27],[6.5,49,10,26],[19.5,49,10,26]]},
+ "2 panel":{lite:null,panels:[[6.5,6,23,32],[6.5,44,23,30]]},
+ "Flush":{lite:null,panels:[]}
+};
+const SL_PRESETS={
+ "3/4 lite, 1 panel":{lite:[3,7,8,48],panels:[[3,60,8,11]]},
+ "Full lite":{lite:[3.5,7.5,7,64],panels:[]},
+ "1/2 lite, 1 panel":{lite:[3,6,8,36],panels:[[3,49,8,25]]},
+ "2 panel, solid":{lite:null,panels:[[3,6,8,36],[3,49,8,25]]},
+ "Flush":{lite:null,panels:[]}
+};
+
+let ME=null, D={lines:[],glass:[],fin:[],prices:[],customers:[],orders:[]};
+let CUST=ls("db-cust")||"Miller Brothers";
+let S={line:null,cfg:"A",side:"R",glass:"CLEAR",fin:null,hand:"LHIS"};
+let CUR=null; // current order id
+let SHOWCOST=ls("db-cost")==="1";
+
+/* ---------- data ---------- */
+async function loadAll(){
+ const q=t=>sb.from(t).select("*");
+ const [l,g,f,p,c,o]=await Promise.all([q("door_lines").order("sort"),q("door_glass").order("sort"),q("door_finishes").order("sort"),q("door_prices"),q("customers").order("name"),q("door_orders").order("updated_at",{ascending:false})]);
+ for(const r of [l,g,f,p,c,o]) if(r.error) throw r.error;
+ D={lines:l.data,glass:g.data,fin:f.data,prices:p.data,customers:c.data,orders:o.data};
+ if(!D.customers.some(x=>x.name===CUST)&&D.customers.length)CUST=D.customers[0].name;
+ $("#cust").innerHTML=D.customers.map(c=>`<option ${c.name===CUST?"selected":""}>${esc(c.name)}</option>`).join("");
+ const keep=ls("db-cur-"+CUST);CUR=D.orders.some(o=>o.id===keep&&o.status==="Draft")?keep:null;
+}
+const code=()=>(D.customers.find(c=>c.name===CUST)?.code||"").trim();
+const itemNo=i=>code()?code()+"-"+i:i;
+const priceOf=(item,cust=CUST)=>D.prices.find(p=>p.customer===cust&&p.item===item);
+const activeLines=()=>D.lines.filter(l=>l.active);
+const line=()=>D.lines.find(l=>l.id===S.line);
+const glassFor=l=>D.glass.filter(g=>g.active&&g.fits.includes(l.id));
+
+/* ---------- build ---------- */
+function fixS(){
+ const ls_=activeLines();if(!ls_.length)return;
+ if(!ls_.some(l=>l.id===S.line))S.line=ls_[0].id;
+ const l=line();const cfgs=l.configs.filter(c=>c==="A"||l.sl_pn);if(!cfgs.includes(S.cfg))S.cfg=cfgs[0];
+ const gl=glassFor(l);if(!l.lite)S.glass="NONE";else if(S.glass!=="CLEAR"&&!gl.some(g=>g.id===S.glass))S.glass="CLEAR";else if(S.glass==="NONE")S.glass="CLEAR";
+ const fins=D.fin.filter(f=>f.active&&f.skin===l.skin);if(!fins.some(f=>f.id===S.fin))S.fin=(fins.find(f=>f.as_shipped)||fins[0]||{}).id||null;
+}
+function calc(st=S,cust=CUST){
+ const l=D.lines.find(x=>x.id===st.line),n=CFG[st.cfg].n,G=D.glass.find(g=>g.id===st.glass);
+ const up=priceOf(l.id+"-"+st.cfg,cust);
+ const items=[];
+ if(G){const dl=priceOf("G-"+G.id+"-DL",cust),sl=priceOf("G-"+G.id+"-SL",cust);
+  items.push({item:"G-"+G.id+"-DL",desc:G.name+" door lite",q:1,p:dl?.price,f:dl?.fob});
+  if(n===1)items.push({item:"G-"+G.id+"-SL"+(G.handed?(st.side==="L"?" (L)":" (R)"):""),desc:G.name+" sidelite lite",q:1,p:sl?.price,f:sl?.fob});
+  if(n===2){if(G.handed)items.push({item:"G-"+G.id+"-SL (L)",desc:G.name+" sidelite lite, left",q:1,p:sl?.price,f:sl?.fob},{item:"G-"+G.id+"-SL (R)",desc:G.name+" sidelite lite, right",q:1,p:sl?.price,f:sl?.fob});
+   else items.push({item:"G-"+G.id+"-SL",desc:G.name+" sidelite lite",q:2,p:sl?.price,f:sl?.fob})}}
+ const missing=up?.price==null||items.some(i=>i.p==null);
+ const gp=r2(items.reduce((a,i)=>a+(i.p||0)*i.q,0)),gf=r2(items.reduce((a,i)=>a+(i.f||0)*i.q,0));
+ const parts=[[l.slab_pn,1]];if(n){parts.push([l.sl_pn,n],[l.mull_pn,n])}parts.push([l.jamb_pn,"1 set"],[l.brick_pn,"1 set"]);
+ return {l,n,G,unit:up?.price??null,ufob:up?.fob??null,items,gp,gf,each:up?.price==null?null:r2(up.price+gp),efob:up?.fob==null?null:r2(up.fob+gf),missing,parts};
+}
+function optBtns(el,items,key,html,cls=""){
+ const b=$(el);b.innerHTML="";items.forEach(it=>{const x=document.createElement("button");x.type="button";x.className="opt "+cls;x.setAttribute("aria-pressed",String(S[key]===it.id));x.innerHTML=html(it);x.onclick=()=>{S[key]=it.id;fixS();renderBuild()};b.appendChild(x)});
+}
+function renderBuild(){
+ fixS();const l=line();
+ if(!l){$("#v-build").innerHTML='<div class="empty">No door styles yet. Add one under Catalog.</div>';return}
+ const c=calc();
+ optBtns("#o-line",activeLines(),"line",x=>`<b>${esc(itemNo(x.id))}</b><div>${esc(x.name)}</div><span>${esc(x.sub||"")}</span>`);
+ const cfgs=l.configs.filter(k=>k==="A"||l.sl_pn).map(k=>({id:k}));
+ optBtns("#o-cfg",cfgs,"cfg",x=>{const p=priceOf(l.id+"-"+x.id);return `<b>${esc(itemNo(l.id+"-"+x.id))}</b><div>${CFG[x.id].name}</div><span class="pr">${p?.price!=null?money(p.price):'<span class="flag">NO PRICE</span>'}</span>`});
+ $("#f-side").hidden=c.n!==1;
+ optBtns("#o-side",[{id:"L",n:"Left of door"},{id:"R",n:"Right of door"}],"side",x=>`<div>${x.n}</div><span>viewed from outside</span>`);
+ const gl=l.lite?[{id:"CLEAR",name:"Clear"}].concat(glassFor(l)):[];
+ $("#f-glass").hidden=!gl.length;
+ optBtns("#o-glass",gl,"glass",x=>{if(x.id==="CLEAR")return `<div><b>Included</b><div>Clear</div><span class="pr">in unit price</span></div>`;
+  const t=calc({...S,glass:x.id});return `${x.photo_path?`<img alt="" src="${esc(src(x.photo_path))}">`:""}<div><b>${esc(itemNo("G-"+x.id))}</b><div>${esc(x.name)}${(x.recommended_for||[]).includes(l.id)?" ★":""}</div><span class="pr">${t.items.some(i=>i.p==null)?'<span class="flag">NO PRICE</span>':"+ "+money(t.gp)}</span></div>`},"thumb");
+ $("#glassnote").textContent=gl.length>1?`★ = recommended. Glass price shown is for this unit: 1 door lite${c.n?` + ${c.n} sidelite lite${c.n>1?"s":""}`:""}.`:"";
+ optBtns("#o-fin",D.fin.filter(f=>f.active&&f.skin===l.skin),"fin",x=>`<div>${esc(x.name)}</div><span>${esc(x.sub||"")}</span><i class="sw" style="background-image:url('${esc(src(x.swatch_path))}')"></i>${!x.as_shipped&&!x.priced?'<span class="flag">PREVIEW</span>':""}`);
+ optBtns("#o-hand",HAND,"hand",x=>`<b>${x.id}</b><div>${x.name}</div><span>${x.sub}</span>`);
+ $("#door").innerHTML=drawUnit(l,S,c.G);
+ $("#caption").textContent=`${itemNo(l.id+"-"+S.cfg)} · ${l.name} · ${CFG[S.cfg].name}${c.G?" · "+c.G.name+" glass":""}`;
+ $("#pk").textContent=c.unit==null?"No price set for "+CUST:`Unit ${money(c.unit)}${c.gp?` + glass ${money(c.gp)}`:""} · each`;
+ $("#pbig").textContent=c.each==null?"—":money(c.each);
+ $("#pcost").innerHTML=SHOWCOST&&c.efob!=null&&c.each!=null?`FOB ${money(c.efob)}<br>Margin ${money(c.each-c.efob)} (${((c.each-c.efob)/c.each*100).toFixed(1)}%)`:esc(HAND.find(h=>h.id===S.hand).name);
+ const G=c.G,gc=$("#gcard");
+ if(G){const fit=G.photo_lite&&G.photo_lite===l.lite;gc.hidden=false;
+  gc.innerHTML=`${G.photo_path?`<img src="${esc(src(G.photo_path))}" alt="${esc(G.name)} glass, factory photo">`:'<div style="width:100px;height:160px;background:var(--chip)"></div>'}<div><h3>${esc(G.name)}</h3><p>${esc(G.caming)} caming · ${esc(G.spec||"")}${G.handed?" · sidelites are handed L/R":""}</p>
+  <p class="note">${G.photo_path?`Factory photo${G.photo_lite?`, shown in a ${esc(G.photo_lite)} lite`:""}. `:"No photo yet. "}${fit?"That is this door's lite, so it is fitted into the drawing.":G.photo_path?`This door uses a ${esc(l.lite)} lite, so the drawing shows clear glass. <span class="flag">ASK FACTORY FOR ${esc(l.lite)} PHOTO</span>`:""}${c.n?" Sidelite glass is drawn clear with the pattern named.":""}</p>${G.notes?`<p class="note">${esc(G.notes)}</p>`:""}</div>`}
+ else if(S.glass==="CLEAR"){gc.hidden=false;gc.innerHTML=`<div style="width:100px;height:110px;background:linear-gradient(135deg,#cfdde4,#9fb4bf)"></div><div><h3>Clear glass</h3><p>Included in the unit price.</p></div>`}
+ else gc.hidden=true;
+ drawPlan();
+ const fin=D.fin.find(f=>f.id===S.fin);
+ const rows=[["Item #",`<code>${esc(itemNo(l.id+"-"+S.cfg))}</code> · ${money(c.unit)}`],["Unit",`${esc(l.name)} · ${CFG[S.cfg].name}${c.n===1?` (${S.side==="L"?"left":"right"} of door)`:""}`],
+  ["Factory parts",c.parts.map(p=>`<code>${esc(p[0])}</code> × ${p[1]}`).join("<br>")+`<div class="note">${esc(l.slab_desc)}${c.n?" · "+esc(l.sl_desc):""}</div>`],
+  ["Glass",c.G?c.items.map(i=>`<code>${esc(itemNo(i.item))}</code> × ${i.q} <span class="note">${money(i.p)} each</span>`).join("<br>"):(S.glass==="CLEAR"?"Clear (included)":"None")],
+  ["Handing",HAND.find(h=>h.id===S.hand).name+" · "+HAND.find(h=>h.id===S.hand).sub],
+  ["Finish",fin?(fin.as_shipped?esc(fin.sub||fin.name):esc(fin.name)+(fin.priced?"":' <span class="flag">PREVIEW ONLY · NOT PRICED</span>')):"—"],
+  ["Price each",`<strong>${money(c.each)}</strong>${SHOWCOST&&c.efob!=null?` <span class="note">FOB ${money(c.efob)}</span>`:""}`]];
+ if(l.notes)rows.push(["Open question",`<span class="flag">VERIFY</span> ${esc(l.notes)}`]);
+ $("#bs").innerHTML=rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("");
+ $("#bsid").textContent=`${itemNo(l.id+"-"+S.cfg)}${c.G?" + "+c.G.id:""} · ${S.hand}`;
+ const o=D.orders.find(x=>x.id===CUR);$("#curOrder").textContent=o?`${o.title} (${o.lines.reduce((a,x)=>a+x.qty,0)} doors)`:"New order (starts when you add a door)";
+}
+function drawUnit(l,st,G,P="d"){
+ const n=CFG[st.cfg].n,mull=1.93,bm=2,dw=36,sw=14,H=80,slH=Number(l.sl_height)||80;
+ const totalW=dw+n*(sw+mull)+2*bm,s=Math.min(430/totalW,400/(H+bm+1.5)),ox=(470-totalW*s)/2,oy=24;
+ const X=v=>ox+v*s,Y=v=>oy+v*s;
+ const fin=D.fin.find(f=>f.id===st.fin),tex=fin?src(fin.swatch_path):"";
+ const ts=14*s;
+ let o=`<defs><linearGradient id="${P}gl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfdde4"/><stop offset=".55" stop-color="#9fb4bf"/><stop offset="1" stop-color="#b9c9d1"/></linearGradient>
+ <pattern id="${P}wood" patternUnits="userSpaceOnUse" width="${ts}" height="${ts}">${tex?`<image href="${esc(tex)}" width="${ts}" height="${ts}" preserveAspectRatio="none"/>`:`<rect width="${ts}" height="${ts}" fill="#efede8"/>`}</pattern>
+ <filter id="${P}sh"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity=".35"/></filter></defs>`;
+ o+=`<rect x="${X(0)}" y="${Y(0)}" width="${totalW*s}" height="${(H+bm+.5)*s}" fill="#f3f1ec" stroke="#b9b5ac"/>`;
+ let x=bm;const parts=[];const L1=n===2||(n===1&&st.side==="L"),R1=n===2||(n===1&&st.side==="R");
+ if(L1){parts.push(["sl",x,"L"]);x+=sw+mull}parts.push(["door",x]);x+=dw;if(R1){x+=mull;parts.push(["sl",x,"R"])}
+ parts.forEach(p=>{if(p[0]==="sl"){const mx=p[2]==="L"?p[1]+sw:p[1]-mull;o+=`<rect x="${X(mx)}" y="${Y(bm)}" width="${mull*s}" height="${H*s}" fill="#ece9e2" stroke="#b9b5ac" stroke-width=".6"/>`}});
+ const glassRect=(gx,gy,gw,gh,photo,label)=>{let r=`<rect x="${X(gx)}" y="${Y(gy)}" width="${gw*s}" height="${gh*s}" fill="url(#${P}gl)" stroke="#3a2a20" stroke-width="1.2"/>`;
+  if(photo)r+=`<image href="${esc(photo)}" x="${X(gx)}" y="${Y(gy)}" width="${gw*s}" height="${gh*s}" preserveAspectRatio="none"/>`;
+  else r+=`<path d="M${X(gx+gw*.15)} ${Y(gy+gh*.12)} l${gw*s*.45} ${gh*s*.35}" stroke="#ffffff88" stroke-width="2"/>`;
+  if(label){const cx=X(gx+gw/2),cy=Y(gy+gh/2);r+=`<text x="${cx}" y="${cy}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="${Math.max(7,1.4*s)}" fill="#22313a" transform="rotate(-90 ${cx} ${cy})">${esc(label)}</text>`}return r};
+ const panel=(a,b,w,h)=>`<rect x="${X(a)}" y="${Y(b)}" width="${w*s}" height="${h*s}" fill="none" stroke="#0000004d" stroke-width="1.6"/><rect x="${X(a)+2}" y="${Y(b)+2}" width="${Math.max(0,w*s-4)}" height="${Math.max(0,h*s-4)}" fill="none" stroke="#ffffff40" stroke-width="1.2"/>`;
+ parts.forEach(p=>{
+  if(p[0]==="door"){const dx=p[1],g=l.door_geom||{};
+   o+=`<rect x="${X(dx)}" y="${Y(bm)}" width="${dw*s}" height="${H*s}" fill="url(#${P}wood)" stroke="#2b1d14" filter="url(#${P}sh)"/>`;
+   (g.panels||[]).forEach(q=>o+=panel(dx+q[0],bm+q[1],q[2],q[3]));
+   if(g.shelf)o+=`<rect x="${X(dx+g.shelf[0])}" y="${Y(bm+g.shelf[1])}" width="${g.shelf[2]*s}" height="${g.shelf[3]*s}" fill="#00000026" stroke="#0000004d"/>`;
+   if(g.lite)o+=glassRect(dx+g.lite[0],bm+g.lite[1],g.lite[2],g.lite[3],G&&G.photo_path&&G.photo_lite&&G.photo_lite===l.lite?src(G.photo_path):null,null);
+   const Lh=st.hand.startsWith("LH"),lx=Lh?dx+dw-3:dx+3,ly=bm+40;
+   o+=`<rect x="${X(lx)-.9*s}" y="${Y(ly-1.2)}" width="${1.8*s}" height="${6.5*s}" rx="${.4*s}" fill="#3b3b38"/><circle cx="${X(lx)}" cy="${Y(ly-5.5)}" r="${1.1*s}" fill="#3b3b38"/>`;
+   if(st.hand.endsWith("OS")){const hx=Lh?dx+.15:dx+dw-.95;[9,40,71].forEach(hy=>o+=`<rect x="${X(hx)}" y="${Y(bm+hy-2)}" width="${.8*s}" height="${4*s}" fill="#5a5a55"/>`)}
+  }else{const sx=p[1],g=l.sl_geom||{},top=bm+(80-slH);
+   o+=`<rect x="${X(sx)}" y="${Y(top)}" width="${sw*s}" height="${slH*s}" fill="url(#${P}wood)" stroke="#2b1d14" filter="url(#${P}sh)"/>`;
+   (g.panels||[]).forEach(q=>o+=panel(sx+q[0],top+q[1],q[2],q[3]));
+   if(g.lite)o+=glassRect(sx+g.lite[0],top+g.lite[1],g.lite[2],g.lite[3],null,G?G.name.toUpperCase()+(G.handed?(p[2]==="L"?" -L":" -R"):""):null);
+  }});
+ o+=`<rect x="${X(bm)}" y="${Y(bm+H)}" width="${(totalW-2*bm)*s}" height="${1.3*s}" fill="#9a9a96"/>`;
+ const dy=Y(bm+H)+18;o+=`<line x1="${X(0)}" y1="${dy}" x2="${X(totalW)}" y2="${dy}" stroke="#6b6862"/><line x1="${X(0)}" y1="${dy-5}" x2="${X(0)}" y2="${dy+5}" stroke="#6b6862"/><line x1="${X(totalW)}" y1="${dy-5}" x2="${X(totalW)}" y2="${dy+5}" stroke="#6b6862"/>`;
+ o+=`<text x="235" y="${dy+15}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#1c1b1a">≈ ${totalW.toFixed(1)}" over brickmould · door 36"×80"</text><text x="235" y="14" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="#6b6862">VIEWED FROM OUTSIDE · TO SCALE</text>`;
+ return o;
+}
+function drawPlan(){
+ const L=S.hand.startsWith("LH"),IN=S.hand.endsWith("IS"),wy=60,x1=70,x2=170,hx=L?x1:x2,R=42,oy=wy+(IN?-R:R),fx=L?hx+R:hx-R,sweep=(L===IN)?0:1;
+ $("#plan").innerHTML=`<text x="120" y="12" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">INSIDE</text><text x="120" y="116" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">OUTSIDE (you)</text>
+ <rect x="8" y="${wy-4}" width="${x1-8}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${232-x2}" height="8" fill="#1c1b1a"/>
+ <line x1="${hx}" y1="${wy}" x2="${hx}" y2="${oy}" stroke="#c8102e" stroke-width="4"/><path d="M${hx} ${oy} A${R} ${R} 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#c8102e" stroke-dasharray="4 3"/>
+ <circle cx="${hx}" cy="${wy}" r="4" fill="#c8102e"/><text x="${hx+(L?-6:6)}" y="${wy+(IN?18:-10)}" text-anchor="${L?"end":"start"}" font-size="9" fill="#6b6862" font-family="IBM Plex Mono,monospace">hinge</text>`;
+}
+function snapshotLine(qty){
+ const c=calc(),fin=D.fin.find(f=>f.id===S.fin);
+ return {line:S.line,cfg:S.cfg,side:c.n===1?(S.side==="L"?"Left":"Right"):(c.n===2?"Both":""),glass:c.G?c.G.id:S.glass,fin:S.fin,hand:S.hand,qty,
+  item:c.l.id+"-"+S.cfg,desc:`${c.l.name}, ${CFG[S.cfg].name.toLowerCase()}`,glassName:c.G?c.G.name:(S.glass==="CLEAR"?"Clear":"None"),
+  finName:fin?(fin.as_shipped?"Unfinished":fin.name+(fin.priced?"":" (preview)")):"",
+  unit:c.unit,ufob:c.ufob,gitems:c.items.map(i=>({item:i.item,desc:i.desc,q:i.q,p:i.p??null,f:i.f??null})),gp:c.gp,gf:c.gf,parts:c.parts};
+}
+const lineKey=x=>[x.item,x.side,x.glass,x.fin,x.hand].join("|");
+async function addToOrder(){
+ const qty=Math.max(1,parseInt($("#qty").value)||1),ln=snapshotLine(qty);
+ if(ln.unit==null){toast("This unit has no price for "+CUST+". Add it under Catalog > Prices first.");return}
+ let o=D.orders.find(x=>x.id===CUR);
+ $("#add").disabled=true;
+ try{
+  if(!o){const {data,error}=await sb.from("door_orders").insert({customer:CUST,title:`${today()} ${code()||CUST} doors`,lines:[ln]}).select().single();if(error)throw error;D.orders.unshift(data);CUR=data.id;ls("db-cur-"+CUST,CUR)}
+  else{const lines=o.lines.slice(),same=lines.find(x=>lineKey(x)===lineKey(ln));if(same)same.qty+=qty;else lines.push(ln);
+   const {error}=await sb.from("door_orders").update({lines,updated_at:new Date().toISOString()}).eq("id",o.id);if(error)throw error;o.lines=lines}
+  $("#qty").value=1;toast(`Added ${qty} × ${itemNo(ln.item)}`);renderBuild();
+ }catch(e){console.error(e);toast("Couldn't save to the order. Check your connection and try again.")}
+ finally{$("#add").disabled=false}
+}
+
+/* ---------- orders ---------- */
+const lineEach=x=>r2((x.unit||0)+(x.gp||0)), lineFob=x=>r2((x.ufob||0)+(x.gf||0));
+const oTotals=o=>({doors:o.lines.reduce((a,x)=>a+x.qty,0),sum:r2(o.lines.reduce((a,x)=>a+x.qty*lineEach(x),0)),fob:r2(o.lines.reduce((a,x)=>a+x.qty*lineFob(x),0))});
+let OPEN=null;
+function renderOrders(){
+ const list=D.orders.filter(o=>o.customer===CUST);
+ $("#olist").innerHTML=list.length?list.map(o=>{const t=oTotals(o);return `<button type="button" class="ocard" data-o="${o.id}" aria-current="${o.id===OPEN}"><span class="pill ${esc(o.status)}">${esc(o.status)}</span><strong>${esc(o.title)}</strong><span class="sub">${t.doors} doors · ${money(t.sum)}${o.id===CUR?" · building now":""}</span><span class="sub">${esc(({"D Lapp":"Lapp D","D Glick":"Daniel G"})[o.created_by]||o.created_by||"")} · updated ${new Date(o.updated_at).toLocaleDateString()}</span></button>`}).join(""):`<div class="empty">No door orders for ${esc(CUST)} yet. Build a door and tap Add to order.</div>`;
+ const o=D.orders.find(x=>x.id===OPEN&&x.customer===CUST);const d=$("#odetail");if(!o){d.hidden=true;return}d.hidden=false;
+ const t=oTotals(o);
+ d.innerHTML=`<div class="secthead"><div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1"><input id="oTitle" value="${esc(o.title)}" aria-label="Order name" style="font:700 22px var(--f-display);text-transform:uppercase;border:1px solid var(--line);padding:4px 8px;max-width:100%">
+  <div class="btns"><label class="sub">Status <select id="oStatus">${["Draft","Sent","Ordered"].map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select></label><span class="sub">${t.doors} doors · <strong>${money(t.sum)}</strong>${SHOWCOST?` · FOB ${money(t.fob)} · margin ${money(t.sum-t.fob)}`:""}</span></div></div>
+  <div class="btns"><button class="btn" type="button" id="oBuild">${o.id===CUR?"Building this order":"Add doors to this order"}</button></div></div>
+  <div class="tbl"><table><tr><th>#</th><th>Item #</th><th>Unit</th><th>SL side</th><th>Glass</th><th>Handing</th><th>Finish</th><th class="n">Each</th><th>Qty</th><th class="n">Line</th><th></th></tr>
+  ${o.lines.map((x,i)=>`<tr><td class="n">${i+1}</td><td><code>${esc(itemNo(x.item))}</code></td><td>${esc(x.desc)}</td><td>${esc(x.side||"—")}</td><td>${esc(x.glassName)}</td><td><code>${esc(x.hand)}</code></td><td>${esc(x.finName)}</td><td class="n">${money(lineEach(x))}</td><td><input class="q" type="number" min="1" value="${x.qty}" data-i="${i}" aria-label="Quantity line ${i+1}"></td><td class="n">${money(x.qty*lineEach(x))}</td><td><button type="button" class="rm" data-rm="${i}" aria-label="Remove line ${i+1}">×</button></td></tr>`).join("")||'<tr><td colspan="11" class="empty">No doors on this order yet.</td></tr>'}
+  <tr><td colspan="8" style="text-align:right;font-weight:600">Total</td><td class="n"><strong>${t.doors}</strong></td><td class="n"><strong>${money(t.sum)}</strong></td><td></td></tr></table></div>
+  <div class="pad btns"><button class="btn red" type="button" id="xCust">Excel for customer</button><button class="btn" type="button" id="xFact">Excel for factory (PO)</button><button class="btn" type="button" id="oCopy">Copy for email</button><button class="btn ghost" type="button" id="oDel">Delete order</button></div>
+  <div class="pad note" style="padding-top:0">Prices are locked in when a door is added. Customer Excel shows customer prices; the factory Excel shows factory part numbers and FOB with no customer prices.</div>`;
+ d.querySelectorAll("input.q").forEach(inp=>inp.onchange=()=>saveLines(o,ls_=>{ls_[+inp.dataset.i].qty=Math.max(1,parseInt(inp.value)||1)}));
+ d.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>saveLines(o,ls_=>ls_.splice(+b.dataset.rm,1)));
+ $("#oTitle").onchange=e=>saveOrder(o,{title:e.target.value.trim()||o.title});
+ $("#oStatus").onchange=e=>saveOrder(o,{status:e.target.value});
+ $("#oBuild").onclick=()=>{CUR=o.id;ls("db-cur-"+CUST,CUR);location.hash="build"};
+ $("#xCust").onclick=()=>excel(o,"customer");$("#xFact").onclick=()=>excel(o,"factory");
+ $("#oCopy").onclick=()=>copyOrder(o);
+ let armed=false;$("#oDel").onclick=async e=>{if(!armed){armed=true;e.target.textContent="Tap again to delete";setTimeout(()=>{armed=false;if(e.target.isConnected)e.target.textContent="Delete order"},3000);return}
+  const {error}=await sb.from("door_orders").delete().eq("id",o.id);if(error)return toast("Couldn't delete the order.");D.orders=D.orders.filter(x=>x.id!==o.id);if(CUR===o.id)CUR=null;OPEN=null;renderOrders();toast("Order deleted")};
+}
+async function saveLines(o,fn){const lines=o.lines.slice();fn(lines);await saveOrder(o,{lines})}
+async function saveOrder(o,patch){patch.updated_at=new Date().toISOString();const {error}=await sb.from("door_orders").update(patch).eq("id",o.id);if(error){toast("Couldn't save. Check your connection.");return}Object.assign(o,patch);renderOrders()}
+async function copyOrder(o){
+ const H=["Line","Item #","Unit","Sidelite side","Glass","Handing","Finish","Each","Qty","Line total"];
+ const txt=[H.join("\t"),...o.lines.map((x,i)=>[i+1,itemNo(x.item),x.desc,x.side||"",x.glassName,x.hand,x.finName,lineEach(x).toFixed(2),x.qty,(x.qty*lineEach(x)).toFixed(2)].join("\t"))].join("\n");
+ try{await navigator.clipboard.writeText(txt);toast("Copied. Paste into an email or Excel.")}catch(e){toast("Copy was blocked. Use the Excel button instead.")}
+}
+async function excel(o,kind){
+ if(!window.ExcelJS)return toast("Excel export didn't load. Check your connection.");
+ const wb=new ExcelJS.Workbook();wb.creator="Northeast International";
+ const font={name:"Arial",size:10,color:{argb:"FF262626"}};
+ let logoId=null;try{const b=await (await fetch("logo.png")).arrayBuffer();logoId=wb.addImage({buffer:b,extension:"png"})}catch(e){}
+ const head=(ws,title,subtitle,cols)=>{ws.properties.defaultRowHeight=16;
+  if(logoId!=null)ws.addImage(logoId,{tl:{col:0,row:0},ext:{width:170,height:51}});
+  ws.getRow(1).height=22;ws.getRow(2).height=18;ws.getRow(3).height=18;
+  const last=String.fromCharCode(64+cols.length),st_=cols.length>=6?"D":"B";
+  ws.mergeCells(`${st_}1:${last}1`);ws.getCell(st_+"1").value=title;ws.getCell(st_+"1").font={name:"Arial",size:16,bold:true,color:{argb:"FF262626"}};ws.getCell(st_+"1").alignment={horizontal:"right"};
+  ws.mergeCells(`${st_}2:${last}2`);ws.getCell(st_+"2").value=subtitle;ws.getCell(st_+"2").font={name:"Arial",size:9,color:{argb:"FF666666"}};ws.getCell(st_+"2").alignment={horizontal:"right"};
+  for(let c=1;c<=cols.length;c++)ws.getCell(4,c).border={bottom:{style:"medium",color:{argb:"FFE23B28"}}};
+  const hr=ws.getRow(6);cols.forEach((c,i)=>{const cell=hr.getCell(i+1);cell.value=c[0];cell.font={name:"Arial",size:11,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0A0A0A"}};cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};ws.getColumn(i+1).width=c[1]});
+  hr.height=30;ws.views=[{state:"frozen",ySplit:6}];
+  ws.pageSetup={orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:"6:6",margins:{left:.5,right:.5,top:.5,bottom:.6,header:.3,footer:.3}};
+  ws.headerFooter.oddFooter="&L&8Northeast International · 11 Kennedy Street, Lancaster, PA 17602 · 717-945-6331 · northeast-intl.com&R&8Page &P of &N";
+ };
+ const body=(ws,r1,r2_,ncol,money_)=>{for(let r=r1;r<=r2_;r++){const row=ws.getRow(r);for(let c=1;c<=ncol;c++){const cell=row.getCell(c);cell.font=font;cell.border={top:{style:"thin",color:{argb:"FFD9D9D9"}},bottom:{style:"thin",color:{argb:"FFD9D9D9"}},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};cell.alignment={vertical:"top",wrapText:true};if((r-r1)%2===1)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};if(money_.includes(c)){cell.numFmt="$#,##0.00";cell.alignment={horizontal:"right",vertical:"top"}}}}};
+ const tot=(ws,r,ncol,lbl,cells)=>{const row=ws.getRow(r);for(let c=1;c<=ncol;c++){const cell=row.getCell(c);cell.font={...font,bold:true};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};cell.border={top:{style:"thin",color:{argb:"FF262626"}}}}row.getCell(cells[0][0]-1).value=lbl;cells.forEach(([c,f,fmt])=>{row.getCell(c).value={formula:f};if(fmt)row.getCell(c).numFmt=fmt})};
+ const cc=code()||CUST, d=today(), r0=7, rl=r0+o.lines.length-1;
+ if(kind==="customer"){
+  const ws=wb.addWorksheet("Door Order");
+  const cols=[["Line",6],["Item #",13],["Unit",34],["Sidelite side",10],["Glass",13],["Glass item #s",30],["Handing",10],["Finish",16],["Unit price",12],["Glass price",12],["Each",12],["Qty",7],["Line total",14]];
+  head(ws,"Exterior Door Order",`${CUST} · ${o.title} · ${d} · Prepared by ${ME}`,cols);
+  o.lines.forEach((x,i)=>{const r=r0+i;ws.getRow(r).values=[i+1,itemNo(x.item),x.desc,x.side||"—",x.glassName,x.gitems.map(g=>itemNo(g.item)+" ×"+g.q).join("\n")||"—",x.hand,x.finName,x.unit,x.gp,{formula:`I${r}+J${r}`},x.qty,{formula:`K${r}*L${r}`}]});
+  body(ws,r0,rl,cols.length,[9,10,11,13]);tot(ws,rl+1,cols.length,"Total",[[12,`SUM(L${r0}:L${rl})`],[13,`SUM(M${r0}:M${rl})`,"$#,##0.00"]]);
+  const k=wb.addWorksheet("Handing Key");k.columns=[{width:10},{width:80}];k.addRows([["Code","Meaning"],...HAND.map(h=>[h.id,`${h.name}: ${h.sub}, viewed from outside`])]);k.getRow(1).font={name:"Arial",bold:true};
+ }else{
+  const ws=wb.addWorksheet("Factory Order");
+  const cols=[["Line",6],["Customer item #",15],["Unit",30],["Factory parts",40],["Glass",30],["Handing",10],["Sidelite side",10],["FOB each",12],["Qty",7],["FOB line",13]];
+  head(ws,"Factory Order",`${cc} doors · ${o.title} · ${d} · FOB USD`,cols);
+  o.lines.forEach((x,i)=>{const r=r0+i;ws.getRow(r).values=[i+1,itemNo(x.item),x.desc,x.parts.map(p=>p[0]+" × "+p[1]).join("\n"),x.gitems.map(g=>itemNo(g.item)+" × "+g.q).join("\n")||(x.glassName==="Clear"?"Clear (included)":"—"),x.hand,x.side||"—",lineFob(x),x.qty,{formula:`H${r}*I${r}`}]});
+  body(ws,r0,rl,cols.length,[8,10]);tot(ws,rl+1,cols.length,"Total",[[9,`SUM(I${r0}:I${rl})`],[10,`SUM(J${r0}:J${rl})`,"$#,##0.00"]]);
+  const roll={};o.lines.forEach(x=>{x.parts.forEach(([pn,q])=>{const k=pn;roll[k]=roll[k]||{q:0,u:typeof q==="number"?"pcs":"sets"};roll[k].q+=(typeof q==="number"?q:1)*x.qty});x.gitems.forEach(g=>{const k=itemNo(g.item);roll[k]=roll[k]||{q:0,u:"lites"};roll[k].q+=g.q*x.qty})});
+  const ws2=wb.addWorksheet("Parts Rollup");const c2=[["Part #",30],["Qty",12],["Unit",12],["",14]];head(ws2,"Parts Rollup",`Totals for all ${oTotals(o).doors} doors`,c2);
+  Object.entries(roll).forEach(([k,v],i)=>ws2.getRow(r0+i).values=[k,v.q,v.u]);body(ws2,r0,r0+Object.keys(roll).length-1,3,[]);
+ }
+ const buf=await wb.xlsx.writeBuffer();const name=kind==="customer"?`${d} ${cc} doors order.xlsx`:`${d} Fangda-${cc}-doors order.xlsx`;
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Downloaded "+name);
+}
+
+/* ---------- catalog ---------- */
+let CT="lines",EDIT=null;
+function renderCatalog(){
+ document.querySelectorAll("#ctabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===CT)));
+ const B=$("#cbody");
+ if(CT==="lines"){B.innerHTML=`<div class="btns" style="margin-bottom:10px"><button class="btn red" type="button" id="newLine">Add door style</button></div><div class="items">${D.lines.map(l=>`<button type="button" class="item ${l.active?"":"off"}" data-e="${esc(l.id)}">${l.photo_path?`<img src="${esc(src(l.photo_path))}" alt="">`:'<span class="ph"></span>'}<span><code>${esc(l.id)}</code><br><strong>${esc(l.name)}</strong><br><span class="sub">${esc(l.slab_pn)}${l.active?"":" · hidden"}</span></span></button>`).join("")}</div><div id="ed"></div>`;
+  $("#newLine").onclick=()=>{EDIT={_new:true,id:"",name:"",skin:"M",supplier:"Fangda",sub:"",slab_pn:"",slab_desc:"",sl_pn:"",sl_desc:"",mull_pn:"HDT-01",jamb_pn:"HDJ-6-9/16",brick_pn:"HDB-01",lite:"",sl_lite:"",sl_height:80,door_geom:DOOR_PRESETS["3/4 lite, 1 panel"],sl_geom:SL_PRESETS["3/4 lite, 1 panel"],configs:["A","B","C"],photo_path:"",notes:"",sort:D.lines.length+1,active:true};lineEditor()};
+  B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.lines.find(l=>l.id===b.dataset.e)));lineEditor()});
+ }
+ if(CT==="glass"){B.innerHTML=`<div class="btns" style="margin-bottom:10px"><button class="btn red" type="button" id="newG">Add glass</button></div><div class="items">${D.glass.map(g=>`<button type="button" class="item ${g.active?"":"off"}" data-e="${esc(g.id)}">${g.photo_path?`<img src="${esc(src(g.photo_path))}" alt="">`:'<span class="ph"></span>'}<span><code>${esc(g.id)}</code><br><strong>${esc(g.name)}</strong><br><span class="sub">fits ${esc(g.fits.join(", ")||"nothing yet")}</span></span></button>`).join("")}</div><div id="ed"></div>`;
+  $("#newG").onclick=()=>{EDIT={_new:true,id:"",name:"",caming:"",spec:"DP tempered w/ frame",dl_lite:"",sl_lite:"",handed:false,fits:[],recommended_for:[],photo_path:"",photo_lite:"",notes:"",sort:D.glass.length+1,active:true};glassEditor()};
+  B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.glass.find(g=>g.id===b.dataset.e)));glassEditor()});
+ }
+ if(CT==="fin"){B.innerHTML=`<div class="btns" style="margin-bottom:10px"><button class="btn red" type="button" id="newF">Add finish</button></div><div class="items">${D.fin.map(f=>`<button type="button" class="item ${f.active?"":"off"}" data-e="${esc(f.id)}"><span class="ph" style="background:url('${esc(src(f.swatch_path))}') center/cover"></span><span><code>${esc(f.id)}</code><br><strong>${esc(f.name)}</strong><br><span class="sub">${esc(SKINS[f.skin]||f.skin)}</span></span></button>`).join("")}</div><div id="ed"></div>`;
+  $("#newF").onclick=()=>{EDIT={_new:true,id:"",skin:"M",name:"",sub:"",swatch_path:"",as_shipped:false,priced:false,sort:D.fin.length+1,active:true};finEditor()};
+  B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.fin.find(f=>f.id===b.dataset.e)));finEditor()});
+ }
+ if(CT==="prices")priceEditor();
+}
+const fld=(k,label,v,extra="")=>`<label>${label}<input data-k="${k}" value="${esc(v??"")}" ${extra}></label>`;
+async function upload(file,prefix){
+ const ext=(file.name.split(".").pop()||"jpg").toLowerCase(),path=`${prefix}/${Date.now()}.${ext}`;
+ const {error}=await sb.storage.from("door-photos").upload(path,file,{upsert:true,contentType:file.type});if(error)throw error;
+ return sb.storage.from("door-photos").getPublicUrl(path).data.publicUrl;
+}
+function bindForm(root,onChange){
+ root.querySelectorAll("[data-k]").forEach(el=>{const ev=el.type==="checkbox"||el.tagName==="SELECT"?"change":"input";el.addEventListener(ev,()=>{const k=el.dataset.k;
+  if(el.dataset.arr){EDIT[k]=[...root.querySelectorAll(`[data-k="${k}"]:checked`)].map(x=>x.value)}
+  else if(el.type==="checkbox")EDIT[k]=el.checked;
+  else if(el.dataset.json){try{EDIT[k]=el.value.trim()?JSON.parse(el.value):null;el.style.borderColor=""}catch(e){el.style.borderColor="var(--red)";return}}
+  else if(el.type==="number")EDIT[k]=el.value===""?null:Number(el.value);
+  else EDIT[k]=el.value;onChange&&onChange()})});
+}
+function litePreset(geom,lite,wTotal){if(!geom||!geom.lite||!/^\d{3,4}$/.test(lite||""))return geom;const w=+lite.slice(0,lite.length-2),h=+lite.slice(-2);const g=JSON.parse(JSON.stringify(geom));g.lite=[r2((wTotal-w)/2),g.lite[1],w,h];return g}
+function lineEditor(){
+ const e=EDIT,ed=$("#ed");
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New door style":"Edit "+esc(e.id)}</h3>
+ <div class="editor"><div class="form">
+  ${fld("id","Style code (used in item #s, e.g. M4)",e.id,e._new?"":"disabled")}${fld("name","Name",e.name)}
+  <label>Skin / finish family<select data-k="skin">${Object.entries(SKINS).map(([k,v])=>`<option value="${k}" ${k===e.skin?"selected":""}>${v}</option>`).join("")}</select></label>
+  ${fld("supplier","Supplier",e.supplier)}${fld("sub","Short note under the name",e.sub)}
+  ${fld("slab_pn","Door slab part #",e.slab_pn)}${fld("slab_desc","Door slab description",e.slab_desc)}
+  ${fld("lite","Door lite size (e.g. 2248, blank = no glass)",e.lite)}
+  ${fld("sl_pn","Sidelite part # (blank = no sidelites)",e.sl_pn)}${fld("sl_desc","Sidelite description",e.sl_desc)}
+  ${fld("sl_lite","Sidelite lite size",e.sl_lite)}${fld("sl_height","Sidelite height (in)",e.sl_height,'type="number" step="0.5"')}
+  ${fld("mull_pn","Mull post part #",e.mull_pn)}${fld("jamb_pn","Jamb part #",e.jamb_pn)}${fld("brick_pn","Brickmould part #",e.brick_pn)}
+  <label class="wide">Units offered<span class="checks">${Object.entries(CFG).map(([k,v])=>`<label><input type="checkbox" data-k="configs" data-arr="1" value="${k}" ${e.configs.includes(k)?"checked":""}>${k} · ${v.name}</label>`).join("")}</span></label>
+  <label>Door layout<select id="dPre"><option value="">Pick a layout…</option>${Object.keys(DOOR_PRESETS).map(k=>`<option>${k}</option>`).join("")}</select></label>
+  <label>Sidelite layout<select id="sPre"><option value="">Pick a layout…</option>${Object.keys(SL_PRESETS).map(k=>`<option>${k}</option>`).join("")}</select></label>
+  <label class="wide">Door drawing (inches on a 36×80 slab: lite [x,y,w,h], panels, optional shelf)<textarea data-k="door_geom" data-json="1">${esc(JSON.stringify(e.door_geom))}</textarea></label>
+  <label class="wide">Sidelite drawing (inches on a 14-wide sidelite)<textarea data-k="sl_geom" data-json="1">${esc(JSON.stringify(e.sl_geom))}</textarea></label>
+  <label>Catalog photo (optional)<input type="file" accept="image/*" id="ph"></label>
+  ${fld("sort","Sort order",e.sort,'type="number"')}
+  <label class="wide">Open questions / notes (shows on the build sheet as VERIFY)<input data-k="notes" value="${esc(e.notes||"")}"></label>
+  <label class="checks"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></label>
+ </div><div><div class="stage"><svg id="pv" viewBox="0 0 470 470" role="img" aria-label="Preview"></svg></div><div class="note" style="margin-top:6px">Preview with clear glass. Picking a layout uses the lite size above to size the glass opening.</div>${e.photo_path?`<img src="${esc(src(e.photo_path))}" alt="" style="max-height:200px;margin-top:8px;border:1px solid var(--line)">`:""}</div></div>
+ <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button><span class="note">Prices for this style are set under Prices.</span></div></div>`;
+ const pv=()=>{try{$("#pv").innerHTML=drawUnit({...e,door_geom:e.door_geom||{},sl_geom:e.sl_geom||{}},{cfg:e.configs.includes("C")&&e.sl_pn?"C":"A",side:"R",fin:(D.fin.find(f=>f.skin===e.skin&&f.as_shipped)||{}).id,hand:"LHIS"},null,"p")}catch(err){}};
+ bindForm(ed,pv);pv();
+ $("#dPre").onchange=ev=>{if(!ev.target.value)return;e.door_geom=litePreset(DOOR_PRESETS[ev.target.value],e.lite,36);ed.querySelector('[data-k="door_geom"]').value=JSON.stringify(e.door_geom);pv()};
+ $("#sPre").onchange=ev=>{if(!ev.target.value)return;e.sl_geom=litePreset(SL_PRESETS[ev.target.value],e.sl_lite,14);ed.querySelector('[data-k="sl_geom"]').value=JSON.stringify(e.sl_geom);pv()};
+ $("#ph").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.photo_path=await upload(f,"lines");toast("Photo uploaded. Save to keep it.")}catch(err){toast("Upload failed.")}};
+ $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};
+ $("#sv").onclick=()=>save("door_lines",e,()=>{if(!/^[A-Z0-9]{1,8}$/i.test(e.id))return "Style code must be letters/numbers, up to 8 characters.";if(!e.name||!e.slab_pn)return "Name and door slab part # are required.";if(e._new&&D.lines.some(l=>l.id===e.id))return "That style code is already used."});
+ ed.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function glassEditor(){
+ const e=EDIT,ed=$("#ed");
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New glass":"Edit "+esc(e.id)}</h3><div class="editor"><div class="form">
+  ${fld("id","Glass code (e.g. CAPEFL)",e.id,e._new?"":"disabled")}${fld("name","Pattern name",e.name)}${fld("caming","Caming",e.caming)}${fld("spec","Glass spec",e.spec)}
+  ${fld("dl_lite","Door lite size",e.dl_lite)}${fld("sl_lite","Sidelite lite size",e.sl_lite)}
+  ${fld("photo_lite","Lite size shown in the photo",e.photo_lite)}
+  <label>Photo<input type="file" accept="image/*" id="ph"></label>
+  <label class="wide">Fits door styles<span class="checks">${D.lines.map(l=>`<label><input type="checkbox" data-k="fits" data-arr="1" value="${esc(l.id)}" ${e.fits.includes(l.id)?"checked":""}>${esc(l.id)} · ${esc(l.name)}</label>`).join("")}</span></label>
+  <label class="wide">Recommended for<span class="checks">${D.lines.map(l=>`<label><input type="checkbox" data-k="recommended_for" data-arr="1" value="${esc(l.id)}" ${(e.recommended_for||[]).includes(l.id)?"checked":""}>${esc(l.id)}</label>`).join("")}</span></label>
+  <label class="checks"><label><input type="checkbox" data-k="handed" ${e.handed?"checked":""}>Sidelite lites are handed (L/R)</label></label>
+  ${fld("sort","Sort order",e.sort,'type="number"')}
+  <label class="wide">Notes<input data-k="notes" value="${esc(e.notes||"")}"></label>
+  <label class="checks"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></label>
+ </div><div>${e.photo_path?`<img id="gimg" src="${esc(src(e.photo_path))}" alt="" style="max-height:320px;border:1px solid var(--line)">`:'<div class="note" id="gimg">No photo yet.</div>'}<p class="note">The photo is fitted into the door drawing only when "lite size shown in the photo" matches the door style's lite. Otherwise it shows beside the drawing, so the picture never misleads.</p></div></div>
+ <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button><span class="note">Set prices for -DL and -SL under Prices.</span></div></div>`;
+ bindForm(ed);
+ $("#ph").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.photo_path=await upload(f,"glass");toast("Photo uploaded. Save to keep it.");glassEditor()}catch(err){toast("Upload failed.")}};
+ $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};
+ $("#sv").onclick=()=>save("door_glass",e,()=>{if(!/^[A-Z0-9]{1,10}$/i.test(e.id))return "Glass code must be letters/numbers, up to 10 characters.";if(!e.name)return "Pattern name is required.";if(e._new&&D.glass.some(g=>g.id===e.id))return "That glass code is already used."});
+ ed.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function finEditor(){
+ const e=EDIT,ed=$("#ed");
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New finish":"Edit "+esc(e.id)}</h3><div class="form" style="margin-top:10px">
+  ${fld("id","Finish code (e.g. K-05)",e.id,e._new?"":"disabled")}${fld("name","Name",e.name)}
+  <label>For skin<select data-k="skin">${Object.entries(SKINS).map(([k,v])=>`<option value="${k}" ${k===e.skin?"selected":""}>${v}</option>`).join("")}</select></label>
+  ${fld("sub","Short note",e.sub)}<label>Swatch photo<input type="file" accept="image/*" id="ph"></label>${fld("sort","Sort order",e.sort,'type="number"')}
+  <label class="checks wide"><label><input type="checkbox" data-k="as_shipped" ${e.as_shipped?"checked":""}>This is the as-shipped finish</label><label><input type="checkbox" data-k="priced" ${e.priced?"checked":""}>Included in price (not preview)</label><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></label>
+ </div><div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
+ bindForm(ed);
+ $("#ph").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.swatch_path=await upload(f,"finishes");toast("Swatch uploaded. Save to keep it.")}catch(err){toast("Upload failed.")}};
+ $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};
+ $("#sv").onclick=()=>save("door_finishes",e,()=>{if(!e.id||!e.name)return "Code and name are required.";if(e._new&&D.fin.some(f=>f.id===e.id))return "That code is already used."});
+}
+async function save(table,e,validate){
+ const msg=validate();if(msg)return toast(msg);
+ const row={...e};delete row._new;if(table!=="door_finishes")row.updated_at=new Date().toISOString();
+ if(table==="door_lines"){row.sl_pn=row.sl_pn||null;row.lite=row.lite||null;row.sl_lite=row.sl_lite||null}
+ const {error}=await sb.from(table).upsert(row);if(error){console.error(error);return toast("Couldn't save: "+error.message)}
+ await loadAll();EDIT=null;renderCatalog();toast("Saved")
+}
+function priceEditor(){
+ const B=$("#cbody"),items=[];
+ D.lines.forEach(l=>l.configs.filter(k=>k==="A"||l.sl_pn).forEach(k=>items.push({item:l.id+"-"+k,desc:`${l.name} · ${CFG[k].name}`})));
+ D.glass.forEach(g=>{items.push({item:"G-"+g.id+"-DL",desc:`${g.name} door lite`});items.push({item:"G-"+g.id+"-SL",desc:`${g.name} sidelite lite`})});
+ const others=D.customers.filter(c=>c.name!==CUST&&D.prices.some(p=>p.customer===c.name));
+ B.innerHTML=`<div class="card"><div class="secthead"><div><h3>Price list · ${esc(CUST)}</h3><div class="sub">Customer price and FOB cost per item. Changed cells turn red until you save.</div></div>
+  <div class="btns">${others.length?`<select id="cpFrom" aria-label="Copy from">${others.map(c=>`<option>${esc(c.name)}</option>`).join("")}</select><button class="btn" type="button" id="cpGo">Copy missing prices from</button>`:""}<button class="btn red" type="button" id="psave">Save prices</button></div></div>
+  <div class="tbl"><table><tr><th>Item #</th><th>Description</th><th class="n">Customer price</th><th class="n">FOB</th><th class="n">Margin</th></tr>
+  ${items.map(it=>{const p=priceOf(it.item);return `<tr><td><code>${esc(itemNo(it.item))}</code></td><td>${esc(it.desc)}</td><td class="n"><input class="pr" data-item="${esc(it.item)}" data-f="price" inputmode="decimal" value="${p?.price??""}" aria-label="Price ${esc(it.item)}"></td><td class="n"><input class="pr" data-item="${esc(it.item)}" data-f="fob" inputmode="decimal" value="${p?.fob??""}" aria-label="FOB ${esc(it.item)}"></td><td class="n" data-m="${esc(it.item)}">${p?.price&&p?.fob?((p.price-p.fob)/p.price*100).toFixed(1)+"%":"—"}</td></tr>`}).join("")}</table></div></div>`;
+ B.querySelectorAll("input.pr").forEach(i=>i.oninput=()=>i.classList.add("dirty"));
+ $("#psave").onclick=async()=>{const rows={};B.querySelectorAll("input.pr.dirty").forEach(i=>{const it=i.dataset.item;const cur=priceOf(it)||{};rows[it]=rows[it]||{customer:CUST,item:it,price:cur.price??null,fob:cur.fob??null};const v=i.value.trim();rows[it][i.dataset.f]=v===""?null:r2(parseFloat(v.replace(/[$,]/g,"")))});
+  const list=Object.values(rows).map(r=>({...r,updated_at:new Date().toISOString()}));if(!list.length)return toast("Nothing changed.");
+  if(list.some(r=>(r.price!=null&&isNaN(r.price))||(r.fob!=null&&isNaN(r.fob))))return toast("One of the prices isn't a number.");
+  const {error}=await sb.from("door_prices").upsert(list);if(error)return toast("Couldn't save prices: "+error.message);await loadAll();priceEditor();toast(`Saved ${list.length} price${list.length>1?"s":""}`)};
+ const cp=$("#cpGo");if(cp)cp.onclick=async()=>{const from=$("#cpFrom").value,src_=D.prices.filter(p=>p.customer===from&&!priceOf(p.item));if(!src_.length)return toast("Nothing to copy. "+CUST+" already has those prices.");
+  const {error}=await sb.from("door_prices").insert(src_.map(p=>({customer:CUST,item:p.item,price:p.price,fob:p.fob})));if(error)return toast("Couldn't copy prices.");await loadAll();priceEditor();toast(`Copied ${src_.length} prices from ${from}`)};
+}
+
+/* ---------- shell ---------- */
+function route(){
+ const v=(location.hash||"#build").slice(1);const view=["build","orders","catalog"].includes(v)?v:"build";
+ document.querySelectorAll(".tabs a").forEach(a=>a.setAttribute("aria-current",a.dataset.v===view?"page":"false"));
+ ["build","orders","catalog"].forEach(k=>$("#v-"+k).hidden=k!==view);
+ if(view==="build")renderBuild();if(view==="orders"){if(!OPEN)OPEN=CUR;renderOrders()}if(view==="catalog")renderCatalog();
+}
+window.addEventListener("hashchange",route);
+$("#cust").onchange=e=>{CUST=e.target.value;ls("db-cust",CUST);const keep=ls("db-cur-"+CUST);CUR=D.orders.some(o=>o.id===keep&&o.status==="Draft")?keep:null;OPEN=null;route()};
+$("#showCost").checked=SHOWCOST;$("#showCost").onchange=e=>{SHOWCOST=e.target.checked;ls("db-cost",SHOWCOST?"1":"0");renderBuild()};
+const newOrder=()=>{CUR=null;ls("db-cur-"+CUST,"");toast("Next door you add starts a new order.");location.hash="build";renderBuild()};
+$("#newOrder").onclick=newOrder;$("#newOrder2").onclick=newOrder;
+$("#add").onclick=addToOrder;
+$("#qm").onclick=()=>$("#qty").value=Math.max(1,(+$("#qty").value||1)-1);$("#qp").onclick=()=>$("#qty").value=(+$("#qty").value||0)+1;
+$("#olist").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b){OPEN=b.dataset.o;renderOrders();$("#odetail").scrollIntoView({behavior:"smooth",block:"start"})}});
+$("#ctabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){CT=b.dataset.t;EDIT=null;renderCatalog()}});
+$("#signOut").onclick=async()=>{await sb.auth.signOut();location.reload()};
+const lMsg=(t,err)=>{$("#lMsg").textContent=t||"";$("#lMsg").style.color=err?"var(--red)":"var(--muted)"};
+$("#login").addEventListener("submit",async e=>{e.preventDefault();$("#lGo").disabled=true;lMsg("");
+ try{const {error}=await sb.auth.signInWithPassword({email:$("#lEmail").value.trim(),password:$("#lPass").value});if(error)throw error;await afterLogin()}
+ catch(err){lMsg(/Invalid login/i.test(err.message)?"That email and password don't match. Use the same login as the NEI Hub.":"Couldn't sign in: "+err.message,true)}finally{$("#lGo").disabled=false}});
+$("#lForgot").onclick=async()=>{const em=$("#lEmail").value.trim();if(!em)return lMsg("Type your email above first.",true);
+ const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+"/prototypes/nei-office-hub/"});lMsg(error?"Couldn't send the reset email.":"Check your email for a reset link. It opens the NEI Hub, where you set the new password.",!!error)};
+async function afterLogin(){
+ const {data:me,error}=await sb.rpc("my_member");
+ if(error||!me){await sb.auth.signOut();$("#login").hidden=false;lMsg("That email isn't on the NEI team list.",true);return}
+ ME=me==="D Lapp"?"Lapp D":me==="D Glick"?"Daniel G":me;$("#me").textContent=ME;
+ $("#login").hidden=true;$("#bar").hidden=false;$("#app").hidden=false;
+ try{await loadAll()}catch(e){console.error(e);toast("Couldn't load the catalog. Check your connection.");return}
+ route();
+}
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+(async()=>{const {data:{session}}=await sb.auth.getSession();if(session)await afterLogin();else $("#login").hidden=false})();
+</script>
+</body>
+</html>
