@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>NEI Door Builder</title>
-<meta name="description" content="Northeast International door builder: configure entry door units, build customer orders, manage the door catalog">
+<meta name="description" content="Northeast International door builder: configure Fangda entry doors from the full catalog, build customer orders, manage catalog and prices">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -18,11 +18,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Layout: black app bar (logo, customer, tabs) · Build: drawing left / options right / build sheet · Orders: list + order detail · Catalog: tabbed editors with live preview */
+/* Layout: black app bar (NEI logo, customer, tabs) · Build: live render left / numbered steps right / parts sheet · Orders · Catalog editors */
 :root{
   color-scheme:light;
   --bg:#f3f2ef; --surface:#ffffff; --ink:#1c1b1a; --muted:#6b6862; --line:#e2dfd9;
-  --red:#c8102e; --red-soft:#fbe7ea; --chip:#efeeea; --wall:#d9d3c7; --ok:#2f7d4f;
+  --red:#c8102e; --red-soft:#fbe7ea; --chip:#efeeea; --ok:#2f7d4f;
   --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -33,50 +33,62 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 var(--f-body)}
 img{max-width:100%}
 [hidden]{display:none!important}
 button{font:inherit;color:inherit}
-.bar{background:#0d0d0d;color:#fff;position:sticky;top:0;z-index:20}
+.bar{background:#0d0d0d;color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:#0d0d0d;z-index:30}
-.bar .in{max-width:1200px;margin:0 auto;padding:10px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
-.brand{font:700 22px var(--f-display);letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
-.brand i{width:10px;height:22px;background:var(--red);display:inline-block}
+.bar .in{max-width:1280px;margin:0 auto;padding:10px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{height:34px;width:auto;display:block}
+.brand span{font:600 18px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:#d8d8d8;border-left:1px solid #3a3a3a;padding-left:12px}
 .bar select{background:#1f1f1f;color:#fff;border:1px solid #3a3a3a;padding:6px 8px;font:inherit;font-size:14px}
 .who{margin-left:auto;font-size:13px;color:#bbb;display:flex;gap:10px;align-items:center}
 .who button{background:none;border:1px solid #444;color:#ddd;padding:4px 10px;cursor:pointer;font-size:13px}
 .tabs{flex-basis:100%;display:flex;gap:2px;overflow-x:auto}
 .tabs a{color:#bbb;text-decoration:none;padding:9px 14px;font:600 15px var(--f-display);letter-spacing:.08em;text-transform:uppercase;border-bottom:3px solid transparent;white-space:nowrap}
 .tabs a[aria-current="page"]{color:#fff;border-color:var(--red)}
-main{max-width:1200px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+main{max-width:1280px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 56px max(16px,env(safe-area-inset-left,0px))}
 h2{font:700 26px var(--f-display);text-transform:uppercase;letter-spacing:.03em;margin:0}
 h3{font:700 18px var(--f-display);text-transform:uppercase;letter-spacing:.05em;margin:0}
 .sub{color:var(--muted);font-size:13px}
 .mono,code{font-family:var(--f-mono);font-size:12px}
-.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;align-items:start}
-@media (max-width:840px){.grid2{grid-template-columns:1fr}}
-.left{display:flex;flex-direction:column;gap:12px;min-width:0;position:sticky;top:110px}
-@media (max-width:840px){.left{position:static}}
-.stage{background:var(--wall);border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.stage svg{width:100%;max-width:470px;height:auto;display:block}
-.cap{font-size:13px;font-weight:600;text-align:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.left{display:flex;flex-direction:column;gap:12px;min-width:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 100px)}
+@media (max-width:900px){.left{position:static}}
+.stage{background:#2a2a28;border:1px solid var(--line);overflow:hidden}
+.stage canvas{width:100%;height:auto;display:block}
+.cap{font-size:13px;font-weight:600;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-top:0}
 .card{background:var(--surface);border:1px solid var(--line)}
 .pad{padding:12px}
-.pricebar{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
-.big{font:700 32px var(--f-display);color:var(--red);font-variant-numeric:tabular-nums}
+.prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.big{font:700 32px var(--f-display);color:var(--red);font-variant-numeric:tabular-nums;line-height:1.1}
+.big.fob{color:var(--ink)}
 .k{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.gcard{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px}
-.gcard img{width:100px;border:1px solid var(--line);display:block}
-.gcard p{margin:0 0 6px;font-size:13px}
-.opts{display:flex;flex-direction:column;gap:16px;min-width:0}
-fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:6px}
-legend{font:600 15px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0;margin-bottom:4px}
+.warn{color:#8a5a00;background:#fbf0d9;padding:8px 10px;font-size:13px}
+.steps{display:flex;flex-direction:column;gap:18px;min-width:0}
+fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:8px}
+legend{font:600 15px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0;margin-bottom:6px;width:100%;display:flex;justify-content:space-between;gap:8px}
+legend em{font-style:normal;color:var(--ink);text-transform:none;letter-spacing:0;font-family:var(--f-body);font-size:13px;font-weight:500}
 .row{display:flex;flex-wrap:wrap;gap:6px}
-.opt{border:1px solid var(--line);background:var(--surface);padding:7px 10px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0;font-size:13.5px}
-.opt b{font:500 11.5px var(--f-mono);color:var(--muted)}
-.opt span{color:var(--muted);font-size:12px}
-.opt .pr{color:var(--ink);font-variant-numeric:tabular-nums}
-.opt[aria-pressed="true"]{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
-.opt[aria-pressed="true"] b{color:var(--red)}
-.opt.thumb{flex-direction:row;align-items:center;gap:8px}
-.opt.thumb img{width:28px;height:58px;object-fit:cover;border:1px solid var(--line)}
-.opt i.sw{display:block;height:8px;margin-top:3px;border:1px solid var(--line);background-size:cover}
+.chip{border:1px solid var(--line);background:var(--surface);padding:7px 11px;cursor:pointer;font-size:13.5px;text-align:left}
+.chip[aria-pressed="true"]{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red);font-weight:600}
+.chip span{display:block;color:var(--muted);font-size:11.5px;font-weight:400}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;max-height:330px;overflow:auto;padding:2px}
+.tiles.sl{grid-template-columns:repeat(auto-fill,minmax(58px,1fr))}
+.tiles.gl{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));max-height:380px}
+.tile{border:1px solid var(--line);background:var(--surface);padding:5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;text-align:center;min-width:0}
+.tile img{height:96px;width:auto;max-width:100%;object-fit:contain;display:block;background:#fff}
+.tiles.gl .tile img{height:110px}
+.tile b{font:500 10.5px var(--f-mono);word-break:break-all}
+.tile span{color:var(--muted);font-size:10.5px;line-height:1.2}
+.tile[aria-pressed="true"]{border-color:var(--red);box-shadow:inset 0 0 0 2px var(--red)}
+.tile .pv{font:600 10px var(--f-mono);color:var(--muted)}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tools input[type=search],.tools select{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);background:var(--surface);min-width:0}
+.cfgs{display:flex;flex-wrap:wrap;gap:6px}
+.cfg{border:1px solid var(--line);background:var(--surface);padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}
+.cfg svg{width:64px;height:40px}
+.cfg[aria-pressed="true"]{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.sw{width:44px;height:30px;border:1px solid var(--line);display:block;background-size:cover;background-position:center}
 .note{font-size:12.5px;color:var(--muted)}
 .flag{font:500 10.5px var(--f-mono);color:var(--red);letter-spacing:.04em}
 .plan{width:100%;max-width:240px;height:auto}
@@ -94,59 +106,58 @@ table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 th{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-table.kv th{width:28%;font-size:13px;white-space:normal}
 input.q{width:58px;padding:3px 5px;font:inherit;border:1px solid var(--line)}
 .rm{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px}
 .secthead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .olist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .ocard{background:var(--surface);border:1px solid var(--line);padding:12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px}
 .ocard[aria-current="true"]{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
-.pill{display:inline-block;font:600 11px var(--f-mono);padding:2px 7px;background:var(--chip);letter-spacing:.04em;text-transform:uppercase}
+.pill{display:inline-block;font:600 11px var(--f-mono);padding:2px 7px;background:var(--chip);letter-spacing:.04em;text-transform:uppercase;align-self:flex-start}
 .pill.Draft{background:#fbf0d9;color:#7a4d00}.pill.Sent{background:#e6eef8;color:#1d4b85}.pill.Ordered{background:#e3f2e8;color:var(--ok)}
 .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
 .subtabs button{border:1px solid var(--line);background:var(--surface);padding:7px 12px;cursor:pointer;font:600 14px var(--f-display);letter-spacing:.06em;text-transform:uppercase}
 .subtabs button[aria-pressed="true"]{background:#0d0d0d;color:#fff;border-color:#0d0d0d}
-.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
-.item{background:var(--surface);border:1px solid var(--line);padding:10px;cursor:pointer;text-align:left;display:flex;gap:10px;align-items:center}
-.item img,.item .ph{width:34px;height:70px;object-fit:cover;border:1px solid var(--line);background:var(--chip);flex:none}
-.item.off{opacity:.55}
 .form{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px}
 .form label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);font-weight:500}
 .form input,.form select,.form textarea{font:inherit;font-size:14px;color:var(--ink);border:1px solid var(--line);padding:7px 8px;background:var(--surface);width:100%}
-.form textarea{font-family:var(--f-mono);font-size:12px;min-height:70px}
-.form .wide{grid-column:1/-1}
-.checks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--ink)}
-.form .checks label{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:14px}
 .form input[type=checkbox]{width:auto}
+.form .wide{grid-column:1/-1}
+.form .checks{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--ink)}
+.form .checks label{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:14px}
 .editor{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-top:12px}
-@media (max-width:840px){.editor{grid-template-columns:1fr}}
-input.pr{width:92px;text-align:right;font:inherit;border:1px solid var(--line);padding:4px 6px;font-variant-numeric:tabular-nums}
+@media (max-width:900px){.editor{grid-template-columns:1fr}}
+.sizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.sizes .s{border:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center;font-size:12px}
+.sizes .s img{height:110px;object-fit:contain}
+input.pr{width:96px;text-align:right;font:inherit;border:1px solid var(--line);padding:4px 6px;font-variant-numeric:tabular-nums}
 input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0d0d0d;color:#fff;padding:10px 16px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
 .login{max-width:380px;margin:60px auto;background:var(--surface);border:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:12px}
+.login .lg{background:#0d0d0d;margin:-24px -24px 6px;padding:16px 20px}
+.login .lg img{height:40px;display:block}
 .login input{font:inherit;padding:10px;border:1px solid var(--line)}
 .err{color:var(--red);font-size:13.5px}
 .empty{padding:18px 12px;color:var(--muted)}
 :focus-visible{outline:2px solid var(--red);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 <header class="bar" id="bar" hidden>
   <div class="in">
-    <div class="brand"><i></i>NEI Door Builder</div>
+    <div class="brand"><img src="logo-onblack.png" alt="Northeast International"><span>Door Builder</span></div>
     <label class="sub" style="color:#bbb">Customer <select id="cust" aria-label="Customer"></select></label>
     <div class="who"><span id="me"></span><button type="button" id="signOut">Sign out</button></div>
     <nav class="tabs" aria-label="Sections">
       <a href="#build" data-v="build">Build</a>
       <a href="#orders" data-v="orders">Orders</a>
-      <a href="#catalog" data-v="catalog">Catalog</a>
+      <a href="#catalog" data-v="catalog">Catalog &amp; prices</a>
     </nav>
   </div>
 </header>
 
 <form class="login" id="login" hidden>
-  <div class="brand" style="color:var(--ink)"><i></i>NEI Door Builder</div>
+  <div class="lg"><img src="logo-onblack.png" alt="Northeast International"></div>
+  <h3>Door Builder</h3>
   <div class="sub">Sign in with your NEI Hub email and password.</div>
   <input id="lEmail" type="email" autocomplete="email" placeholder="Work email" required>
   <input id="lPass" type="password" autocomplete="current-password" placeholder="Password" required>
@@ -156,26 +167,36 @@ input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
 </form>
 
 <main id="app" hidden>
-  <!-- BUILD -->
   <section id="v-build" hidden>
     <div class="grid2">
       <div class="left">
-        <div class="stage"><svg id="door" viewBox="0 0 470 470" role="img" aria-label="Scale drawing of the selected unit, viewed from outside"></svg><div class="cap" id="caption"></div></div>
-        <div class="card pad pricebar"><div><div class="k" id="pk"></div><div class="big" id="pbig"></div></div><div class="k" id="pcost"></div></div>
-        <div class="card pad gcard" id="gcard" hidden></div>
+        <div><div class="stage"><canvas id="cv" width="1000" height="860" role="img" aria-label="Rendering of the selected door unit, viewed from outside"></canvas></div><div class="cap" id="caption"></div></div>
+        <div class="card pad">
+          <div class="prices"><div><div class="k">Customer price each</div><div class="big" id="pCust">—</div></div><div id="fobBox"><div class="k">FOB cost each</div><div class="big fob" id="pFob">—</div></div></div>
+          <div class="warn" id="pWarn" hidden style="margin-top:8px"></div>
+        </div>
       </div>
-      <div class="opts">
+      <div class="steps">
         <div class="card pad btns" style="justify-content:space-between">
           <div><div class="sub">Adding to</div><strong id="curOrder">New order</strong></div>
-          <div class="btns"><button type="button" class="btn" id="newOrder">Start new order</button><label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="showCost">Show FOB &amp; margin</label></div>
+          <div class="btns"><button type="button" class="btn" id="newOrder">Start new order</button><label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="showFob">Show FOB</label></div>
         </div>
-        <fieldset><legend>1 · Door style</legend><div class="row" id="o-line"></div></fieldset>
-        <fieldset><legend>2 · Unit</legend><div class="row" id="o-cfg"></div></fieldset>
-        <fieldset id="f-side"><legend>Sidelite position</legend><div class="row" id="o-side"></div></fieldset>
-        <fieldset id="f-glass"><legend>3 · Glass</legend><div class="row" id="o-glass"></div><div class="note" id="glassnote"></div></fieldset>
-        <fieldset><legend>4 · Finish preview</legend><div class="row" id="o-fin"></div><div class="note">Units ship unfinished woodgrain unless a finish is priced. Stains marked PREVIEW are not in the price.</div></fieldset>
-        <fieldset><legend>5 · Handing &amp; swing</legend><div class="row" id="o-hand"></div>
-          <div class="note">Stand outside facing the door. Hinges on your left = left hand (LH). Opens into the house = inswing.</div>
+        <fieldset><legend>1 · Collection</legend><div class="row" id="o-coll"></div></fieldset>
+        <fieldset><legend>2 · Door slab <em id="doorPick"></em></legend>
+          <div class="tools"><input type="search" id="dq" placeholder="Search code or style" aria-label="Search doors"><select id="df" aria-label="Filter doors"><option value="">All doors</option><option value="glass">With glass</option><option value="solid">No glass</option></select><span class="note" id="dcount"></span></div>
+          <div class="tiles" id="o-door"></div></fieldset>
+        <fieldset><legend>3 · Unit</legend><div class="cfgs" id="o-cfg"></div></fieldset>
+        <fieldset><legend>4 · Size</legend><div class="row" id="o-w"></div><div class="row" id="o-h"></div><div class="row" id="o-slw"></div></fieldset>
+        <fieldset id="f-sl"><legend>5 · Sidelite <em id="slPick"></em></legend><div class="tiles sl" id="o-sl"></div></fieldset>
+        <fieldset id="f-glass"><legend>6 · Glass <em id="glPick"></em></legend>
+          <div class="tools"><input type="search" id="gq" placeholder="Search pattern" aria-label="Search glass"><span class="note" id="gcount"></span></div>
+          <div class="tiles gl" id="o-glass"></div>
+          <div id="o-cam"></div>
+          <div id="o-slglass"></div></fieldset>
+        <fieldset><legend>7 · Finish</legend><div class="row" id="o-fin"></div><div class="note">Finishes other than as-shipped are previews unless they're marked as priced in the catalog.</div></fieldset>
+        <fieldset><legend>8 · Frame &amp; hardware prep</legend><div id="o-frame" style="display:flex;flex-direction:column;gap:8px"></div></fieldset>
+        <fieldset><legend>9 · Handing &amp; swing</legend><div class="row" id="o-hand"></div>
+          <div class="note" id="handNote">Stand outside facing the door. Hinges on your left = left hand (LH). Opens into the house = inswing.</div>
           <svg id="plan" viewBox="0 0 240 120" class="plan" role="img" aria-label="Top view of the door swing"></svg></fieldset>
         <div class="addrow">
           <span class="sub">Qty</span>
@@ -184,24 +205,24 @@ input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
         </div>
       </div>
     </div>
-    <div class="card" style="margin-top:18px"><div class="secthead"><h3>Build sheet</h3><span class="mono" id="bsid" style="color:var(--red)"></span></div><div class="tbl"><table class="kv" id="bs"></table></div></div>
+    <div class="card" style="margin-top:18px"><div class="secthead"><h3>Build sheet · factory parts</h3><span class="mono" id="bsid" style="color:var(--red)"></span></div><div class="tbl"><table id="bs"></table></div></div>
   </section>
 
-  <!-- ORDERS -->
   <section id="v-orders" hidden>
     <div class="btns" style="justify-content:space-between;margin-bottom:12px"><h2>Orders</h2><button class="btn" type="button" id="newOrder2">Start new order</button></div>
     <div class="olist" id="olist"></div>
     <div class="card" id="odetail" style="margin-top:16px" hidden></div>
   </section>
 
-  <!-- CATALOG -->
   <section id="v-catalog" hidden>
-    <h2>Catalog</h2>
+    <h2>Catalog &amp; prices</h2>
     <div class="sub">Everything the builder offers comes from here. Changes save to the shared database and show for everyone right away.</div>
     <div class="subtabs" id="ctabs">
-      <button type="button" data-t="lines" aria-pressed="true">Door styles</button>
+      <button type="button" data-t="slabs" aria-pressed="true">Doors &amp; sidelites</button>
       <button type="button" data-t="glass" aria-pressed="false">Glass</button>
       <button type="button" data-t="fin" aria-pressed="false">Finishes</button>
+      <button type="button" data-t="comp" aria-pressed="false">Frame parts</button>
+      <button type="button" data-t="coll" aria-pressed="false">Collections</button>
       <button type="button" data-t="prices" aria-pressed="false">Prices</button>
     </div>
     <div id="cbody"></div>
@@ -220,397 +241,479 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const money=v=>v==null||isNaN(v)?"—":"$"+Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",");
 const r2=v=>Math.round(v*100)/100;
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
-const src=p=>!p?"":p;
 function toast(t){const h=$("#toastHost");h.innerHTML=`<div class="toast" role="status">${esc(t)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>h.innerHTML="",3500)}
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+const T={coll:"door_collections",slab:"door_slabs",glass:"door_glass_patterns",fin:"door_finish_options",comp:"door_components",cost:"door_costs",price:"door_customer_prices",orders:"door_orders"};
 
-const CFG={A:{name:"Single door",n:0},B:{name:"Door + 1 sidelite",n:1},C:{name:"Door + 2 sidelites",n:2}};
+const CFG={S:{name:"Single",leaves:1,sl:[]},SL:{name:"Sidelite left",leaves:1,sl:["L"]},SR:{name:"Sidelite right",leaves:1,sl:["R"]},S2:{name:"2 sidelites",leaves:1,sl:["L","R"]},D:{name:"Double",leaves:2,sl:[]},D2:{name:"Double + 2 SL",leaves:2,sl:["L","R"]}};
 const HAND=[{id:"LHIS",name:"LH Inswing",sub:"hinges left, opens in"},{id:"RHIS",name:"RH Inswing",sub:"hinges right, opens in"},{id:"LHOS",name:"LH Outswing",sub:"hinges left, opens out"},{id:"RHOS",name:"RH Outswing",sub:"hinges right, opens out"}];
-const SKINS={M:"Mahogany woodgrain",K:"Oak woodgrain",LS:"Smooth",F:"Fir woodgrain"};
-const DOOR_PRESETS={
- "3/4 lite, 1 panel":{lite:[7,7,22,48],panels:[[7,60,22,11]]},
- "Craftsman lite, 2 panels, shelf":{lite:[7,6,22,15],panels:[[7,27,9.5,45],[19.5,27,9.5,45]],shelf:[6,22.5,24,2.2]},
- "Full lite":{lite:[7,8,22,64],panels:[]},
- "1/2 lite, 2 panels":{lite:[7,6,22,36],panels:[[6.5,49,10,25],[19.5,49,10,25]]},
- "6 panel":{lite:null,panels:[[6.5,5,10,7],[19.5,5,10,7],[6.5,17,10,27],[19.5,17,10,27],[6.5,49,10,26],[19.5,49,10,26]]},
- "2 panel":{lite:null,panels:[[6.5,6,23,32],[6.5,44,23,30]]},
- "Flush":{lite:null,panels:[]}
-};
-const SL_PRESETS={
- "3/4 lite, 1 panel":{lite:[3,7,8,48],panels:[[3,60,8,11]]},
- "Full lite":{lite:[3.5,7.5,7,64],panels:[]},
- "1/2 lite, 1 panel":{lite:[3,6,8,36],panels:[[3,49,8,25]]},
- "2 panel, solid":{lite:null,panels:[[3,6,8,36],[3,49,8,25]]},
- "Flush":{lite:null,panels:[]}
-};
+const LITE_NAMES={"2264":"22×64","2248":"22×48","2236":"22×36","2217":"22×17","2215":"22×15","0764":"7×64","0848":"8×48","0836":"8×36"};
+const liteName=l=>LITE_NAMES[l]||l||"";
 
-let ME=null, D={lines:[],glass:[],fin:[],prices:[],customers:[],orders:[]};
-let CUST=ls("db-cust")||"Miller Brothers";
-let S={line:null,cfg:"A",side:"R",glass:"CLEAR",fin:null,hand:"LHIS"};
-let CUR=null; // current order id
-let SHOWCOST=ls("db-cost")==="1";
+let ME=null,D={coll:[],slab:[],glass:[],fin:[],comp:[],cost:[],price:[],customers:[],orders:[]};
+let CUST=ls("db-cust")||"Miller Brothers", CUR=null, SHOWFOB=ls("db-fob")==="1";
+let S={coll:"M",door:null,cfg:"S",w:36,h:80,slw:14,sl:null,glass:"CLEAR",slglass:"SAME",caming:"",fin:null,jamb:"HDJ-6-9/16",trim:"HDB-01",SILL:"Bronze",HINGE:"Bronze",SWEEP:"Bronze",BORE:"Double bore",hand:"LHIS"};
+try{Object.assign(S,JSON.parse(ls("db-state")||"{}"))}catch(e){}
 
 /* ---------- data ---------- */
 async function loadAll(){
- const q=t=>sb.from(t).select("*");
- const [l,g,f,p,c,o]=await Promise.all([q("door_lines").order("sort"),q("door_glass").order("sort"),q("door_finishes").order("sort"),q("door_prices"),q("customers").order("name"),q("door_orders").order("updated_at",{ascending:false})]);
- for(const r of [l,g,f,p,c,o]) if(r.error) throw r.error;
- D={lines:l.data,glass:g.data,fin:f.data,prices:p.data,customers:c.data,orders:o.data};
+ const q=(t,o)=>{let x=sb.from(t).select("*");return o?x.order(o):x};
+ const r=await Promise.all([q(T.coll,"sort"),q(T.slab,"sort"),q(T.glass,"sort"),q(T.fin,"sort"),q(T.comp,"sort"),q(T.cost),q(T.price),q("customers","name"),sb.from(T.orders).select("*").order("updated_at",{ascending:false})]);
+ for(const x of r)if(x.error)throw x.error;
+ [D.coll,D.slab,D.glass,D.fin,D.comp,D.cost,D.price,D.customers,D.orders]=r.map(x=>x.data||[]);
  if(!D.customers.some(x=>x.name===CUST)&&D.customers.length)CUST=D.customers[0].name;
  $("#cust").innerHTML=D.customers.map(c=>`<option ${c.name===CUST?"selected":""}>${esc(c.name)}</option>`).join("");
  const keep=ls("db-cur-"+CUST);CUR=D.orders.some(o=>o.id===keep&&o.status==="Draft")?keep:null;
 }
-const code=()=>(D.customers.find(c=>c.name===CUST)?.code||"").trim();
-const itemNo=i=>code()?code()+"-"+i:i;
-const priceOf=(item,cust=CUST)=>D.prices.find(p=>p.customer===cust&&p.item===item);
-const activeLines=()=>D.lines.filter(l=>l.active);
-const line=()=>D.lines.find(l=>l.id===S.line);
-const glassFor=l=>D.glass.filter(g=>g.active&&g.fits.includes(l.id));
+const slab=id=>D.slab.find(s=>s.id===id);
+const coll=()=>D.coll.find(c=>c.id===S.coll);
+const comp=id=>D.comp.find(c=>c.id===id);
+const glassP=id=>D.glass.find(g=>g.id===id);
+const cost=item=>D.cost.find(c=>c.item===item)?.fob??null;
+const price=(item,cust=CUST)=>D.price.find(p=>p.customer===cust&&p.item===item)?.price??null;
+function lookup(keys){for(const k of keys){const p=price(k),f=cost(k);if(p!=null||f!=null)return {key:k,p,f}}return {key:keys[keys.length-1],p:null,f:null}}
 
-/* ---------- build ---------- */
+/* ---------- configuration ---------- */
 function fixS(){
- const ls_=activeLines();if(!ls_.length)return;
- if(!ls_.some(l=>l.id===S.line))S.line=ls_[0].id;
- const l=line();const cfgs=l.configs.filter(c=>c==="A"||l.sl_pn);if(!cfgs.includes(S.cfg))S.cfg=cfgs[0];
- const gl=glassFor(l);if(!l.lite)S.glass="NONE";else if(S.glass!=="CLEAR"&&!gl.some(g=>g.id===S.glass))S.glass="CLEAR";else if(S.glass==="NONE")S.glass="CLEAR";
- const fins=D.fin.filter(f=>f.active&&f.skin===l.skin);if(!fins.some(f=>f.id===S.fin))S.fin=(fins.find(f=>f.as_shipped)||fins[0]||{}).id||null;
+ const cs=D.coll.filter(c=>c.active);if(!cs.length)return;
+ if(!cs.some(c=>c.id===S.coll))S.coll=cs[0].id;
+ const c=coll(),doors=D.slab.filter(s=>s.active&&s.collection===S.coll&&s.kind==="door"),sls=D.slab.filter(s=>s.active&&s.collection===S.coll&&s.kind==="sidelite");
+ if(!doors.some(d=>d.id===S.door))S.door=(doors.find(d=>d.photo_img&&d.lite)||doors[0]||{}).id;
+ if(!CFG[S.cfg])S.cfg="S";if(CFG[S.cfg].sl.length&&!sls.length)S.cfg=CFG[S.cfg].leaves===2?"D":"S";
+ if(!c.widths.includes(S.w))S.w=c.widths.includes(36)?36:c.widths[c.widths.length-1];
+ if(!c.heights.includes(S.h))S.h=c.heights[0];
+ if(!c.sl_widths.includes(S.slw))S.slw=c.sl_widths[c.sl_widths.length-1];
+ const d=slab(S.door);
+ if(!sls.some(s=>s.id===S.sl)){const match=sls.find(s=>s.code===d?.code)||sls.find(s=>!!s.lite===!!d?.lite)||sls[0];S.sl=match?.id||null}
+ const gl=glassFor(d?.lite);if(!d?.lite||!d?.glass_box)S.glass="CLEAR";else if(S.glass!=="CLEAR"&&!gl.some(g=>g.id===S.glass))S.glass="CLEAR";
+ const G=glassP(S.glass);if(G&&G.caming?.length&&!G.caming.includes(S.caming))S.caming=G.caming[0];if(!G||!G.caming?.length)S.caming="";
+ const fins=D.fin.filter(f=>f.active&&f.collections.includes(S.coll));if(!fins.some(f=>f.id===S.fin))S.fin=(fins.find(f=>f.as_shipped)||fins[0]||{}).id||null;
+ if(!D.comp.some(c=>c.id===S.jamb))S.jamb=(D.comp.find(c=>c.type==="jamb")||{}).id;
+ if(!D.comp.some(c=>c.id===S.trim))S.trim=(D.comp.find(c=>c.type==="trim")||{}).id;
+ ls("db-state",JSON.stringify(S));
 }
-function calc(st=S,cust=CUST){
- const l=D.lines.find(x=>x.id===st.line),n=CFG[st.cfg].n,G=D.glass.find(g=>g.id===st.glass);
- const up=priceOf(l.id+"-"+st.cfg,cust);
- const items=[];
- if(G){const dl=priceOf("G-"+G.id+"-DL",cust),sl=priceOf("G-"+G.id+"-SL",cust);
-  items.push({item:"G-"+G.id+"-DL",desc:G.name+" door lite",q:1,p:dl?.price,f:dl?.fob});
-  if(n===1)items.push({item:"G-"+G.id+"-SL"+(G.handed?(st.side==="L"?" (L)":" (R)"):""),desc:G.name+" sidelite lite",q:1,p:sl?.price,f:sl?.fob});
-  if(n===2){if(G.handed)items.push({item:"G-"+G.id+"-SL (L)",desc:G.name+" sidelite lite, left",q:1,p:sl?.price,f:sl?.fob},{item:"G-"+G.id+"-SL (R)",desc:G.name+" sidelite lite, right",q:1,p:sl?.price,f:sl?.fob});
-   else items.push({item:"G-"+G.id+"-SL",desc:G.name+" sidelite lite",q:2,p:sl?.price,f:sl?.fob})}}
- const missing=up?.price==null||items.some(i=>i.p==null);
- const gp=r2(items.reduce((a,i)=>a+(i.p||0)*i.q,0)),gf=r2(items.reduce((a,i)=>a+(i.f||0)*i.q,0));
- const parts=[[l.slab_pn,1]];if(n){parts.push([l.sl_pn,n],[l.mull_pn,n])}parts.push([l.jamb_pn,"1 set"],[l.brick_pn,"1 set"]);
- return {l,n,G,unit:up?.price??null,ufob:up?.fob??null,items,gp,gf,each:up?.price==null?null:r2(up.price+gp),efob:up?.fob==null?null:r2(up.fob+gf),missing,parts};
+const glassFor=lite=>lite?D.glass.filter(g=>g.active&&g.sizes&&g.sizes[lite]):[];
+function slGlass(st=S){
+ const sl=slab(st.sl);if(!sl||!sl.lite)return null;
+ const want=st.slglass==="SAME"?st.glass:st.slglass;if(!want||want==="CLEAR")return null;
+ const G=glassP(want);return G&&G.sizes[sl.lite]?G:null;
 }
-function optBtns(el,items,key,html,cls=""){
- const b=$(el);b.innerHTML="";items.forEach(it=>{const x=document.createElement("button");x.type="button";x.className="opt "+cls;x.setAttribute("aria-pressed",String(S[key]===it.id));x.innerHTML=html(it);x.onclick=()=>{S[key]=it.id;fixS();renderBuild()};b.appendChild(x)});
+function parts(st=S){
+ const c=CFG[st.cfg],d=slab(st.door),sl=slab(st.sl),n=c.sl.length,out=[];
+ const add=(keys,pn,desc,qty)=>{const L=lookup(keys);out.push({key:L.key,pn,desc,qty,p:L.p,f:L.f})};
+ if(!d)return out;
+ add([`S:${d.id}:${st.w}x${st.h}`,`S:${d.id}`],d.code,`Door slab ${st.w}"×${st.h}"${d.label?" · "+d.label:""}${d.lite?" · lite "+d.lite:""}`,c.leaves);
+ if(n&&sl)add([`S:${sl.id}:${st.slw}x${st.h}`,`S:${sl.id}`],sl.code,`Sidelite ${st.slw}"×${st.h}"${sl.label?" · "+sl.label:""}${sl.lite?" · lite "+sl.lite:""}`,n);
+ const G=glassP(st.glass);
+ if(G&&d.lite)add([`G:${G.id}:${d.lite}`],`${G.name} ${d.lite}`,`Glass, door lite${st.caming?" · "+st.caming+" caming":""}`,c.leaves);
+ const SG=n&&sl?slGlass(st):null;
+ if(SG)add([`G:${SG.id}:${sl.lite}`],`${SG.name} ${sl.lite}`,`Glass, sidelite lite${st.caming&&SG.caming?.includes(st.caming)?" · "+st.caming+" caming":""}`,n);
+ if(n)add(["C:HDT-01"],"HDT-01","Mull post",n);
+ if(c.leaves===2)add(["C:HDA-01"],"HDA-01","Astragal",1);
+ const j=comp(st.jamb);if(j)add(["C:"+j.id],j.id,j.name+" (set)",1);
+ const t=comp(st.trim);if(t&&t.id!=="NONE-TRIM")add(["C:"+t.id],t.id,t.name+" (set)",1);
+ const ph=comp("PREHANG");if(ph&&ph.active)add(["C:PREHANG"],"PREHANG",ph.name,1);
+ return out;
 }
-function renderBuild(){
- fixS();const l=line();
- if(!l){$("#v-build").innerHTML='<div class="empty">No door styles yet. Add one under Catalog.</div>';return}
- const c=calc();
- optBtns("#o-line",activeLines(),"line",x=>`<b>${esc(itemNo(x.id))}</b><div>${esc(x.name)}</div><span>${esc(x.sub||"")}</span>`);
- const cfgs=l.configs.filter(k=>k==="A"||l.sl_pn).map(k=>({id:k}));
- optBtns("#o-cfg",cfgs,"cfg",x=>{const p=priceOf(l.id+"-"+x.id);return `<b>${esc(itemNo(l.id+"-"+x.id))}</b><div>${CFG[x.id].name}</div><span class="pr">${p?.price!=null?money(p.price):'<span class="flag">NO PRICE</span>'}</span>`});
- $("#f-side").hidden=c.n!==1;
- optBtns("#o-side",[{id:"L",n:"Left of door"},{id:"R",n:"Right of door"}],"side",x=>`<div>${x.n}</div><span>viewed from outside</span>`);
- const gl=l.lite?[{id:"CLEAR",name:"Clear"}].concat(glassFor(l)):[];
- $("#f-glass").hidden=!gl.length;
- optBtns("#o-glass",gl,"glass",x=>{if(x.id==="CLEAR")return `<div><b>Included</b><div>Clear</div><span class="pr">in unit price</span></div>`;
-  const t=calc({...S,glass:x.id});return `${x.photo_path?`<img alt="" src="${esc(src(x.photo_path))}">`:""}<div><b>${esc(itemNo("G-"+x.id))}</b><div>${esc(x.name)}${(x.recommended_for||[]).includes(l.id)?" ★":""}</div><span class="pr">${t.items.some(i=>i.p==null)?'<span class="flag">NO PRICE</span>':"+ "+money(t.gp)}</span></div>`},"thumb");
- $("#glassnote").textContent=gl.length>1?`★ = recommended. Glass price shown is for this unit: 1 door lite${c.n?` + ${c.n} sidelite lite${c.n>1?"s":""}`:""}.`:"";
- optBtns("#o-fin",D.fin.filter(f=>f.active&&f.skin===l.skin),"fin",x=>`<div>${esc(x.name)}</div><span>${esc(x.sub||"")}</span><i class="sw" style="background-image:url('${esc(src(x.swatch_path))}')"></i>${!x.as_shipped&&!x.priced?'<span class="flag">PREVIEW</span>':""}`);
- optBtns("#o-hand",HAND,"hand",x=>`<b>${x.id}</b><div>${x.name}</div><span>${x.sub}</span>`);
- $("#door").innerHTML=drawUnit(l,S,c.G);
- $("#caption").textContent=`${itemNo(l.id+"-"+S.cfg)} · ${l.name} · ${CFG[S.cfg].name}${c.G?" · "+c.G.name+" glass":""}`;
- $("#pk").textContent=c.unit==null?"No price set for "+CUST:`Unit ${money(c.unit)}${c.gp?` + glass ${money(c.gp)}`:""} · each`;
- $("#pbig").textContent=c.each==null?"—":money(c.each);
- $("#pcost").innerHTML=SHOWCOST&&c.efob!=null&&c.each!=null?`FOB ${money(c.efob)}<br>Margin ${money(c.each-c.efob)} (${((c.each-c.efob)/c.each*100).toFixed(1)}%)`:esc(HAND.find(h=>h.id===S.hand).name);
- const G=c.G,gc=$("#gcard");
- if(G){const fit=G.photo_lite&&G.photo_lite===l.lite;gc.hidden=false;
-  gc.innerHTML=`${G.photo_path?`<img src="${esc(src(G.photo_path))}" alt="${esc(G.name)} glass, factory photo">`:'<div style="width:100px;height:160px;background:var(--chip)"></div>'}<div><h3>${esc(G.name)}</h3><p>${esc(G.caming)} caming · ${esc(G.spec||"")}${G.handed?" · sidelites are handed L/R":""}</p>
-  <p class="note">${G.photo_path?`Factory photo${G.photo_lite?`, shown in a ${esc(G.photo_lite)} lite`:""}. `:"No photo yet. "}${fit?"That is this door's lite, so it is fitted into the drawing.":G.photo_path?`This door uses a ${esc(l.lite)} lite, so the drawing shows clear glass. <span class="flag">ASK FACTORY FOR ${esc(l.lite)} PHOTO</span>`:""}${c.n?" Sidelite glass is drawn clear with the pattern named.":""}</p>${G.notes?`<p class="note">${esc(G.notes)}</p>`:""}</div>`}
- else if(S.glass==="CLEAR"){gc.hidden=false;gc.innerHTML=`<div style="width:100px;height:110px;background:linear-gradient(135deg,#cfdde4,#9fb4bf)"></div><div><h3>Clear glass</h3><p>Included in the unit price.</p></div>`}
- else gc.hidden=true;
- drawPlan();
- const fin=D.fin.find(f=>f.id===S.fin);
- const rows=[["Item #",`<code>${esc(itemNo(l.id+"-"+S.cfg))}</code> · ${money(c.unit)}`],["Unit",`${esc(l.name)} · ${CFG[S.cfg].name}${c.n===1?` (${S.side==="L"?"left":"right"} of door)`:""}`],
-  ["Factory parts",c.parts.map(p=>`<code>${esc(p[0])}</code> × ${p[1]}`).join("<br>")+`<div class="note">${esc(l.slab_desc)}${c.n?" · "+esc(l.sl_desc):""}</div>`],
-  ["Glass",c.G?c.items.map(i=>`<code>${esc(itemNo(i.item))}</code> × ${i.q} <span class="note">${money(i.p)} each</span>`).join("<br>"):(S.glass==="CLEAR"?"Clear (included)":"None")],
-  ["Handing",HAND.find(h=>h.id===S.hand).name+" · "+HAND.find(h=>h.id===S.hand).sub],
-  ["Finish",fin?(fin.as_shipped?esc(fin.sub||fin.name):esc(fin.name)+(fin.priced?"":' <span class="flag">PREVIEW ONLY · NOT PRICED</span>')):"—"],
-  ["Price each",`<strong>${money(c.each)}</strong>${SHOWCOST&&c.efob!=null?` <span class="note">FOB ${money(c.efob)}</span>`:""}`]];
- if(l.notes)rows.push(["Open question",`<span class="flag">VERIFY</span> ${esc(l.notes)}`]);
- $("#bs").innerHTML=rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("");
- $("#bsid").textContent=`${itemNo(l.id+"-"+S.cfg)}${c.G?" + "+c.G.id:""} · ${S.hand}`;
- const o=D.orders.find(x=>x.id===CUR);$("#curOrder").textContent=o?`${o.title} (${o.lines.reduce((a,x)=>a+x.qty,0)} doors)`:"New order (starts when you add a door)";
-}
-function drawUnit(l,st,G,P="d"){
- const n=CFG[st.cfg].n,mull=1.93,bm=2,dw=36,sw=14,H=80,slH=Number(l.sl_height)||80;
- const totalW=dw+n*(sw+mull)+2*bm,s=Math.min(430/totalW,400/(H+bm+1.5)),ox=(470-totalW*s)/2,oy=24;
+function totals(ps){const miss=ps.filter(p=>p.p==null),missF=ps.filter(p=>p.f==null);return {each:miss.length?null:r2(ps.reduce((a,p)=>a+p.p*p.qty,0)),fob:missF.length?null:r2(ps.reduce((a,p)=>a+p.f*p.qty,0)),miss,missF}}
+
+/* ---------- rendering ---------- */
+const IMG={};
+function img(src){if(!src)return Promise.resolve(null);if(IMG[src])return IMG[src];IMG[src]=new Promise(res=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src});return IMG[src]}
+const INV={};
+function inverted(im){if(!im)return null;if(INV[im.src])return INV[im.src];const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext("2d");x.drawImage(im,0,0);
+ try{const d=x.getImageData(0,0,c.width,c.height),a=d.data;for(let i=0;i<a.length;i+=4){const v=255-a[i];a[i]=a[i+1]=a[i+2]=255;a[i+3]=v}x.putImageData(d,0,0)}catch(e){return null}INV[im.src]=c;return c}
+let RENDER_ID=0;
+async function render(cv,st){
+ const id=++RENDER_ID,c=CFG[st.cfg],d=slab(st.door),sl=slab(st.sl),fin=D.fin.find(f=>f.id===st.fin),G=glassP(st.glass),SG=slGlass(st);
+ if(!d)return;
+ const [dLine,dPhoto,slLine,slPhoto,tex,gImg,sgImg]=await Promise.all([img(d.line_img),img(d.photo_img),img(sl?.line_img),img(sl?.photo_img),img(fin?.image),img(G&&d.lite?G.sizes[d.lite]:null),img(SG?SG.sizes[sl.lite]:null)]);
+ if(id!==RENDER_ID)return;
+ const x=cv.getContext("2d"),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);x.globalCompositeOperation="source-over";x.globalAlpha=1;
+ const g0=x.createLinearGradient(0,0,0,H);g0.addColorStop(0,"#c9cdc9");g0.addColorStop(1,"#b6bab5");x.fillStyle=g0;x.fillRect(0,0,W,H);
+ for(let y=0;y<H*0.86;y+=26){x.fillStyle="rgba(0,0,0,.10)";x.fillRect(0,y+23,W,2);x.fillStyle="rgba(255,255,255,.25)";x.fillRect(0,y,W,1.5)}
+ const gy=H*0.86;const gs=x.createLinearGradient(0,gy,0,H);gs.addColorStop(0,"#b9b4aa");gs.addColorStop(1,"#9b968c");x.fillStyle=gs;x.fillRect(0,gy,W,H-gy);x.fillStyle="rgba(0,0,0,.18)";x.fillRect(0,gy,W,4);
+ const bm=st.trim==="NONE-TRIM"?0.75:(st.trim==="HDB-06"?2.9:2),mull=1.93,ast=c.leaves===2?0.6:0;
+ const nSL=c.sl.length,leafW=st.w,unitW=c.leaves*leafW+ast+nSL*(st.slw+mull),totalW=unitW+2*bm,totalH=st.h+bm+1.2;
+ const s=Math.min((W*0.82)/totalW,(gy-40)/totalH),ox=(W-totalW*s)/2,oy=gy-totalH*s;
  const X=v=>ox+v*s,Y=v=>oy+v*s;
- const fin=D.fin.find(f=>f.id===st.fin),tex=fin?src(fin.swatch_path):"";
- const ts=14*s;
- let o=`<defs><linearGradient id="${P}gl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfdde4"/><stop offset=".55" stop-color="#9fb4bf"/><stop offset="1" stop-color="#b9c9d1"/></linearGradient>
- <pattern id="${P}wood" patternUnits="userSpaceOnUse" width="${ts}" height="${ts}">${tex?`<image href="${esc(tex)}" width="${ts}" height="${ts}" preserveAspectRatio="none"/>`:`<rect width="${ts}" height="${ts}" fill="#efede8"/>`}</pattern>
- <filter id="${P}sh"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity=".35"/></filter></defs>`;
- o+=`<rect x="${X(0)}" y="${Y(0)}" width="${totalW*s}" height="${(H+bm+.5)*s}" fill="#f3f1ec" stroke="#b9b5ac"/>`;
- let x=bm;const parts=[];const L1=n===2||(n===1&&st.side==="L"),R1=n===2||(n===1&&st.side==="R");
- if(L1){parts.push(["sl",x,"L"]);x+=sw+mull}parts.push(["door",x]);x+=dw;if(R1){x+=mull;parts.push(["sl",x,"R"])}
- parts.forEach(p=>{if(p[0]==="sl"){const mx=p[2]==="L"?p[1]+sw:p[1]-mull;o+=`<rect x="${X(mx)}" y="${Y(bm)}" width="${mull*s}" height="${H*s}" fill="#ece9e2" stroke="#b9b5ac" stroke-width=".6"/>`}});
- const glassRect=(gx,gy,gw,gh,photo,label)=>{let r=`<rect x="${X(gx)}" y="${Y(gy)}" width="${gw*s}" height="${gh*s}" fill="url(#${P}gl)" stroke="#3a2a20" stroke-width="1.2"/>`;
-  if(photo)r+=`<image href="${esc(photo)}" x="${X(gx)}" y="${Y(gy)}" width="${gw*s}" height="${gh*s}" preserveAspectRatio="none"/>`;
-  else r+=`<path d="M${X(gx+gw*.15)} ${Y(gy+gh*.12)} l${gw*s*.45} ${gh*s*.35}" stroke="#ffffff88" stroke-width="2"/>`;
-  if(label){const cx=X(gx+gw/2),cy=Y(gy+gh/2);r+=`<text x="${cx}" y="${cy}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="${Math.max(7,1.4*s)}" fill="#22313a" transform="rotate(-90 ${cx} ${cy})">${esc(label)}</text>`}return r};
- const panel=(a,b,w,h)=>`<rect x="${X(a)}" y="${Y(b)}" width="${w*s}" height="${h*s}" fill="none" stroke="#0000004d" stroke-width="1.6"/><rect x="${X(a)+2}" y="${Y(b)+2}" width="${Math.max(0,w*s-4)}" height="${Math.max(0,h*s-4)}" fill="none" stroke="#ffffff40" stroke-width="1.2"/>`;
- parts.forEach(p=>{
-  if(p[0]==="door"){const dx=p[1],g=l.door_geom||{};
-   o+=`<rect x="${X(dx)}" y="${Y(bm)}" width="${dw*s}" height="${H*s}" fill="url(#${P}wood)" stroke="#2b1d14" filter="url(#${P}sh)"/>`;
-   (g.panels||[]).forEach(q=>o+=panel(dx+q[0],bm+q[1],q[2],q[3]));
-   if(g.shelf)o+=`<rect x="${X(dx+g.shelf[0])}" y="${Y(bm+g.shelf[1])}" width="${g.shelf[2]*s}" height="${g.shelf[3]*s}" fill="#00000026" stroke="#0000004d"/>`;
-   if(g.lite)o+=glassRect(dx+g.lite[0],bm+g.lite[1],g.lite[2],g.lite[3],G&&G.photo_path&&G.photo_lite&&G.photo_lite===l.lite?src(G.photo_path):null,null);
-   const Lh=st.hand.startsWith("LH"),lx=Lh?dx+dw-3:dx+3,ly=bm+40;
-   o+=`<rect x="${X(lx)-.9*s}" y="${Y(ly-1.2)}" width="${1.8*s}" height="${6.5*s}" rx="${.4*s}" fill="#3b3b38"/><circle cx="${X(lx)}" cy="${Y(ly-5.5)}" r="${1.1*s}" fill="#3b3b38"/>`;
-   if(st.hand.endsWith("OS")){const hx=Lh?dx+.15:dx+dw-.95;[9,40,71].forEach(hy=>o+=`<rect x="${X(hx)}" y="${Y(bm+hy-2)}" width="${.8*s}" height="${4*s}" fill="#5a5a55"/>`)}
-  }else{const sx=p[1],g=l.sl_geom||{},top=bm+(80-slH);
-   o+=`<rect x="${X(sx)}" y="${Y(top)}" width="${sw*s}" height="${slH*s}" fill="url(#${P}wood)" stroke="#2b1d14" filter="url(#${P}sh)"/>`;
-   (g.panels||[]).forEach(q=>o+=panel(sx+q[0],top+q[1],q[2],q[3]));
-   if(g.lite)o+=glassRect(sx+g.lite[0],top+g.lite[1],g.lite[2],g.lite[3],null,G?G.name.toUpperCase()+(G.handed?(p[2]==="L"?" -L":" -R"):""):null);
-  }});
- o+=`<rect x="${X(bm)}" y="${Y(bm+H)}" width="${(totalW-2*bm)*s}" height="${1.3*s}" fill="#9a9a96"/>`;
- const dy=Y(bm+H)+18;o+=`<line x1="${X(0)}" y1="${dy}" x2="${X(totalW)}" y2="${dy}" stroke="#6b6862"/><line x1="${X(0)}" y1="${dy-5}" x2="${X(0)}" y2="${dy+5}" stroke="#6b6862"/><line x1="${X(totalW)}" y1="${dy-5}" x2="${X(totalW)}" y2="${dy+5}" stroke="#6b6862"/>`;
- o+=`<text x="235" y="${dy+15}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#1c1b1a">≈ ${totalW.toFixed(1)}" over brickmould · door 36"×80"</text><text x="235" y="14" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="#6b6862">VIEWED FROM OUTSIDE · TO SCALE</text>`;
- return o;
+ x.save();x.shadowColor="rgba(0,0,0,.35)";x.shadowBlur=18;x.shadowOffsetY=6;x.fillStyle="#f4f2ec";x.fillRect(X(0),Y(0),totalW*s,(totalH-1.2)*s);x.restore();
+ const tg=x.createLinearGradient(X(0),0,X(bm),0);tg.addColorStop(0,"#ffffff");tg.addColorStop(1,"#dcd8cf");x.fillStyle=tg;x.fillRect(X(0),Y(0),bm*s,(totalH-1.2)*s);
+ const tg2=x.createLinearGradient(X(totalW-bm),0,X(totalW),0);tg2.addColorStop(0,"#dcd8cf");tg2.addColorStop(1,"#f7f6f2");x.fillStyle=tg2;x.fillRect(X(totalW-bm),Y(0),bm*s,(totalH-1.2)*s);
+ const tg3=x.createLinearGradient(0,Y(0),0,Y(bm));tg3.addColorStop(0,"#ffffff");tg3.addColorStop(1,"#d6d2c8");x.fillStyle=tg3;x.fillRect(X(0),Y(0),totalW*s,bm*s);
+ x.fillStyle="#3a3631";x.fillRect(X(bm),Y(bm),unitW*s,st.h*s);
+ let cx=bm;const pieces=[];
+ if(c.sl.includes("L")){pieces.push({t:"sl",x:cx,side:"L"});cx+=st.slw;pieces.push({t:"mull",x:cx});cx+=mull}
+ for(let i=0;i<c.leaves;i++){pieces.push({t:"door",x:cx,leaf:i});cx+=leafW;if(c.leaves===2&&i===0){pieces.push({t:"ast",x:cx});cx+=ast}}
+ if(c.sl.includes("R")){pieces.push({t:"mull",x:cx});cx+=mull;pieces.push({t:"sl",x:cx,side:"R"});cx+=st.slw}
+ const hinL=st.hand.startsWith("LH"),out=st.hand.endsWith("OS");
+ const hw=st.HINGE==="Mill"?["#d9d9d6","#8f908c"]:["#5a4636","#2a1f17"];
+ for(const p of pieces){
+  if(p.t==="mull"||p.t==="ast"){const w=(p.t==="mull"?mull:ast)*s,gx=x.createLinearGradient(X(p.x),0,X(p.x)+w,0);gx.addColorStop(0,"#d8d4cb");gx.addColorStop(.5,"#f7f5f0");gx.addColorStop(1,"#cfcac0");x.fillStyle=gx;x.fillRect(X(p.x),Y(bm),w,st.h*s);continue}
+  const isSL=p.t==="sl",sd=isSL?sl:d,w=(isSL?st.slw:leafW)*s,h=st.h*s,px=X(p.x)+.6,py=Y(bm)+.6;
+  drawSlab(x,sd,{x:px,y:py,w:w-1.2,h:h-1.2,line:isSL?slLine:dLine,photo:isSL?slPhoto:dPhoto,fin,tex,glass:isSL?sgImg:gImg,glassName:isSL?(SG?SG.name:null):(G?G.name:null),mirror:c.leaves===2&&p.leaf===1,kindW:isSL?14:36});
+  if(!isSL){
+   const lockLeft=c.leaves===2?p.leaf===1:!hinL;
+   const lx=lockLeft?px+3.2*s:px+w-3.2*s,ly=py+(36/80)*h;
+   const active=c.leaves===1||(hinL?p.leaf===0:p.leaf===1);
+   hardware(x,lx,ly,s,hw,active);
+   if(out){const hx=lockLeft?px+w-.9*s:px+.1*s;[0.11,0.5,0.88].forEach(f=>{const hy=py+h*f;const g=x.createLinearGradient(hx,0,hx+.8*s,0);g.addColorStop(0,hw[0]);g.addColorStop(1,hw[1]);x.fillStyle=g;x.fillRect(hx,hy-2*s,.8*s,4*s)})}
+  }
+ }
+ const sc=st.SILL==="Mill"?["#e3e3df","#a4a5a1"]:["#6a5544","#3a2c22"];const sgr=x.createLinearGradient(0,Y(bm+st.h),0,Y(bm+st.h+1.2));sgr.addColorStop(0,sc[0]);sgr.addColorStop(1,sc[1]);x.fillStyle=sgr;x.fillRect(X(bm-.3),Y(bm+st.h),(unitW+.6)*s,1.2*s);
+ x.fillStyle="#2b2b29";x.font=`500 ${Math.max(13,W*0.016)}px "IBM Plex Mono",monospace`;x.textAlign="center";
+ x.fillText(`≈ ${unitW.toFixed(1)}" × ${st.h}" unit · ${totalW.toFixed(1)}" over trim · viewed from outside`,W/2,H-18);
+}
+function drawSlab(x,sd,o){
+ if(!sd)return;
+ x.save();x.beginPath();x.rect(o.x,o.y,o.w,o.h);x.clip();
+ if(o.mirror){x.translate(o.x*2+o.w,0);x.scale(-1,1)}
+ const fin=o.fin,paint=fin&&fin.kind==="paint";
+ if(o.photo&&fin&&fin.as_shipped){x.drawImage(o.photo,o.x,o.y,o.w,o.h)}
+ else{
+  if(paint){x.fillStyle=fin.color||"#eee";x.fillRect(o.x,o.y,o.w,o.h);
+   const ng=x.createLinearGradient(o.x,0,o.x+o.w,0);ng.addColorStop(0,"rgba(255,255,255,.10)");ng.addColorStop(.5,"rgba(255,255,255,0)");ng.addColorStop(1,"rgba(0,0,0,.10)");x.fillStyle=ng;x.fillRect(o.x,o.y,o.w,o.h)}
+  else if(o.tex){x.drawImage(o.tex,o.x,o.y,o.w,o.h)}else{x.fillStyle="#b88a5a";x.fillRect(o.x,o.y,o.w,o.h)}
+  if(o.line){
+   x.globalCompositeOperation="multiply";x.globalAlpha=.85;x.drawImage(o.line,o.x,o.y,o.w,o.h);
+   x.globalAlpha=.35;x.drawImage(o.line,o.x+1.4,o.y+1.4,o.w,o.h);
+   const inv=inverted(o.line);if(inv){x.globalCompositeOperation="screen";x.globalAlpha=.45;x.drawImage(inv,o.x-1.2,o.y-1.2,o.w,o.h)}
+   x.globalCompositeOperation="source-over";x.globalAlpha=1;
+  }
+ }
+ const gb=sd.glass_box;
+ if(gb){const sx=o.w/o.kindW,sy=o.h/80,rects=(sd.lites&&sd.lites.length>1)?sd.lites:[gb];
+  if(o.glass){const r=gb;x.drawImage(o.glass,o.x+r[0]*sx,o.y+r[1]*sy,r[2]*sx,r[3]*sy);
+   if(sd.lites&&sd.lites.length>1&&o.line){x.save();x.beginPath();x.rect(o.x+r[0]*sx,o.y+r[1]*sy,r[2]*sx,r[3]*sy);x.clip();x.globalCompositeOperation="multiply";x.drawImage(o.line,o.x,o.y,o.w,o.h);x.restore()}}
+  else for(const r of rects){const rx=o.x+r[0]*sx,ry=o.y+r[1]*sy,rw=r[2]*sx,rh=r[3]*sy;
+   const g=x.createLinearGradient(rx,ry,rx+rw,ry+rh);g.addColorStop(0,"#d7e3e8");g.addColorStop(.45,"#9fb3bd");g.addColorStop(1,"#c3d1d8");x.fillStyle=g;x.fillRect(rx,ry,rw,rh);
+   x.fillStyle="rgba(255,255,255,.35)";x.beginPath();x.moveTo(rx+rw*.1,ry);x.lineTo(rx+rw*.35,ry);x.lineTo(rx+rw*.05,ry+rh*.5);x.lineTo(rx,ry+rh*.45);x.closePath();x.fill();
+   x.strokeStyle="rgba(40,30,20,.6)";x.lineWidth=1.5;x.strokeRect(rx,ry,rw,rh);
+   if(o.glassName){x.save();x.translate(rx+rw/2,ry+rh/2);if(rw<rh*0.4)x.rotate(-Math.PI/2);x.fillStyle="rgba(20,35,45,.75)";x.font=`600 ${Math.max(9,Math.min(rw,rh)*0.09)}px "IBM Plex Mono",monospace`;x.textAlign="center";x.fillText(o.glassName.toUpperCase(),0,0);x.restore()}}
+ }
+ const eg=x.createLinearGradient(o.x,0,o.x+o.w,0);eg.addColorStop(0,"rgba(0,0,0,.22)");eg.addColorStop(.04,"rgba(0,0,0,0)");eg.addColorStop(.96,"rgba(0,0,0,0)");eg.addColorStop(1,"rgba(0,0,0,.22)");x.fillStyle=eg;x.fillRect(o.x,o.y,o.w,o.h);
+ x.restore();
+ x.strokeStyle="rgba(0,0,0,.45)";x.lineWidth=1;x.strokeRect(o.x,o.y,o.w,o.h);
+}
+function hardware(x,lx,ly,s,hw,active){
+ const g=x.createLinearGradient(lx-s,0,lx+s,0);g.addColorStop(0,hw[0]);g.addColorStop(1,hw[1]);
+ x.fillStyle=g;x.beginPath();if(x.roundRect)x.roundRect(lx-.9*s,ly-1.4*s,1.8*s,4.6*s,.9*s);else x.rect(lx-.9*s,ly-1.4*s,1.8*s,4.6*s);x.fill();
+ x.beginPath();x.arc(lx,ly,1.05*s,0,Math.PI*2);x.fill();
+ if(active){x.beginPath();x.arc(lx,ly-5.5*s,1.15*s,0,Math.PI*2);x.fill();x.fillStyle="rgba(0,0,0,.5)";x.fillRect(lx-.12*s,ly-6*s,.24*s,1*s)}
+ x.fillStyle="rgba(255,255,255,.35)";x.beginPath();x.arc(lx-.3*s,ly-.3*s,.35*s,0,Math.PI*2);x.fill();
 }
 function drawPlan(){
- const L=S.hand.startsWith("LH"),IN=S.hand.endsWith("IS"),wy=60,x1=70,x2=170,hx=L?x1:x2,R=42,oy=wy+(IN?-R:R),fx=L?hx+R:hx-R,sweep=(L===IN)?0:1;
- $("#plan").innerHTML=`<text x="120" y="12" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">INSIDE</text><text x="120" y="116" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">OUTSIDE (you)</text>
- <rect x="8" y="${wy-4}" width="${x1-8}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${232-x2}" height="8" fill="#1c1b1a"/>
- <line x1="${hx}" y1="${wy}" x2="${hx}" y2="${oy}" stroke="#c8102e" stroke-width="4"/><path d="M${hx} ${oy} A${R} ${R} 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#c8102e" stroke-dasharray="4 3"/>
- <circle cx="${hx}" cy="${wy}" r="4" fill="#c8102e"/><text x="${hx+(L?-6:6)}" y="${wy+(IN?18:-10)}" text-anchor="${L?"end":"start"}" font-size="9" fill="#6b6862" font-family="IBM Plex Mono,monospace">hinge</text>`;
-}
-function snapshotLine(qty){
- const c=calc(),fin=D.fin.find(f=>f.id===S.fin);
- return {line:S.line,cfg:S.cfg,side:c.n===1?(S.side==="L"?"Left":"Right"):(c.n===2?"Both":""),glass:c.G?c.G.id:S.glass,fin:S.fin,hand:S.hand,qty,
-  item:c.l.id+"-"+S.cfg,desc:`${c.l.name}, ${CFG[S.cfg].name.toLowerCase()}`,glassName:c.G?c.G.name:(S.glass==="CLEAR"?"Clear":"None"),
-  finName:fin?(fin.as_shipped?"Unfinished":fin.name+(fin.priced?"":" (preview)")):"",
-  unit:c.unit,ufob:c.ufob,gitems:c.items.map(i=>({item:i.item,desc:i.desc,q:i.q,p:i.p??null,f:i.f??null})),gp:c.gp,gf:c.gf,parts:c.parts};
-}
-const lineKey=x=>[x.item,x.side,x.glass,x.fin,x.hand].join("|");
-async function addToOrder(){
- const qty=Math.max(1,parseInt($("#qty").value)||1),ln=snapshotLine(qty);
- if(ln.unit==null){toast("This unit has no price for "+CUST+". Add it under Catalog > Prices first.");return}
- let o=D.orders.find(x=>x.id===CUR);
- $("#add").disabled=true;
- try{
-  if(!o){const {data,error}=await sb.from("door_orders").insert({customer:CUST,title:`${today()} ${code()||CUST} doors`,lines:[ln]}).select().single();if(error)throw error;D.orders.unshift(data);CUR=data.id;ls("db-cur-"+CUST,CUR)}
-  else{const lines=o.lines.slice(),same=lines.find(x=>lineKey(x)===lineKey(ln));if(same)same.qty+=qty;else lines.push(ln);
-   const {error}=await sb.from("door_orders").update({lines,updated_at:new Date().toISOString()}).eq("id",o.id);if(error)throw error;o.lines=lines}
-  $("#qty").value=1;toast(`Added ${qty} × ${itemNo(ln.item)}`);renderBuild();
- }catch(e){console.error(e);toast("Couldn't save to the order. Check your connection and try again.")}
- finally{$("#add").disabled=false}
+ const c=CFG[S.cfg],L=S.hand.startsWith("LH"),IN=S.hand.endsWith("IS"),wy=60,R=42;
+ let p=`<text x="120" y="12" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">INSIDE</text><text x="120" y="116" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">OUTSIDE (you)</text>`;
+ if(c.leaves===2){const x1=40,x2=200,ax=L?x1:x2,fx=L?x1+76:x2-76,oy=wy+(IN?-76:76),sweep=(L===IN)?0:1;
+  p+=`<rect x="0" y="${wy-4}" width="${x1}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${240-x2}" height="8" fill="#1c1b1a"/><line x1="${L?x2:x1}" y1="${wy}" x2="${L?x2-76:x1+76}" y2="${wy}" stroke="#6b6862" stroke-width="4"/><line x1="${ax}" y1="${wy}" x2="${ax}" y2="${oy}" stroke="#c8102e" stroke-width="4"/><path d="M${ax} ${oy} A76 76 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#c8102e" stroke-dasharray="4 3"/><circle cx="${ax}" cy="${wy}" r="4" fill="#c8102e"/><text x="120" y="${wy+(IN?18:-8)}" text-anchor="middle" font-size="9" fill="#6b6862" font-family="IBM Plex Mono,monospace">active leaf ${L?"left":"right"} · other leaf fixed</text>`}
+ else{const x1=70,x2=170,hx=L?x1:x2,oy=wy+(IN?-R:R),fx=L?hx+R:hx-R,sweep=(L===IN)?0:1;
+  p+=`<rect x="8" y="${wy-4}" width="${x1-8}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${232-x2}" height="8" fill="#1c1b1a"/><line x1="${hx}" y1="${wy}" x2="${hx}" y2="${oy}" stroke="#c8102e" stroke-width="4"/><path d="M${hx} ${oy} A${R} ${R} 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#c8102e" stroke-dasharray="4 3"/><circle cx="${hx}" cy="${wy}" r="4" fill="#c8102e"/><text x="${hx+(L?-6:6)}" y="${wy+(IN?18:-10)}" text-anchor="${L?"end":"start"}" font-size="9" fill="#6b6862" font-family="IBM Plex Mono,monospace">hinge</text>`}
+ $("#plan").innerHTML=p;
 }
 
+/* ---------- build view ---------- */
+const chip=(pressed,html,attrs="")=>`<button type="button" class="chip" aria-pressed="${pressed}" ${attrs}>${html}</button>`;
+function bindPick(el,key,after){$(el).onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;S[key]=b.dataset.n!==undefined?Number(b.dataset.v):b.dataset.v;if(after)after();fixS();renderBuild()}}
+function cfgIcon(k){const c=CFG[k];let p="",x=4;const H=34,y=3,dw=c.leaves===2?14:18,sw=6;
+ const piece=(w,fill)=>{p+=`<rect x="${x}" y="${y}" width="${w}" height="${H}" fill="${fill}" stroke="#555" stroke-width="1"/>`;x+=w+1.5};
+ if(c.sl.includes("L"))piece(sw,"#dfe7ea");for(let i=0;i<c.leaves;i++)piece(dw,"#c9a27a");if(c.sl.includes("R"))piece(sw,"#dfe7ea");
+ return `<svg viewBox="0 0 ${x+3} 40" aria-hidden="true">${p}</svg>`}
+function renderBuild(){
+ fixS();const c=coll(),d=slab(S.door);
+ if(!c||!d){$("#v-build").innerHTML=`<div class="empty">The door catalog is empty. Open Catalog &amp; prices to add a collection and doors.</div>`;return}
+ $("#o-coll").innerHTML=D.coll.filter(x=>x.active).map(x=>chip(S.coll===x.id,`${esc(x.name)}<span>${D.slab.filter(s=>s.collection===x.id&&s.kind==="door"&&s.active).length} doors</span>`,`data-v="${esc(x.id)}"`)).join("");
+ bindPick("#o-coll","coll",()=>{S.door=null;S.sl=null});
+ const q=($("#dq").value||"").trim().toLowerCase(),f=$("#df").value;
+ let doors=D.slab.filter(s=>s.active&&s.collection===S.coll&&s.kind==="door");
+ if(f==="glass")doors=doors.filter(s=>s.glass_box);if(f==="solid")doors=doors.filter(s=>!s.glass_box);
+ if(q)doors=doors.filter(s=>(s.code+" "+s.label).toLowerCase().includes(q));
+ $("#dcount").textContent=`${doors.length} shown`;
+ $("#o-door").innerHTML=doors.map(s=>`<button type="button" class="tile" aria-pressed="${s.id===S.door}" data-v="${esc(s.id)}"><img loading="lazy" src="${esc(s.photo_img||s.line_img)}" alt=""><b>${esc(s.id.replace(" #"," v"))}</b><span>${esc(s.label||"")}</span></button>`).join("")||'<div class="note">No doors match.</div>';
+ bindPick("#o-door","door");
+ $("#doorPick").textContent=`${d.code}${d.label?" · "+d.label:""}`;
+ const sls=D.slab.filter(s=>s.active&&s.collection===S.coll&&s.kind==="sidelite");
+ $("#o-cfg").innerHTML=Object.entries(CFG).filter(([k,v])=>!v.sl.length||sls.length).map(([k,v])=>`<button type="button" class="cfg" aria-pressed="${S.cfg===k}" data-v="${k}">${cfgIcon(k)}${v.name}</button>`).join("");
+ bindPick("#o-cfg","cfg");
+ const nSL=CFG[S.cfg].sl.length;
+ $("#o-w").innerHTML=`<span class="note" style="align-self:center;width:72px">Door width</span>`+c.widths.map(w=>chip(S.w===w,w+'"',`data-v="${w}" data-n="1"`)).join("");
+ $("#o-h").innerHTML=`<span class="note" style="align-self:center;width:72px">Height</span>`+c.heights.map(w=>chip(S.h===w,w+'"',`data-v="${w}" data-n="1"`)).join("");
+ $("#o-slw").innerHTML=nSL?`<span class="note" style="align-self:center;width:72px">Sidelite</span>`+c.sl_widths.map(w=>chip(S.slw===w,w+'"',`data-v="${w}" data-n="1"`)).join(""):"";
+ bindPick("#o-w","w");bindPick("#o-h","h");bindPick("#o-slw","slw");
+ $("#f-sl").hidden=!nSL;
+ const sl=slab(S.sl);
+ $("#o-sl").innerHTML=sls.map(s=>`<button type="button" class="tile" aria-pressed="${s.id===S.sl}" data-v="${esc(s.id)}"><img loading="lazy" src="${esc(s.photo_img||s.line_img)}" alt=""><b>${esc(s.code)}</b><span>${s.lite?liteName(s.lite):"solid"}</span></button>`).join("");
+ bindPick("#o-sl","sl");$("#slPick").textContent=sl?`${sl.code}${sl.lite?" · lite "+sl.lite:""}`:"";
+ const gl=glassFor(d.lite),gq=($("#gq").value||"").trim().toLowerCase();
+ $("#f-glass").hidden=!(d.glass_box||(nSL&&sl?.glass_box));
+ const glist=[{id:"CLEAR",name:"Clear",clear:true}].concat(gl.filter(g=>!gq||g.name.toLowerCase().includes(gq)));
+ $("#gcount").textContent=d.lite?`${gl.length} patterns made in the ${liteName(d.lite)} lite`:(d.glass_box?"This door's lite isn't a standard size, so it's shown with clear glass.":"Solid door");
+ $("#o-glass").innerHTML=d.glass_box?glist.map(g=>g.clear?`<button type="button" class="tile" aria-pressed="${S.glass==="CLEAR"}" data-v="CLEAR"><div style="height:110px;width:60px;background:linear-gradient(135deg,#d7e3e8,#9fb3bd)"></div><b>Clear</b><span>insulated</span></button>`:`<button type="button" class="tile" aria-pressed="${S.glass===g.id}" data-v="${esc(g.id)}"><img loading="lazy" src="${esc(g.sizes[d.lite])}" alt=""><b>${esc(g.name)}</b>${g.privacy?`<span class="pv">privacy ${g.privacy}/10</span>`:""}</button>`).join(""):"";
+ bindPick("#o-glass","glass");
+ const G=glassP(S.glass);$("#glPick").textContent=G?G.name:(d.glass_box?"Clear":"");
+ $("#o-cam").innerHTML=G&&G.caming?.length?`<div class="row"><span class="note" style="align-self:center">Caming</span>${G.caming.map(cm=>chip(S.caming===cm,esc(cm),`data-v="${esc(cm)}"`)).join("")}</div>`:(G?`<div class="note">The glass catalog doesn't list caming finishes for ${esc(G.name)}.</div>`:"");
+ bindPick("#o-cam","caming");
+ let slg="";
+ if(nSL&&sl?.lite){const opts=[{id:"SAME",n:G?`Same as door (${G.name})`:"Same as door (clear)"},{id:"CLEAR",n:"Clear"}].concat(glassFor(sl.lite).filter(g=>g.id!==S.glass).map(g=>({id:g.id,n:g.name})));
+  const same=S.slglass==="SAME"&&G&&!G.sizes[sl.lite];
+  slg=`<label class="note" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">Sidelite glass (${liteName(sl.lite)}) <select id="slgSel" style="font:inherit;padding:5px">${opts.map(o=>`<option value="${esc(o.id)}" ${S.slglass===o.id?"selected":""}>${esc(o.n)}</option>`).join("")}</select></label>${same?`<div class="warn">${esc(G.name)} isn't made in the ${liteName(sl.lite)} sidelite lite, so the sidelites are clear. Pick another sidelite glass or ask Fangda.</div>`:""}`}
+ else if(nSL&&sl&&sl.glass_box&&!sl.lite)slg=`<div class="note">This sidelite's lite isn't a standard size, so it's shown with clear glass.</div>`;
+ $("#o-slglass").innerHTML=slg;if($("#slgSel"))$("#slgSel").onchange=e=>{S.slglass=e.target.value;fixS();renderBuild()};
+ $("#o-fin").innerHTML=D.fin.filter(f=>f.active&&f.collections.includes(S.coll)).map(f=>`<button type="button" class="chip" aria-pressed="${S.fin===f.id}" data-v="${esc(f.id)}" style="display:flex;gap:8px;align-items:center"><i class="sw" style="${f.image?`background-image:url('${esc(f.image)}')`:`background:${esc(f.color)}`}"></i><span style="color:var(--ink);font-size:13px">${esc(f.name)}${!f.as_shipped&&!f.priced?'<br><span class="flag">PREVIEW</span>':""}</span></button>`).join("");
+ bindPick("#o-fin","fin");
+ const comps=t=>D.comp.filter(c=>c.active&&c.type===t);
+ let fr=`<div class="row"><span class="note" style="align-self:center;width:92px">Jamb width</span>${comps("jamb").map(j=>chip(S.jamb===j.id,esc(j.name.replace("Jamb ","")),`data-k="jamb" data-v="${esc(j.id)}"`)).join("")}</div>`;
+ fr+=`<div class="row"><span class="note" style="align-self:center;width:92px">Exterior trim</span>${comps("trim").map(j=>chip(S.trim===j.id,esc(j.name),`data-k="trim" data-v="${esc(j.id)}"`)).join("")}</div>`;
+ comps("option").forEach(o=>{if(!o.choices.includes(S[o.id]))S[o.id]=o.choices[0];fr+=`<div class="row"><span class="note" style="align-self:center;width:92px">${esc(o.name.split(",")[0].replace("Composite sill","Sill").replace("Ball-bearing hinges","Hinges").replace("Drip cap + bottom sweep","Drip cap & sweep"))}</span>${o.choices.map(ch=>chip(S[o.id]===ch,esc(ch),`data-k="${esc(o.id)}" data-v="${esc(ch)}"`)).join("")}</div>`});
+ $("#o-frame").innerHTML=fr;
+ $("#o-frame").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;S[b.dataset.k]=b.dataset.v;fixS();renderBuild()};
+ const dbl=CFG[S.cfg].leaves===2;
+ $("#o-hand").innerHTML=HAND.map(h=>chip(S.hand===h.id,`${dbl?h.name.replace("LH","Left active").replace("RH","Right active"):h.name}<span>${dbl?h.sub.replace("hinges left","left leaf operates").replace("hinges right","right leaf operates"):h.sub}</span>`,`data-v="${h.id}"`)).join("");
+ bindPick("#o-hand","hand");
+ $("#handNote").textContent=dbl?"Double doors: pick which leaf is the active (operating) leaf, viewed from outside. The other leaf is fixed with the astragal.":"Stand outside facing the door. Hinges on your left = left hand (LH). Opens into the house = inswing.";
+ drawPlan();
+ const ps=parts(),t=totals(ps);
+ $("#pCust").textContent=t.each==null?"Price needed":money(t.each);
+ $("#fobBox").hidden=!SHOWFOB;$("#pFob").textContent=t.fob==null?"Cost needed":money(t.fob);
+ const w=$("#pWarn");if(t.miss.length||(SHOWFOB&&t.missF.length)){w.hidden=false;w.innerHTML=`${t.miss.length?`${t.miss.length} part${t.miss.length>1?"s have":" has"} no ${esc(CUST)} price`:""}${t.miss.length&&SHOWFOB&&t.missF.length?" · ":""}${SHOWFOB&&t.missF.length?`${t.missF.length} part${t.missF.length>1?"s have":" has"} no FOB cost`:""}. <a href="#catalog" id="toPrices">Set prices</a>`;$("#toPrices").onclick=()=>{CT="prices";PF={q:d.code,type:"",coll:"",size:""}}}else w.hidden=true;
+ $("#caption").textContent=`${d.code}${nSL&&sl?" + "+sl.code+" ×"+nSL:""} · ${CFG[S.cfg].name} · ${S.w}"×${S.h}"${G?" · "+G.name+" glass":""} · ${S.hand}`;
+ render($("#cv"),S);
+ $("#bs").innerHTML=`<tr><th>Part #</th><th>Description</th><th class="n">Qty</th><th class="n">${esc(CUST)} price</th>${SHOWFOB?'<th class="n">FOB</th>':""}</tr>`+ps.map(p=>`<tr><td><code>${esc(p.pn)}</code></td><td>${esc(p.desc)}</td><td class="n">${p.qty}</td><td class="n">${p.p==null?'<span class="flag">NEEDED</span>':money(p.p)}</td>${SHOWFOB?`<td class="n">${p.f==null?'<span class="flag">NEEDED</span>':money(p.f)}</td>`:""}</tr>`).join("")+
+  `<tr><td colspan="2" class="note">Finish: ${esc(D.fin.find(f=>f.id===S.fin)?.name||"")} · Sill ${esc(S.SILL)} · Hinges ${esc(S.HINGE)} · Sweep ${esc(S.SWEEP)} · ${esc(S.BORE)}${d.notes?` · <span class="flag">VERIFY</span> ${esc(d.notes)}`:""}</td><td></td><td class="n"><strong>${t.each==null?"—":money(t.each)}</strong></td>${SHOWFOB?`<td class="n"><strong>${t.fob==null?"—":money(t.fob)}</strong></td>`:""}</tr>`;
+ $("#bsid").textContent=`${d.code} · ${S.cfg} · ${S.hand}`;
+ const o=D.orders.find(x=>x.id===CUR);$("#curOrder").textContent=o?`${o.title} (${o.lines.reduce((a,x)=>a+x.qty,0)} units)`:"New order (starts when you add a unit)";
+}
+$("#dq").oninput=()=>renderBuild();$("#df").onchange=()=>renderBuild();$("#gq").oninput=()=>renderBuild();
+
 /* ---------- orders ---------- */
-const lineEach=x=>r2((x.unit||0)+(x.gp||0)), lineFob=x=>r2((x.ufob||0)+(x.gf||0));
-const oTotals=o=>({doors:o.lines.reduce((a,x)=>a+x.qty,0),sum:r2(o.lines.reduce((a,x)=>a+x.qty*lineEach(x),0)),fob:r2(o.lines.reduce((a,x)=>a+x.qty*lineFob(x),0))});
+function describe(st){const d=slab(st.door),sl=slab(st.sl),c=CFG[st.cfg],G=glassP(st.glass),SG=slGlass(st),fin=D.fin.find(f=>f.id===st.fin);
+ return [`${d.code} ${d.label||""}`.trim()+` ${st.w}"×${st.h}"`,c.name+(c.sl.length&&sl?` · SL ${sl.code} ${st.slw}"`:""),`Glass: ${G?G.name+(st.caming?" ("+st.caming+")":""):(d.glass_box?"clear":"none")}${c.sl.length&&sl?.lite?` · SL glass: ${SG?SG.name:"clear"}`:""}`,`Finish: ${fin?.name||""}`,`Frame: ${comp(st.jamb)?.name||""}, ${comp(st.trim)?.name||""}, sill ${st.SILL}, hinges ${st.HINGE}, sweep ${st.SWEEP}, ${st.BORE}`].join("\n")}
+async function addToOrder(){
+ const qty=Math.max(1,parseInt($("#qty").value)||1),ps=parts(),t=totals(ps),st={...S};
+ const ln={st,qty,desc:describe(st),title:`${slab(S.door).code} · ${CFG[S.cfg].name}`,hand:S.hand,parts:ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f})),each:t.each,fob:t.fob};
+ let o=D.orders.find(x=>x.id===CUR);$("#add").disabled=true;
+ try{
+  if(!o){const {data,error}=await sb.from(T.orders).insert({customer:CUST,title:`${today()} ${(D.customers.find(c=>c.name===CUST)?.code||CUST)} doors`,lines:[ln]}).select().single();if(error)throw error;D.orders.unshift(data);CUR=data.id;ls("db-cur-"+CUST,CUR)}
+  else{const lines=o.lines.concat([ln]);const {error}=await sb.from(T.orders).update({lines,updated_at:new Date().toISOString()}).eq("id",o.id);if(error)throw error;o.lines=lines}
+  $("#qty").value=1;toast(`Added ${qty} × ${ln.title}${t.each==null?" (price needed)":""}`);renderBuild();
+ }catch(e){console.error(e);toast("Couldn't save to the order. Check your connection and try again.")}finally{$("#add").disabled=false}
+}
+const oT=o=>({units:o.lines.reduce((a,x)=>a+x.qty,0),sum:o.lines.some(x=>x.each==null)?null:r2(o.lines.reduce((a,x)=>a+x.qty*x.each,0)),fob:o.lines.some(x=>x.fob==null)?null:r2(o.lines.reduce((a,x)=>a+x.qty*x.fob,0))});
 let OPEN=null;
 function renderOrders(){
  const list=D.orders.filter(o=>o.customer===CUST);
- $("#olist").innerHTML=list.length?list.map(o=>{const t=oTotals(o);return `<button type="button" class="ocard" data-o="${o.id}" aria-current="${o.id===OPEN}"><span class="pill ${esc(o.status)}">${esc(o.status)}</span><strong>${esc(o.title)}</strong><span class="sub">${t.doors} doors · ${money(t.sum)}${o.id===CUR?" · building now":""}</span><span class="sub">${esc(({"D Lapp":"Lapp D","D Glick":"Daniel G"})[o.created_by]||o.created_by||"")} · updated ${new Date(o.updated_at).toLocaleDateString()}</span></button>`}).join(""):`<div class="empty">No door orders for ${esc(CUST)} yet. Build a door and tap Add to order.</div>`;
- const o=D.orders.find(x=>x.id===OPEN&&x.customer===CUST);const d=$("#odetail");if(!o){d.hidden=true;return}d.hidden=false;
- const t=oTotals(o);
- d.innerHTML=`<div class="secthead"><div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1"><input id="oTitle" value="${esc(o.title)}" aria-label="Order name" style="font:700 22px var(--f-display);text-transform:uppercase;border:1px solid var(--line);padding:4px 8px;max-width:100%">
-  <div class="btns"><label class="sub">Status <select id="oStatus">${["Draft","Sent","Ordered"].map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select></label><span class="sub">${t.doors} doors · <strong>${money(t.sum)}</strong>${SHOWCOST?` · FOB ${money(t.fob)} · margin ${money(t.sum-t.fob)}`:""}</span></div></div>
-  <div class="btns"><button class="btn" type="button" id="oBuild">${o.id===CUR?"Building this order":"Add doors to this order"}</button></div></div>
-  <div class="tbl"><table><tr><th>#</th><th>Item #</th><th>Unit</th><th>SL side</th><th>Glass</th><th>Handing</th><th>Finish</th><th class="n">Each</th><th>Qty</th><th class="n">Line</th><th></th></tr>
-  ${o.lines.map((x,i)=>`<tr><td class="n">${i+1}</td><td><code>${esc(itemNo(x.item))}</code></td><td>${esc(x.desc)}</td><td>${esc(x.side||"—")}</td><td>${esc(x.glassName)}</td><td><code>${esc(x.hand)}</code></td><td>${esc(x.finName)}</td><td class="n">${money(lineEach(x))}</td><td><input class="q" type="number" min="1" value="${x.qty}" data-i="${i}" aria-label="Quantity line ${i+1}"></td><td class="n">${money(x.qty*lineEach(x))}</td><td><button type="button" class="rm" data-rm="${i}" aria-label="Remove line ${i+1}">×</button></td></tr>`).join("")||'<tr><td colspan="11" class="empty">No doors on this order yet.</td></tr>'}
-  <tr><td colspan="8" style="text-align:right;font-weight:600">Total</td><td class="n"><strong>${t.doors}</strong></td><td class="n"><strong>${money(t.sum)}</strong></td><td></td></tr></table></div>
-  <div class="pad btns"><button class="btn red" type="button" id="xCust">Excel for customer</button><button class="btn" type="button" id="xFact">Excel for factory (PO)</button><button class="btn" type="button" id="oCopy">Copy for email</button><button class="btn ghost" type="button" id="oDel">Delete order</button></div>
-  <div class="pad note" style="padding-top:0">Prices are locked in when a door is added. Customer Excel shows customer prices; the factory Excel shows factory part numbers and FOB with no customer prices.</div>`;
- d.querySelectorAll("input.q").forEach(inp=>inp.onchange=()=>saveLines(o,ls_=>{ls_[+inp.dataset.i].qty=Math.max(1,parseInt(inp.value)||1)}));
- d.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>saveLines(o,ls_=>ls_.splice(+b.dataset.rm,1)));
- $("#oTitle").onchange=e=>saveOrder(o,{title:e.target.value.trim()||o.title});
- $("#oStatus").onchange=e=>saveOrder(o,{status:e.target.value});
+ $("#olist").innerHTML=list.length?list.map(o=>{const t=oT(o);return `<button type="button" class="ocard" data-o="${o.id}" aria-current="${o.id===OPEN}"><span class="pill ${esc(o.status)}">${esc(o.status)}</span><strong>${esc(o.title)}</strong><span class="sub">${t.units} units · ${t.sum==null?"prices incomplete":money(t.sum)}${o.id===CUR?" · building now":""}</span><span class="sub">${esc(({"D Lapp":"Lapp D","D Glick":"Daniel G"})[o.created_by]||o.created_by||"")} · ${new Date(o.updated_at).toLocaleDateString()}</span></button>`}).join(""):`<div class="empty">No door orders for ${esc(CUST)} yet. Build a unit and tap Add to order.</div>`;
+ const o=D.orders.find(x=>x.id===OPEN&&x.customer===CUST),dv=$("#odetail");if(!o){dv.hidden=true;return}dv.hidden=false;const t=oT(o);
+ dv.innerHTML=`<div class="secthead"><div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1"><input id="oTitle" value="${esc(o.title)}" aria-label="Order name" style="font:700 22px var(--f-display);text-transform:uppercase;border:1px solid var(--line);padding:4px 8px;max-width:100%">
+  <div class="btns"><label class="sub">Status <select id="oStatus">${["Draft","Sent","Ordered"].map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select></label><span class="sub">${t.units} units · <strong>${t.sum==null?"prices incomplete":money(t.sum)}</strong>${SHOWFOB?` · FOB ${t.fob==null?"incomplete":money(t.fob)}`:""}</span></div></div>
+  <div class="btns"><button class="btn" type="button" id="oBuild">${o.id===CUR?"Building this order":"Add units to this order"}</button></div></div>
+  <div class="tbl"><table><tr><th>#</th><th>Unit</th><th>Details</th><th>Handing</th><th class="n">Each</th>${SHOWFOB?'<th class="n">FOB each</th>':""}<th>Qty</th><th class="n">Line</th><th></th></tr>
+  ${o.lines.map((x,i)=>`<tr><td class="n">${i+1}</td><td><strong>${esc(x.title)}</strong><br><button type="button" class="btn ghost" style="padding:2px 0" data-load="${i}">Load into builder</button></td><td style="white-space:pre-line;font-size:12.5px">${esc(x.desc)}</td><td><code>${esc(x.hand)}</code></td><td class="n">${x.each==null?'<span class="flag">NEEDED</span>':money(x.each)}</td>${SHOWFOB?`<td class="n">${x.fob==null?'<span class="flag">NEEDED</span>':money(x.fob)}</td>`:""}<td><input class="q" type="number" min="1" value="${x.qty}" data-i="${i}" aria-label="Quantity line ${i+1}"></td><td class="n">${x.each==null?"—":money(x.qty*x.each)}</td><td><button type="button" class="rm" data-rm="${i}" aria-label="Remove line ${i+1}">×</button></td></tr>`).join("")||'<tr><td colspan="9" class="empty">No units on this order yet.</td></tr>'}
+  </table></div>
+  <div class="pad btns"><button class="btn red" type="button" id="xCust">Excel for customer</button><button class="btn" type="button" id="xFact">Excel for factory (PO)</button><button class="btn" type="button" id="oReprice">Update to current prices</button><button class="btn ghost" type="button" id="oDel">Delete order</button></div>
+  <div class="pad note" style="padding-top:0">Prices are saved on each line when it's added. Use Update to current prices after you fill in or change prices.</div>`;
+ dv.querySelectorAll("input.q").forEach(inp=>inp.onchange=()=>saveLines(o,L=>{L[+inp.dataset.i].qty=Math.max(1,parseInt(inp.value)||1)}));
+ dv.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>saveLines(o,L=>L.splice(+b.dataset.rm,1)));
+ dv.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{Object.assign(S,o.lines[+b.dataset.load].st);location.hash="build"});
+ $("#oTitle").onchange=e=>saveOrder(o,{title:e.target.value.trim()||o.title});$("#oStatus").onchange=e=>saveOrder(o,{status:e.target.value});
  $("#oBuild").onclick=()=>{CUR=o.id;ls("db-cur-"+CUST,CUR);location.hash="build"};
  $("#xCust").onclick=()=>excel(o,"customer");$("#xFact").onclick=()=>excel(o,"factory");
- $("#oCopy").onclick=()=>copyOrder(o);
+ $("#oReprice").onclick=()=>saveLines(o,L=>L.forEach(x=>{const ps=parts(x.st),t=totals(ps);x.parts=ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f}));x.each=t.each;x.fob=t.fob})).then(()=>toast("Prices updated"));
  let armed=false;$("#oDel").onclick=async e=>{if(!armed){armed=true;e.target.textContent="Tap again to delete";setTimeout(()=>{armed=false;if(e.target.isConnected)e.target.textContent="Delete order"},3000);return}
-  const {error}=await sb.from("door_orders").delete().eq("id",o.id);if(error)return toast("Couldn't delete the order.");D.orders=D.orders.filter(x=>x.id!==o.id);if(CUR===o.id)CUR=null;OPEN=null;renderOrders();toast("Order deleted")};
+  const {error}=await sb.from(T.orders).delete().eq("id",o.id);if(error)return toast("Couldn't delete the order.");D.orders=D.orders.filter(x=>x.id!==o.id);if(CUR===o.id)CUR=null;OPEN=null;renderOrders();toast("Order deleted")};
 }
-async function saveLines(o,fn){const lines=o.lines.slice();fn(lines);await saveOrder(o,{lines})}
-async function saveOrder(o,patch){patch.updated_at=new Date().toISOString();const {error}=await sb.from("door_orders").update(patch).eq("id",o.id);if(error){toast("Couldn't save. Check your connection.");return}Object.assign(o,patch);renderOrders()}
-async function copyOrder(o){
- const H=["Line","Item #","Unit","Sidelite side","Glass","Handing","Finish","Each","Qty","Line total"];
- const txt=[H.join("\t"),...o.lines.map((x,i)=>[i+1,itemNo(x.item),x.desc,x.side||"",x.glassName,x.hand,x.finName,lineEach(x).toFixed(2),x.qty,(x.qty*lineEach(x)).toFixed(2)].join("\t"))].join("\n");
- try{await navigator.clipboard.writeText(txt);toast("Copied. Paste into an email or Excel.")}catch(e){toast("Copy was blocked. Use the Excel button instead.")}
-}
+async function saveLines(o,fn){const lines=JSON.parse(JSON.stringify(o.lines));fn(lines);await saveOrder(o,{lines})}
+async function saveOrder(o,patch){patch.updated_at=new Date().toISOString();const {error}=await sb.from(T.orders).update(patch).eq("id",o.id);if(error){toast("Couldn't save. Check your connection.");return}Object.assign(o,patch);renderOrders()}
 async function excel(o,kind){
  if(!window.ExcelJS)return toast("Excel export didn't load. Check your connection.");
- const wb=new ExcelJS.Workbook();wb.creator="Northeast International";
- const font={name:"Arial",size:10,color:{argb:"FF262626"}};
+ const wb=new ExcelJS.Workbook();wb.creator="Northeast International";const font={name:"Arial",size:10,color:{argb:"FF262626"}};
  let logoId=null;try{const b=await (await fetch("logo.png")).arrayBuffer();logoId=wb.addImage({buffer:b,extension:"png"})}catch(e){}
- const head=(ws,title,subtitle,cols)=>{ws.properties.defaultRowHeight=16;
-  if(logoId!=null)ws.addImage(logoId,{tl:{col:0,row:0},ext:{width:170,height:51}});
-  ws.getRow(1).height=22;ws.getRow(2).height=18;ws.getRow(3).height=18;
-  const last=String.fromCharCode(64+cols.length),st_=cols.length>=6?"D":"B";
+ const head=(ws,title,subtitle,cols)=>{if(logoId!=null)ws.addImage(logoId,{tl:{col:0,row:0},ext:{width:170,height:43}});ws.getRow(1).height=22;ws.getRow(2).height=18;ws.getRow(3).height=12;
+  const last=String.fromCharCode(64+cols.length),st_=cols.length>=5?"D":"B";
   ws.mergeCells(`${st_}1:${last}1`);ws.getCell(st_+"1").value=title;ws.getCell(st_+"1").font={name:"Arial",size:16,bold:true,color:{argb:"FF262626"}};ws.getCell(st_+"1").alignment={horizontal:"right"};
   ws.mergeCells(`${st_}2:${last}2`);ws.getCell(st_+"2").value=subtitle;ws.getCell(st_+"2").font={name:"Arial",size:9,color:{argb:"FF666666"}};ws.getCell(st_+"2").alignment={horizontal:"right"};
   for(let c=1;c<=cols.length;c++)ws.getCell(4,c).border={bottom:{style:"medium",color:{argb:"FFE23B28"}}};
-  const hr=ws.getRow(6);cols.forEach((c,i)=>{const cell=hr.getCell(i+1);cell.value=c[0];cell.font={name:"Arial",size:11,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0A0A0A"}};cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};ws.getColumn(i+1).width=c[1]});
-  hr.height=30;ws.views=[{state:"frozen",ySplit:6}];
+  const hr=ws.getRow(6);cols.forEach((c,i)=>{const cell=hr.getCell(i+1);cell.value=c[0];cell.font={name:"Arial",size:11,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0A0A0A"}};cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};ws.getColumn(i+1).width=c[1]});hr.height=30;ws.views=[{state:"frozen",ySplit:6}];
   ws.pageSetup={orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:"6:6",margins:{left:.5,right:.5,top:.5,bottom:.6,header:.3,footer:.3}};
-  ws.headerFooter.oddFooter="&L&8Northeast International · 11 Kennedy Street, Lancaster, PA 17602 · 717-945-6331 · northeast-intl.com&R&8Page &P of &N";
- };
- const body=(ws,r1,r2_,ncol,money_)=>{for(let r=r1;r<=r2_;r++){const row=ws.getRow(r);for(let c=1;c<=ncol;c++){const cell=row.getCell(c);cell.font=font;cell.border={top:{style:"thin",color:{argb:"FFD9D9D9"}},bottom:{style:"thin",color:{argb:"FFD9D9D9"}},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};cell.alignment={vertical:"top",wrapText:true};if((r-r1)%2===1)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};if(money_.includes(c)){cell.numFmt="$#,##0.00";cell.alignment={horizontal:"right",vertical:"top"}}}}};
- const tot=(ws,r,ncol,lbl,cells)=>{const row=ws.getRow(r);for(let c=1;c<=ncol;c++){const cell=row.getCell(c);cell.font={...font,bold:true};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};cell.border={top:{style:"thin",color:{argb:"FF262626"}}}}row.getCell(cells[0][0]-1).value=lbl;cells.forEach(([c,f,fmt])=>{row.getCell(c).value={formula:f};if(fmt)row.getCell(c).numFmt=fmt})};
- const cc=code()||CUST, d=today(), r0=7, rl=r0+o.lines.length-1;
+  ws.headerFooter.oddFooter="&L&8Northeast International · 11 Kennedy Street, Lancaster, PA 17602 · 717-945-6331 · northeast-intl.com&R&8Page &P of &N"};
+ const body=(ws,r1,r2_,n,money_)=>{for(let r=r1;r<=r2_;r++){const row=ws.getRow(r);for(let c=1;c<=n;c++){const cell=row.getCell(c);cell.font=font;cell.border={top:{style:"thin",color:{argb:"FFD9D9D9"}},bottom:{style:"thin",color:{argb:"FFD9D9D9"}},left:{style:"thin",color:{argb:"FFD9D9D9"}},right:{style:"thin",color:{argb:"FFD9D9D9"}}};cell.alignment={vertical:"top",wrapText:true};if((r-r1)%2===1)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};if(money_.includes(c)){cell.numFmt="$#,##0.00";cell.alignment={horizontal:"right",vertical:"top"}}}}};
+ const tot=(ws,r,n,cells)=>{const row=ws.getRow(r);for(let c=1;c<=n;c++){const cell=row.getCell(c);cell.font={...font,bold:true};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};cell.border={top:{style:"thin",color:{argb:"FF262626"}}}}row.getCell(cells[0][0]-1).value="Total";cells.forEach(([c,f,fmt])=>{row.getCell(c).value={formula:f};if(fmt)row.getCell(c).numFmt=fmt})};
+ const cc=D.customers.find(c=>c.name===CUST)?.code||CUST,d=today(),r0=7;
  if(kind==="customer"){
-  const ws=wb.addWorksheet("Door Order");
-  const cols=[["Line",6],["Item #",13],["Unit",34],["Sidelite side",10],["Glass",13],["Glass item #s",30],["Handing",10],["Finish",16],["Unit price",12],["Glass price",12],["Each",12],["Qty",7],["Line total",14]];
+  const ws=wb.addWorksheet("Door Order");const cols=[["Line",6],["Unit",26],["Details",62],["Handing",10],["Each",13],["Qty",7],["Line total",14]];
   head(ws,"Exterior Door Order",`${CUST} · ${o.title} · ${d} · Prepared by ${ME}`,cols);
-  o.lines.forEach((x,i)=>{const r=r0+i;ws.getRow(r).values=[i+1,itemNo(x.item),x.desc,x.side||"—",x.glassName,x.gitems.map(g=>itemNo(g.item)+" ×"+g.q).join("\n")||"—",x.hand,x.finName,x.unit,x.gp,{formula:`I${r}+J${r}`},x.qty,{formula:`K${r}*L${r}`}]});
-  body(ws,r0,rl,cols.length,[9,10,11,13]);tot(ws,rl+1,cols.length,"Total",[[12,`SUM(L${r0}:L${rl})`],[13,`SUM(M${r0}:M${rl})`,"$#,##0.00"]]);
+  o.lines.forEach((x,i)=>{const r=r0+i;ws.getRow(r).values=[i+1,x.title,x.desc,x.hand,x.each??"TBD",x.qty,x.each==null?"TBD":{formula:`E${r}*F${r}`}];ws.getRow(r).height=Math.max(30,x.desc.split("\n").length*13)});
+  const rl=r0+o.lines.length-1;body(ws,r0,rl,cols.length,[5,7]);tot(ws,rl+1,cols.length,[[6,`SUM(F${r0}:F${rl})`],[7,`SUM(G${r0}:G${rl})`,"$#,##0.00"]]);
   const k=wb.addWorksheet("Handing Key");k.columns=[{width:10},{width:80}];k.addRows([["Code","Meaning"],...HAND.map(h=>[h.id,`${h.name}: ${h.sub}, viewed from outside`])]);k.getRow(1).font={name:"Arial",bold:true};
  }else{
-  const ws=wb.addWorksheet("Factory Order");
-  const cols=[["Line",6],["Customer item #",15],["Unit",30],["Factory parts",40],["Glass",30],["Handing",10],["Sidelite side",10],["FOB each",12],["Qty",7],["FOB line",13]];
-  head(ws,"Factory Order",`${cc} doors · ${o.title} · ${d} · FOB USD`,cols);
-  o.lines.forEach((x,i)=>{const r=r0+i;ws.getRow(r).values=[i+1,itemNo(x.item),x.desc,x.parts.map(p=>p[0]+" × "+p[1]).join("\n"),x.gitems.map(g=>itemNo(g.item)+" × "+g.q).join("\n")||(x.glassName==="Clear"?"Clear (included)":"—"),x.hand,x.side||"—",lineFob(x),x.qty,{formula:`H${r}*I${r}`}]});
-  body(ws,r0,rl,cols.length,[8,10]);tot(ws,rl+1,cols.length,"Total",[[9,`SUM(I${r0}:I${rl})`],[10,`SUM(J${r0}:J${rl})`,"$#,##0.00"]]);
-  const roll={};o.lines.forEach(x=>{x.parts.forEach(([pn,q])=>{const k=pn;roll[k]=roll[k]||{q:0,u:typeof q==="number"?"pcs":"sets"};roll[k].q+=(typeof q==="number"?q:1)*x.qty});x.gitems.forEach(g=>{const k=itemNo(g.item);roll[k]=roll[k]||{q:0,u:"lites"};roll[k].q+=g.q*x.qty})});
-  const ws2=wb.addWorksheet("Parts Rollup");const c2=[["Part #",30],["Qty",12],["Unit",12],["",14]];head(ws2,"Parts Rollup",`Totals for all ${oTotals(o).doors} doors`,c2);
-  Object.entries(roll).forEach(([k,v],i)=>ws2.getRow(r0+i).values=[k,v.q,v.u]);body(ws2,r0,r0+Object.keys(roll).length-1,3,[]);
+  const ws=wb.addWorksheet("Factory Order");const cols=[["Line",6],["Part #",22],["Description",50],["Qty per unit",10],["Units",8],["Total qty",10],["FOB each",12],["FOB total",13],["Handing",10]];
+  head(ws,"Factory Order",`${cc} · ${o.title} · ${d} · FOB USD`,cols);let r=r0;const roll={};
+  o.lines.forEach((x,i)=>{x.parts.forEach(p=>{ws.getRow(r).values=[i+1,p.pn,p.desc,p.qty,x.qty,{formula:`D${r}*E${r}`},p.f??"TBD",p.f==null?"TBD":{formula:`F${r}*G${r}`},x.hand];r++;const k=p.pn+"|"+p.desc;roll[k]=roll[k]||{pn:p.pn,desc:p.desc,q:0,f:p.f};roll[k].q+=p.qty*x.qty});
+   ws.getRow(r).values=["",`Line ${i+1} options`,x.desc.split("\n").slice(3).join(" · "),"","","","","",""];r++});
+  body(ws,r0,r-1,cols.length,[7,8]);tot(ws,r,cols.length,[[8,`SUM(H${r0}:H${r-1})`,"$#,##0.00"]]);
+  const ws2=wb.addWorksheet("Parts Rollup");const c2=[["Part #",26],["Description",50],["Total qty",10],["FOB each",12]];head(ws2,"Parts Rollup",`All ${oT(o).units} units`,c2);
+  Object.values(roll).forEach((v,i)=>ws2.getRow(r0+i).values=[v.pn,v.desc,v.q,v.f??"TBD"]);body(ws2,r0,r0+Object.keys(roll).length-1,4,[4]);
  }
- const buf=await wb.xlsx.writeBuffer();const name=kind==="customer"?`${d} ${cc} doors order.xlsx`:`${d} Fangda-${cc}-doors order.xlsx`;
+ const buf=await wb.xlsx.writeBuffer(),name=kind==="customer"?`${d} ${cc} doors order.xlsx`:`${d} Fangda-${cc}-doors order.xlsx`;
  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Downloaded "+name);
 }
 
 /* ---------- catalog ---------- */
-let CT="lines",EDIT=null;
+let CT="slabs",EDIT=null,CF={coll:"",q:"",gq:""},PF={q:"",type:"",coll:"",size:""};
 function renderCatalog(){
  document.querySelectorAll("#ctabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.t===CT)));
- const B=$("#cbody");
- if(CT==="lines"){B.innerHTML=`<div class="btns" style="margin-bottom:10px"><button class="btn red" type="button" id="newLine">Add door style</button></div><div class="items">${D.lines.map(l=>`<button type="button" class="item ${l.active?"":"off"}" data-e="${esc(l.id)}">${l.photo_path?`<img src="${esc(src(l.photo_path))}" alt="">`:'<span class="ph"></span>'}<span><code>${esc(l.id)}</code><br><strong>${esc(l.name)}</strong><br><span class="sub">${esc(l.slab_pn)}${l.active?"":" · hidden"}</span></span></button>`).join("")}</div><div id="ed"></div>`;
-  $("#newLine").onclick=()=>{EDIT={_new:true,id:"",name:"",skin:"M",supplier:"Fangda",sub:"",slab_pn:"",slab_desc:"",sl_pn:"",sl_desc:"",mull_pn:"HDT-01",jamb_pn:"HDJ-6-9/16",brick_pn:"HDB-01",lite:"",sl_lite:"",sl_height:80,door_geom:DOOR_PRESETS["3/4 lite, 1 panel"],sl_geom:SL_PRESETS["3/4 lite, 1 panel"],configs:["A","B","C"],photo_path:"",notes:"",sort:D.lines.length+1,active:true};lineEditor()};
-  B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.lines.find(l=>l.id===b.dataset.e)));lineEditor()});
- }
- if(CT==="glass"){B.innerHTML=`<div class="btns" style="margin-bottom:10px"><button class="btn red" type="button" id="newG">Add glass</button></div><div class="items">${D.glass.map(g=>`<button type="button" class="item ${g.active?"":"off"}" data-e="${esc(g.id)}">${g.photo_path?`<img src="${esc(src(g.photo_path))}" alt="">`:'<span class="ph"></span>'}<span><code>${esc(g.id)}</code><br><strong>${esc(g.name)}</strong><br><span class="sub">fits ${esc(g.fits.join(", ")||"nothing yet")}</span></span></button>`).join("")}</div><div id="ed"></div>`;
-  $("#newG").onclick=()=>{EDIT={_new:true,id:"",name:"",caming:"",spec:"DP tempered w/ frame",dl_lite:"",sl_lite:"",handed:false,fits:[],recommended_for:[],photo_path:"",photo_lite:"",notes:"",sort:D.glass.length+1,active:true};glassEditor()};
-  B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.glass.find(g=>g.id===b.dataset.e)));glassEditor()});
- }
- if(CT==="fin"){B.innerHTML=`<div class="btns" style="margin-bottom:10px"><button class="btn red" type="button" id="newF">Add finish</button></div><div class="items">${D.fin.map(f=>`<button type="button" class="item ${f.active?"":"off"}" data-e="${esc(f.id)}"><span class="ph" style="background:url('${esc(src(f.swatch_path))}') center/cover"></span><span><code>${esc(f.id)}</code><br><strong>${esc(f.name)}</strong><br><span class="sub">${esc(SKINS[f.skin]||f.skin)}</span></span></button>`).join("")}</div><div id="ed"></div>`;
-  $("#newF").onclick=()=>{EDIT={_new:true,id:"",skin:"M",name:"",sub:"",swatch_path:"",as_shipped:false,priced:false,sort:D.fin.length+1,active:true};finEditor()};
-  B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.fin.find(f=>f.id===b.dataset.e)));finEditor()});
- }
- if(CT==="prices")priceEditor();
+ ({slabs:catSlabs,glass:catGlass,fin:catFin,comp:catComp,coll:catColl,prices:catPrices})[CT]();
 }
 const fld=(k,label,v,extra="")=>`<label>${label}<input data-k="${k}" value="${esc(v??"")}" ${extra}></label>`;
-async function upload(file,prefix){
- const ext=(file.name.split(".").pop()||"jpg").toLowerCase(),path=`${prefix}/${Date.now()}.${ext}`;
- const {error}=await sb.storage.from("door-photos").upload(path,file,{upsert:true,contentType:file.type});if(error)throw error;
- return sb.storage.from("door-photos").getPublicUrl(path).data.publicUrl;
+async function upload(file,prefix){const ext=(file.name.split(".").pop()||"jpg").toLowerCase(),path=`${prefix}/${Date.now()}.${ext}`;const {error}=await sb.storage.from("door-photos").upload(path,file,{upsert:true,contentType:file.type});if(error)throw error;return sb.storage.from("door-photos").getPublicUrl(path).data.publicUrl}
+function bindForm(root,onChange){root.querySelectorAll("[data-k]").forEach(el=>{const ev=el.type==="checkbox"||el.tagName==="SELECT"?"change":"input";el.addEventListener(ev,()=>{const k=el.dataset.k;
+ if(el.dataset.arr)EDIT[k]=[...root.querySelectorAll(`[data-k="${k}"]:checked`)].map(x=>x.value);
+ else if(el.dataset.list)EDIT[k]=el.value.split(",").map(v=>v.trim()).filter(Boolean).map(v=>el.dataset.list==="int"?parseInt(v):v).filter(v=>v===v);
+ else if(el.type==="checkbox")EDIT[k]=el.checked;
+ else if(el.dataset.json){try{EDIT[k]=el.value.trim()?JSON.parse(el.value):null;el.style.borderColor=""}catch(e){el.style.borderColor="var(--red)";return}}
+ else if(el.type==="number")EDIT[k]=el.value===""?null:Number(el.value);
+ else EDIT[k]=el.value===""&&el.dataset.nul?null:el.value;onChange&&onChange()})})}
+async function save(table,row,validate,pk="id"){const msg=validate&&validate();if(msg)return toast(msg);const r={...row};delete r._new;
+ const {error}=await sb.from(table).upsert(r,{onConflict:pk});if(error){console.error(error);return toast("Couldn't save: "+error.message)}await loadAll();EDIT=null;renderCatalog();toast("Saved")}
+function refocus(id){const i=$(id);if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}}
+function catSlabs(){
+ const B=$("#cbody");let list=D.slab.filter(s=>(!CF.coll||s.collection===CF.coll)&&(!CF.q||(s.id+" "+s.label).toLowerCase().includes(CF.q.toLowerCase())));
+ B.innerHTML=`<div class="tools" style="margin-bottom:10px"><select id="cfColl"><option value="">All collections</option>${D.coll.map(c=>`<option value="${esc(c.id)}" ${CF.coll===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select><input type="search" id="cfQ" placeholder="Search code" value="${esc(CF.q)}"><span class="note">${list.length} of ${D.slab.length}</span><button class="btn red" type="button" id="newS">Add door or sidelite</button></div>
+ <div class="tiles" style="max-height:none">${list.map(s=>`<button type="button" class="tile" data-e="${esc(s.id)}" style="${s.active?"":"opacity:.5"}"><img loading="lazy" src="${esc(s.photo_img||s.line_img)}" alt=""><b>${esc(s.id)}</b><span>${esc(s.collection)} · ${s.kind==="sidelite"?"SL":"door"}${s.lite?" · "+s.lite:""}</span></button>`).join("")}</div><div id="ed"></div>`;
+ $("#cfColl").onchange=e=>{CF.coll=e.target.value;catSlabs()};$("#cfQ").oninput=e=>{CF.q=e.target.value;clearTimeout(catSlabs.t);catSlabs.t=setTimeout(()=>{catSlabs();refocus("#cfQ")},300)};
+ $("#newS").onclick=()=>{EDIT={_new:true,id:"",code:"",collection:CF.coll||S.coll,kind:"door",label:"",lite:null,glass_box:null,lites:[],line_img:"",photo_img:null,notes:"",sort:D.slab.length,active:true};slabEditor()};
+ B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(slab(b.dataset.e)));slabEditor()});
 }
-function bindForm(root,onChange){
- root.querySelectorAll("[data-k]").forEach(el=>{const ev=el.type==="checkbox"||el.tagName==="SELECT"?"change":"input";el.addEventListener(ev,()=>{const k=el.dataset.k;
-  if(el.dataset.arr){EDIT[k]=[...root.querySelectorAll(`[data-k="${k}"]:checked`)].map(x=>x.value)}
-  else if(el.type==="checkbox")EDIT[k]=el.checked;
-  else if(el.dataset.json){try{EDIT[k]=el.value.trim()?JSON.parse(el.value):null;el.style.borderColor=""}catch(e){el.style.borderColor="var(--red)";return}}
-  else if(el.type==="number")EDIT[k]=el.value===""?null:Number(el.value);
-  else EDIT[k]=el.value;onChange&&onChange()})});
-}
-function litePreset(geom,lite,wTotal){if(!geom||!geom.lite||!/^\d{3,4}$/.test(lite||""))return geom;const w=+lite.slice(0,lite.length-2),h=+lite.slice(-2);const g=JSON.parse(JSON.stringify(geom));g.lite=[r2((wTotal-w)/2),g.lite[1],w,h];return g}
-function lineEditor(){
+function slabEditor(){
  const e=EDIT,ed=$("#ed");
- ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New door style":"Edit "+esc(e.id)}</h3>
- <div class="editor"><div class="form">
-  ${fld("id","Style code (used in item #s, e.g. M4)",e.id,e._new?"":"disabled")}${fld("name","Name",e.name)}
-  <label>Skin / finish family<select data-k="skin">${Object.entries(SKINS).map(([k,v])=>`<option value="${k}" ${k===e.skin?"selected":""}>${v}</option>`).join("")}</select></label>
-  ${fld("supplier","Supplier",e.supplier)}${fld("sub","Short note under the name",e.sub)}
-  ${fld("slab_pn","Door slab part #",e.slab_pn)}${fld("slab_desc","Door slab description",e.slab_desc)}
-  ${fld("lite","Door lite size (e.g. 2248, blank = no glass)",e.lite)}
-  ${fld("sl_pn","Sidelite part # (blank = no sidelites)",e.sl_pn)}${fld("sl_desc","Sidelite description",e.sl_desc)}
-  ${fld("sl_lite","Sidelite lite size",e.sl_lite)}${fld("sl_height","Sidelite height (in)",e.sl_height,'type="number" step="0.5"')}
-  ${fld("mull_pn","Mull post part #",e.mull_pn)}${fld("jamb_pn","Jamb part #",e.jamb_pn)}${fld("brick_pn","Brickmould part #",e.brick_pn)}
-  <label class="wide">Units offered<span class="checks">${Object.entries(CFG).map(([k,v])=>`<label><input type="checkbox" data-k="configs" data-arr="1" value="${k}" ${e.configs.includes(k)?"checked":""}>${k} · ${v.name}</label>`).join("")}</span></label>
-  <label>Door layout<select id="dPre"><option value="">Pick a layout…</option>${Object.keys(DOOR_PRESETS).map(k=>`<option>${k}</option>`).join("")}</select></label>
-  <label>Sidelite layout<select id="sPre"><option value="">Pick a layout…</option>${Object.keys(SL_PRESETS).map(k=>`<option>${k}</option>`).join("")}</select></label>
-  <label class="wide">Door drawing (inches on a 36×80 slab: lite [x,y,w,h], panels, optional shelf)<textarea data-k="door_geom" data-json="1">${esc(JSON.stringify(e.door_geom))}</textarea></label>
-  <label class="wide">Sidelite drawing (inches on a 14-wide sidelite)<textarea data-k="sl_geom" data-json="1">${esc(JSON.stringify(e.sl_geom))}</textarea></label>
-  <label>Catalog photo (optional)<input type="file" accept="image/*" id="ph"></label>
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New door or sidelite":"Edit "+esc(e.id)}</h3><div class="editor"><div class="form">
+  ${fld("id","ID (unique; add #2 for a second design under the same code)",e.id,e._new?"":"disabled")}${fld("code","Fangda part code",e.code)}
+  <label>Collection<select data-k="collection">${D.coll.map(c=>`<option value="${esc(c.id)}" ${c.id===e.collection?"selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
+  <label>Type<select data-k="kind"><option value="door" ${e.kind==="door"?"selected":""}>Door slab (36" wide drawing)</option><option value="sidelite" ${e.kind==="sidelite"?"selected":""}>Sidelite (14" wide drawing)</option></select></label>
+  ${fld("label","Style name",e.label)}${fld("lite","Lite size code (e.g. 2248, 0764; blank = none)",e.lite,'data-nul="1"')}
+  <label class="wide">Glass opening, inches from the top-left of the drawing [x, y, width, height]<input data-k="glass_box" data-json="1" value="${esc(e.glass_box?JSON.stringify(e.glass_box):"")}" placeholder="e.g. [7, 7, 22, 48]"></label>
+  <label class="wide">Separate panes for gridded lites (optional, list of [x,y,w,h])<input data-k="lites" data-json="1" value="${esc(JSON.stringify(e.lites||[]))}"></label>
+  <label>Line drawing (white background)<input type="file" accept="image/*" id="upL"></label><label>Photo-real render (optional)<input type="file" accept="image/*" id="upP"></label>
   ${fld("sort","Sort order",e.sort,'type="number"')}
-  <label class="wide">Open questions / notes (shows on the build sheet as VERIFY)<input data-k="notes" value="${esc(e.notes||"")}"></label>
-  <label class="checks"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></label>
- </div><div><div class="stage"><svg id="pv" viewBox="0 0 470 470" role="img" aria-label="Preview"></svg></div><div class="note" style="margin-top:6px">Preview with clear glass. Picking a layout uses the lite size above to size the glass opening.</div>${e.photo_path?`<img src="${esc(src(e.photo_path))}" alt="" style="max-height:200px;margin-top:8px;border:1px solid var(--line)">`:""}</div></div>
- <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button><span class="note">Prices for this style are set under Prices.</span></div></div>`;
- const pv=()=>{try{$("#pv").innerHTML=drawUnit({...e,door_geom:e.door_geom||{},sl_geom:e.sl_geom||{}},{cfg:e.configs.includes("C")&&e.sl_pn?"C":"A",side:"R",fin:(D.fin.find(f=>f.skin===e.skin&&f.as_shipped)||{}).id,hand:"LHIS"},null,"p")}catch(err){}};
+  <label class="wide">Notes (show on the build sheet as VERIFY)<input data-k="notes" value="${esc(e.notes||"")}"></label>
+  <span class="checks wide"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label>${e.photo_img?`<label><input type="checkbox" id="rmP">Remove photo-real render</label>`:""}</span>
+ </div><div><div class="stage" style="background:#ddd"><canvas id="pv" width="500" height="560"></canvas></div><div class="note" style="margin-top:6px">Preview with clear glass. The red box is the glass opening.</div></div></div>
+ <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
+ const pv=async()=>{const cv=$("#pv");if(!cv)return;const x=cv.getContext("2d");x.fillStyle="#ddd";x.fillRect(0,0,cv.width,cv.height);const W=e.kind==="sidelite"?14:36,s=Math.min(480/W,540/80),ox=(cv.width-W*s)/2,oy=10;
+  const f=D.fin.find(f=>f.collections.includes(e.collection)&&f.as_shipped);const [l,p,t]=await Promise.all([img(e.line_img),img(e.photo_img),img(f?.image)]);
+  drawSlab(x,e,{x:ox,y:oy,w:W*s,h:80*s,line:l,photo:p,tex:t,fin:f,glass:null,kindW:W});
+  if(e.glass_box){x.strokeStyle="#c8102e";x.lineWidth=2;x.strokeRect(ox+e.glass_box[0]*s,oy+e.glass_box[1]*s,e.glass_box[2]*s,e.glass_box[3]*s)}};
  bindForm(ed,pv);pv();
- $("#dPre").onchange=ev=>{if(!ev.target.value)return;e.door_geom=litePreset(DOOR_PRESETS[ev.target.value],e.lite,36);ed.querySelector('[data-k="door_geom"]').value=JSON.stringify(e.door_geom);pv()};
- $("#sPre").onchange=ev=>{if(!ev.target.value)return;e.sl_geom=litePreset(SL_PRESETS[ev.target.value],e.sl_lite,14);ed.querySelector('[data-k="sl_geom"]').value=JSON.stringify(e.sl_geom);pv()};
- $("#ph").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.photo_path=await upload(f,"lines");toast("Photo uploaded. Save to keep it.")}catch(err){toast("Upload failed.")}};
+ $("#upL").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.line_img=await upload(f,"slabs");toast("Drawing uploaded. Save to keep it.");pv()}catch(err){toast("Upload failed.")}};
+ $("#upP").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.photo_img=await upload(f,"slabs");toast("Render uploaded. Save to keep it.");pv()}catch(err){toast("Upload failed.")}};
+ if($("#rmP"))$("#rmP").onchange=ev=>{e.photo_img=ev.target.checked?null:slab(e.id)?.photo_img;pv()};
  $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};
- $("#sv").onclick=()=>save("door_lines",e,()=>{if(!/^[A-Z0-9]{1,8}$/i.test(e.id))return "Style code must be letters/numbers, up to 8 characters.";if(!e.name||!e.slab_pn)return "Name and door slab part # are required.";if(e._new&&D.lines.some(l=>l.id===e.id))return "That style code is already used."});
+ $("#sv").onclick=()=>save(T.slab,{...e,updated_at:new Date().toISOString()},()=>{if(!e.id||!e.code)return "ID and part code are required.";if(e._new&&slab(e.id))return "That ID is already used.";if(!e.line_img)return "Upload a line drawing first."});
  ed.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function catGlass(){
+ const B=$("#cbody"),q=(CF.gq||"").toLowerCase(),list=D.glass.filter(g=>!q||g.name.toLowerCase().includes(q));
+ B.innerHTML=`<div class="tools" style="margin-bottom:10px"><input type="search" id="cgQ" placeholder="Search pattern" value="${esc(CF.gq||"")}"><span class="note">${list.length} patterns · ${D.glass.reduce((a,g)=>a+Object.keys(g.sizes||{}).length,0)} lite photos</span><button class="btn red" type="button" id="newG">Add glass pattern</button></div>
+ <div class="tiles gl" style="max-height:none">${list.map(g=>{const k=Object.keys(g.sizes||{});const im=g.sizes["2248"]||g.sizes["2264"]||g.sizes[k[0]];return `<button type="button" class="tile" data-e="${esc(g.id)}" style="${g.active?"":"opacity:.5"}">${im?`<img loading="lazy" src="${esc(im)}" alt="">`:""}<b>${esc(g.name)}</b><span>${k.length} sizes</span></button>`}).join("")}</div><div id="ed"></div>`;
+ $("#cgQ").oninput=e=>{CF.gq=e.target.value;clearTimeout(catGlass.t);catGlass.t=setTimeout(()=>{catGlass();refocus("#cgQ")},300)};
+ $("#newG").onclick=()=>{EDIT={_new:true,id:"",name:"",source:"",privacy:null,caming:[],sizes:{},notes:"",sort:D.glass.length,active:true};glassEditor()};
+ B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(glassP(b.dataset.e)));glassEditor()});
 }
 function glassEditor(){
  const e=EDIT,ed=$("#ed");
- ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New glass":"Edit "+esc(e.id)}</h3><div class="editor"><div class="form">
-  ${fld("id","Glass code (e.g. CAPEFL)",e.id,e._new?"":"disabled")}${fld("name","Pattern name",e.name)}${fld("caming","Caming",e.caming)}${fld("spec","Glass spec",e.spec)}
-  ${fld("dl_lite","Door lite size",e.dl_lite)}${fld("sl_lite","Sidelite lite size",e.sl_lite)}
-  ${fld("photo_lite","Lite size shown in the photo",e.photo_lite)}
-  <label>Photo<input type="file" accept="image/*" id="ph"></label>
-  <label class="wide">Fits door styles<span class="checks">${D.lines.map(l=>`<label><input type="checkbox" data-k="fits" data-arr="1" value="${esc(l.id)}" ${e.fits.includes(l.id)?"checked":""}>${esc(l.id)} · ${esc(l.name)}</label>`).join("")}</span></label>
-  <label class="wide">Recommended for<span class="checks">${D.lines.map(l=>`<label><input type="checkbox" data-k="recommended_for" data-arr="1" value="${esc(l.id)}" ${(e.recommended_for||[]).includes(l.id)?"checked":""}>${esc(l.id)}</label>`).join("")}</span></label>
-  <label class="checks"><label><input type="checkbox" data-k="handed" ${e.handed?"checked":""}>Sidelite lites are handed (L/R)</label></label>
-  ${fld("sort","Sort order",e.sort,'type="number"')}
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New glass pattern":"Edit "+esc(e.name)}</h3><div class="form" style="margin-top:10px">
+  ${fld("id","Glass code (letters/numbers)",e.id,e._new?"":"disabled")}${fld("name","Pattern name",e.name)}${fld("source","Source",e.source)}${fld("privacy","Privacy (1-10)",e.privacy,'type="number" min="1" max="10"')}
+  <label class="wide">Caming finishes (comma separated)<input data-k="caming" data-list="1" value="${esc((e.caming||[]).join(", "))}"></label>
   <label class="wide">Notes<input data-k="notes" value="${esc(e.notes||"")}"></label>
-  <label class="checks"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></label>
- </div><div>${e.photo_path?`<img id="gimg" src="${esc(src(e.photo_path))}" alt="" style="max-height:320px;border:1px solid var(--line)">`:'<div class="note" id="gimg">No photo yet.</div>'}<p class="note">The photo is fitted into the door drawing only when "lite size shown in the photo" matches the door style's lite. Otherwise it shows beside the drawing, so the picture never misleads.</p></div></div>
- <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button><span class="note">Set prices for -DL and -SL under Prices.</span></div></div>`;
+  <span class="checks wide"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></span></div>
+  <h3 style="margin-top:14px">Lite sizes and photos</h3><p class="note">Each lite size has its own photo. A pattern shows up for a door only when it has a photo in that door's lite size.</p>
+  <div class="sizes">${Object.entries(e.sizes||{}).map(([k,v])=>`<div class="s"><img src="${esc(v)}" alt=""><b>${esc(k)}</b><span class="note">${esc(liteName(k))}</span><button type="button" class="btn ghost" data-rs="${esc(k)}">Remove</button></div>`).join("")}</div>
+  <div class="tools" style="margin-top:10px"><input id="nsz" placeholder="Lite code, e.g. 2248" style="width:160px;font:inherit;padding:6px"><input type="file" accept="image/*" id="nimg"><button class="btn" type="button" id="addSz">Add size</button></div>
+  <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
  bindForm(ed);
- $("#ph").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.photo_path=await upload(f,"glass");toast("Photo uploaded. Save to keep it.");glassEditor()}catch(err){toast("Upload failed.")}};
+ ed.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{delete e.sizes[b.dataset.rs];glassEditor()});
+ $("#addSz").onclick=async()=>{const k=$("#nsz").value.trim().toUpperCase(),f=$("#nimg").files[0];if(!k||!f)return toast("Type a lite code and pick a photo.");try{e.sizes[k]=await upload(f,"glass");glassEditor();toast("Photo added. Save to keep it.")}catch(err){toast("Upload failed.")}};
  $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};
- $("#sv").onclick=()=>save("door_glass",e,()=>{if(!/^[A-Z0-9]{1,10}$/i.test(e.id))return "Glass code must be letters/numbers, up to 10 characters.";if(!e.name)return "Pattern name is required.";if(e._new&&D.glass.some(g=>g.id===e.id))return "That glass code is already used."});
+ $("#sv").onclick=()=>save(T.glass,{...e,updated_at:new Date().toISOString()},()=>{if(!/^[A-Z0-9]{1,14}$/i.test(e.id||""))return "Glass code must be letters/numbers.";if(!e.name)return "Pattern name is required.";if(e._new&&glassP(e.id))return "That code is already used."});
  ed.scrollIntoView({behavior:"smooth",block:"start"});
 }
-function finEditor(){
- const e=EDIT,ed=$("#ed");
- ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New finish":"Edit "+esc(e.id)}</h3><div class="form" style="margin-top:10px">
-  ${fld("id","Finish code (e.g. K-05)",e.id,e._new?"":"disabled")}${fld("name","Name",e.name)}
-  <label>For skin<select data-k="skin">${Object.entries(SKINS).map(([k,v])=>`<option value="${k}" ${k===e.skin?"selected":""}>${v}</option>`).join("")}</select></label>
-  ${fld("sub","Short note",e.sub)}<label>Swatch photo<input type="file" accept="image/*" id="ph"></label>${fld("sort","Sort order",e.sort,'type="number"')}
-  <label class="checks wide"><label><input type="checkbox" data-k="as_shipped" ${e.as_shipped?"checked":""}>This is the as-shipped finish</label><label><input type="checkbox" data-k="priced" ${e.priced?"checked":""}>Included in price (not preview)</label><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></label>
+function catFin(){
+ const B=$("#cbody");B.innerHTML=`<div class="btns" style="margin-bottom:10px"><button class="btn red" type="button" id="newF">Add finish</button></div><div class="row">${D.fin.map(f=>`<button type="button" class="chip" data-e="${esc(f.id)}" style="display:flex;gap:8px;align-items:center;${f.active?"":"opacity:.5"}"><i class="sw" style="${f.image?`background-image:url('${esc(f.image)}')`:`background:${esc(f.color)}`}"></i><span>${esc(f.name)}<span>${esc(f.collections.join(", "))} · ${f.kind}</span></span></button>`).join("")}</div><div id="ed"></div>`;
+ $("#newF").onclick=()=>{EDIT={_new:true,id:"",name:"",collections:[S.coll],kind:"paint",image:null,color:"#ffffff",as_shipped:false,priced:false,sort:D.fin.length,active:true};finEditor()};
+ B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.fin.find(f=>f.id===b.dataset.e)));finEditor()});
+}
+function finEditor(){const e=EDIT,ed=$("#ed");
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New finish":"Edit "+esc(e.name)}</h3><div class="form" style="margin-top:10px">
+  ${fld("id","Code",e.id,e._new?"":"disabled")}${fld("name","Name",e.name)}
+  <label>Kind<select data-k="kind">${["texture","stain","paint"].map(k=>`<option ${k===e.kind?"selected":""}>${k}</option>`).join("")}</select></label>
+  <label>Paint color<input type="color" data-k="color" value="${esc(e.color||"#ffffff")}"></label><label>Texture / swatch photo<input type="file" accept="image/*" id="up"></label>
+  <label class="wide">Collections<span class="checks">${D.coll.map(c=>`<label><input type="checkbox" data-k="collections" data-arr="1" value="${esc(c.id)}" ${e.collections.includes(c.id)?"checked":""}>${esc(c.name)}</label>`).join("")}</span></label>
+  <span class="checks wide"><label><input type="checkbox" data-k="as_shipped" ${e.as_shipped?"checked":""}>As shipped (default)</label><label><input type="checkbox" data-k="priced" ${e.priced?"checked":""}>Included in price (not a preview)</label><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></span>
  </div><div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
- bindForm(ed);
- $("#ph").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.swatch_path=await upload(f,"finishes");toast("Swatch uploaded. Save to keep it.")}catch(err){toast("Upload failed.")}};
- $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};
- $("#sv").onclick=()=>save("door_finishes",e,()=>{if(!e.id||!e.name)return "Code and name are required.";if(e._new&&D.fin.some(f=>f.id===e.id))return "That code is already used."});
-}
-async function save(table,e,validate){
- const msg=validate();if(msg)return toast(msg);
- const row={...e};delete row._new;if(table!=="door_finishes")row.updated_at=new Date().toISOString();
- if(table==="door_lines"){row.sl_pn=row.sl_pn||null;row.lite=row.lite||null;row.sl_lite=row.sl_lite||null}
- const {error}=await sb.from(table).upsert(row);if(error){console.error(error);return toast("Couldn't save: "+error.message)}
- await loadAll();EDIT=null;renderCatalog();toast("Saved")
-}
-function priceEditor(){
- const B=$("#cbody"),items=[];
- D.lines.forEach(l=>l.configs.filter(k=>k==="A"||l.sl_pn).forEach(k=>items.push({item:l.id+"-"+k,desc:`${l.name} · ${CFG[k].name}`})));
- D.glass.forEach(g=>{items.push({item:"G-"+g.id+"-DL",desc:`${g.name} door lite`});items.push({item:"G-"+g.id+"-SL",desc:`${g.name} sidelite lite`})});
- const others=D.customers.filter(c=>c.name!==CUST&&D.prices.some(p=>p.customer===c.name));
- B.innerHTML=`<div class="card"><div class="secthead"><div><h3>Price list · ${esc(CUST)}</h3><div class="sub">Customer price and FOB cost per item. Changed cells turn red until you save.</div></div>
-  <div class="btns">${others.length?`<select id="cpFrom" aria-label="Copy from">${others.map(c=>`<option>${esc(c.name)}</option>`).join("")}</select><button class="btn" type="button" id="cpGo">Copy missing prices from</button>`:""}<button class="btn red" type="button" id="psave">Save prices</button></div></div>
-  <div class="tbl"><table><tr><th>Item #</th><th>Description</th><th class="n">Customer price</th><th class="n">FOB</th><th class="n">Margin</th></tr>
-  ${items.map(it=>{const p=priceOf(it.item);return `<tr><td><code>${esc(itemNo(it.item))}</code></td><td>${esc(it.desc)}</td><td class="n"><input class="pr" data-item="${esc(it.item)}" data-f="price" inputmode="decimal" value="${p?.price??""}" aria-label="Price ${esc(it.item)}"></td><td class="n"><input class="pr" data-item="${esc(it.item)}" data-f="fob" inputmode="decimal" value="${p?.fob??""}" aria-label="FOB ${esc(it.item)}"></td><td class="n" data-m="${esc(it.item)}">${p?.price&&p?.fob?((p.price-p.fob)/p.price*100).toFixed(1)+"%":"—"}</td></tr>`}).join("")}</table></div></div>`;
+ bindForm(ed);$("#up").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.image=await upload(f,"finishes");toast("Uploaded. Save to keep it.")}catch(err){toast("Upload failed.")}};
+ $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};$("#sv").onclick=()=>save(T.fin,e,()=>{if(!e.id||!e.name)return "Code and name are required.";if(e._new&&D.fin.some(f=>f.id===e.id))return "That code is already used."});}
+function catComp(){const B=$("#cbody");
+ B.innerHTML=`<div class="card"><div class="secthead"><h3>Frame parts &amp; options</h3><button class="btn red" type="button" id="newC">Add part</button></div><div class="tbl"><table><tr><th>Part #</th><th>Type</th><th>Name</th><th>Spec</th><th>Choices</th><th>Shown</th></tr>${D.comp.map(c=>`<tr data-e="${esc(c.id)}" style="cursor:pointer"><td><code>${esc(c.id)}</code></td><td>${esc(c.type)}</td><td>${esc(c.name)}</td><td>${esc(c.spec)}</td><td>${esc((c.choices||[]).join(", "))}</td><td>${c.active?"yes":"no"}</td></tr>`).join("")}</table></div></div><div id="ed"></div>`;
+ $("#newC").onclick=()=>{EDIT={_new:true,id:"",type:"jamb",name:"",spec:"",choices:[],sort:D.comp.length,active:true};compEditor()};
+ B.querySelectorAll("tr[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(comp(b.dataset.e)));compEditor()});}
+function compEditor(){const e=EDIT,ed=$("#ed");
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New part":"Edit "+esc(e.id)}</h3><div class="form" style="margin-top:10px">${fld("id","Part #",e.id,e._new?"":"disabled")}
+  <label>Type<select data-k="type">${["jamb","trim","mull","astragal","option","labor"].map(k=>`<option ${k===e.type?"selected":""}>${k}</option>`).join("")}</select></label>${fld("name","Name",e.name)}${fld("spec","Spec",e.spec)}
+  <label class="wide">Choices (options only, comma separated)<input data-k="choices" data-list="1" value="${esc((e.choices||[]).join(", "))}"></label>
+  <span class="checks wide"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Active</label></span></div>
+  <p class="note">Jamb and trim parts are offered in the builder. Mull (HDT-01) and astragal (HDA-01) are added automatically. A labor part with code PREHANG is added to every unit while it's active.</p>
+  <div class="btns"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
+ bindForm(ed);$("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};$("#sv").onclick=()=>save(T.comp,e,()=>{if(!e.id||!e.name)return "Part # and name are required.";if(e._new&&comp(e.id))return "That part # is already used."});}
+function catColl(){const B=$("#cbody");
+ B.innerHTML=`<div class="card"><div class="secthead"><h3>Collections</h3><button class="btn red" type="button" id="newCo">Add collection</button></div><div class="tbl"><table><tr><th>Code</th><th>Name</th><th>Door widths</th><th>Heights</th><th>Sidelite widths</th><th>Notes</th></tr>${D.coll.map(c=>`<tr data-e="${esc(c.id)}" style="cursor:pointer"><td><code>${esc(c.id)}</code></td><td>${esc(c.name)}</td><td>${c.widths.join(", ")}</td><td>${c.heights.join(", ")}</td><td>${c.sl_widths.join(", ")}</td><td>${esc(c.notes)}</td></tr>`).join("")}</table></div></div><div id="ed"></div>`;
+ $("#newCo").onclick=()=>{EDIT={_new:true,id:"",name:"",supplier:"Fangda",skin:"",widths:[32,34,36],heights:[80],sl_widths:[12,14],notes:"",sort:D.coll.length+1,active:true};collEditor()};
+ B.querySelectorAll("tr[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(D.coll.find(c=>c.id===b.dataset.e)));collEditor()});}
+function collEditor(){const e=EDIT,ed=$("#ed");
+ ed.innerHTML=`<div class="card pad" style="margin-top:14px"><h3>${e._new?"New collection":"Edit "+esc(e.name)}</h3><div class="form" style="margin-top:10px">${fld("id","Code",e.id,e._new?"":"disabled")}${fld("name","Name",e.name)}${fld("supplier","Supplier",e.supplier)}${fld("skin","Description",e.skin)}
+  <label>Door widths (in)<input data-k="widths" data-list="int" value="${esc(e.widths.join(", "))}"></label><label>Heights (in)<input data-k="heights" data-list="int" value="${esc(e.heights.join(", "))}"></label><label>Sidelite widths (in)<input data-k="sl_widths" data-list="int" value="${esc(e.sl_widths.join(", "))}"></label>
+  <label class="wide">Notes<input data-k="notes" value="${esc(e.notes||"")}"></label><span class="checks wide"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></span></div>
+  <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
+ bindForm(ed);$("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};$("#sv").onclick=()=>save(T.coll,e,()=>{if(!e.id||!e.name)return "Code and name are required.";if(!e.widths.length||!e.heights.length)return "Add at least one width and height."});}
+function priceItems(){const it=[];
+ D.slab.forEach(s=>{const c=D.coll.find(x=>x.id===s.collection);it.push({type:s.kind==="door"?"door":"sidelite",coll:s.collection,base:`S:${s.id}`,label:s.id,desc:`${c?.name||s.collection} ${s.kind}${s.label?" · "+s.label:""}`,sizes:s.kind==="door"?(c?.widths||[]).flatMap(w=>(c?.heights||[]).map(h=>w+"x"+h)):(c?.sl_widths||[]).flatMap(w=>(c?.heights||[]).map(h=>w+"x"+h))})});
+ D.glass.forEach(g=>Object.keys(g.sizes||{}).forEach(k=>it.push({type:"glass",coll:"",base:`G:${g.id}:${k}`,label:`${g.name} ${k}`,desc:`Glass lite ${liteName(k)}`,sizes:[]})));
+ D.comp.filter(c=>c.type!=="option").forEach(c=>it.push({type:"part",coll:"",base:`C:${c.id}`,label:c.id,desc:c.name,sizes:[]}));return it}
+function catPrices(){
+ const B=$("#cbody"),all=priceItems();let list=all.filter(i=>(!PF.type||i.type===PF.type)&&(!PF.coll||i.coll===PF.coll)&&(!PF.q||(i.label+" "+i.desc).toLowerCase().includes(PF.q.toLowerCase())));
+ const key=i=>PF.size&&i.sizes.includes(PF.size)?i.base+":"+PF.size:i.base;
+ const shown=list.slice(0,250),sizesAll=[...new Set(all.flatMap(i=>i.sizes))].sort();
+ const others=D.customers.filter(c=>c.name!==CUST&&D.price.some(p=>p.customer===c.name));
+ B.innerHTML=`<div class="card"><div class="secthead"><div><h3>Prices · ${esc(CUST)}</h3><div class="sub">FOB cost is shared across customers. Customer price is for ${esc(CUST)} (switch customer at the top). Changed cells turn red until you save.</div></div>
+  <div class="btns">${others.length?`<select id="cpFrom">${others.map(c=>`<option>${esc(c.name)}</option>`).join("")}</select><button class="btn" type="button" id="cpGo">Copy missing prices from</button>`:""}<button class="btn red" type="button" id="psave">Save prices</button></div></div>
+  <div class="pad tools"><select id="pfT"><option value="">All items</option>${["door","sidelite","glass","part"].map(t=>`<option ${PF.type===t?"selected":""}>${t}</option>`).join("")}</select>
+  <select id="pfC"><option value="">All collections</option>${D.coll.map(c=>`<option value="${esc(c.id)}" ${PF.coll===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+  <label class="note">Door/sidelite size <select id="pfS"><option value="">Base price (all sizes)</option>${sizesAll.map(z=>`<option ${PF.size===z?"selected":""}>${z}</option>`).join("")}</select></label>
+  <input type="search" id="pfQ" placeholder="Search" value="${esc(PF.q)}"><span class="note">${list.length} items${list.length>250?" (first 250 shown; narrow the filter)":""}</span></div>
+  <div class="tbl"><table><tr><th>Item</th><th>Description</th><th class="n">FOB cost</th><th class="n">${esc(CUST)} price</th></tr>
+  ${shown.map(i=>{const k=key(i);return `<tr><td><code>${esc(i.label)}</code>${k!==i.base?`<br><span class="note">${esc(PF.size)}</span>`:""}</td><td>${esc(i.desc)}</td><td class="n"><input class="pr" data-item="${esc(k)}" data-f="fob" inputmode="decimal" value="${cost(k)??""}" aria-label="FOB ${esc(i.label)}"></td><td class="n"><input class="pr" data-item="${esc(k)}" data-f="price" inputmode="decimal" value="${price(k)??""}" aria-label="Price ${esc(i.label)}"></td></tr>`}).join("")}</table></div>
+  <div class="pad note">Base prices apply to every size. Pick a size above to set a price for just that size; it overrides the base price.</div></div>`;
+ const re=()=>catPrices();$("#pfT").onchange=e=>{PF.type=e.target.value;re()};$("#pfC").onchange=e=>{PF.coll=e.target.value;re()};$("#pfS").onchange=e=>{PF.size=e.target.value;re()};
+ $("#pfQ").oninput=e=>{PF.q=e.target.value;clearTimeout(catPrices.t);catPrices.t=setTimeout(()=>{re();refocus("#pfQ")},300)};
  B.querySelectorAll("input.pr").forEach(i=>i.oninput=()=>i.classList.add("dirty"));
- $("#psave").onclick=async()=>{const rows={};B.querySelectorAll("input.pr.dirty").forEach(i=>{const it=i.dataset.item;const cur=priceOf(it)||{};rows[it]=rows[it]||{customer:CUST,item:it,price:cur.price??null,fob:cur.fob??null};const v=i.value.trim();rows[it][i.dataset.f]=v===""?null:r2(parseFloat(v.replace(/[$,]/g,"")))});
-  const list=Object.values(rows).map(r=>({...r,updated_at:new Date().toISOString()}));if(!list.length)return toast("Nothing changed.");
-  if(list.some(r=>(r.price!=null&&isNaN(r.price))||(r.fob!=null&&isNaN(r.fob))))return toast("One of the prices isn't a number.");
-  const {error}=await sb.from("door_prices").upsert(list);if(error)return toast("Couldn't save prices: "+error.message);await loadAll();priceEditor();toast(`Saved ${list.length} price${list.length>1?"s":""}`)};
- const cp=$("#cpGo");if(cp)cp.onclick=async()=>{const from=$("#cpFrom").value,src_=D.prices.filter(p=>p.customer===from&&!priceOf(p.item));if(!src_.length)return toast("Nothing to copy. "+CUST+" already has those prices.");
-  const {error}=await sb.from("door_prices").insert(src_.map(p=>({customer:CUST,item:p.item,price:p.price,fob:p.fob})));if(error)return toast("Couldn't copy prices.");await loadAll();priceEditor();toast(`Copied ${src_.length} prices from ${from}`)};
+ $("#psave").onclick=async()=>{const cs=[],ps=[];let bad=false;B.querySelectorAll("input.pr.dirty").forEach(i=>{const v=i.value.trim(),n=v===""?null:r2(parseFloat(v.replace(/[$,]/g,"")));if(v!==""&&isNaN(n))bad=true;
+   if(i.dataset.f==="fob")cs.push({item:i.dataset.item,fob:n,updated_at:new Date().toISOString()});else ps.push({customer:CUST,item:i.dataset.item,price:n,updated_at:new Date().toISOString()})});
+  if(bad)return toast("One of the prices isn't a number.");if(!cs.length&&!ps.length)return toast("Nothing changed.");
+  const r=await Promise.all([cs.length?sb.from(T.cost).upsert(cs):{},ps.length?sb.from(T.price).upsert(ps):{}]);const err=r.find(x=>x.error);if(err)return toast("Couldn't save prices: "+err.error.message);
+  await loadAll();catPrices();toast(`Saved ${cs.length+ps.length} price${cs.length+ps.length>1?"s":""}`)};
+ const cp=$("#cpGo");if(cp)cp.onclick=async()=>{const from=$("#cpFrom").value,src=D.price.filter(p=>p.customer===from&&price(p.item)==null);if(!src.length)return toast("Nothing to copy.");
+  const {error}=await sb.from(T.price).insert(src.map(p=>({customer:CUST,item:p.item,price:p.price})));if(error)return toast("Couldn't copy prices.");await loadAll();catPrices();toast(`Copied ${src.length} prices from ${from}`)};
 }
 
 /* ---------- shell ---------- */
-function route(){
- const v=(location.hash||"#build").slice(1);const view=["build","orders","catalog"].includes(v)?v:"build";
+function route(){const v=(location.hash||"#build").slice(1),view=["build","orders","catalog"].includes(v)?v:"build";
  document.querySelectorAll(".tabs a").forEach(a=>a.setAttribute("aria-current",a.dataset.v===view?"page":"false"));
  ["build","orders","catalog"].forEach(k=>$("#v-"+k).hidden=k!==view);
- if(view==="build")renderBuild();if(view==="orders"){if(!OPEN)OPEN=CUR;renderOrders()}if(view==="catalog")renderCatalog();
-}
+ if(view==="build")renderBuild();if(view==="orders"){if(!OPEN)OPEN=CUR;renderOrders()}if(view==="catalog")renderCatalog()}
 window.addEventListener("hashchange",route);
 $("#cust").onchange=e=>{CUST=e.target.value;ls("db-cust",CUST);const keep=ls("db-cur-"+CUST);CUR=D.orders.some(o=>o.id===keep&&o.status==="Draft")?keep:null;OPEN=null;route()};
-$("#showCost").checked=SHOWCOST;$("#showCost").onchange=e=>{SHOWCOST=e.target.checked;ls("db-cost",SHOWCOST?"1":"0");renderBuild()};
-const newOrder=()=>{CUR=null;ls("db-cur-"+CUST,"");toast("Next door you add starts a new order.");location.hash="build";renderBuild()};
-$("#newOrder").onclick=newOrder;$("#newOrder2").onclick=newOrder;
-$("#add").onclick=addToOrder;
+$("#showFob").checked=SHOWFOB;$("#showFob").onchange=e=>{SHOWFOB=e.target.checked;ls("db-fob",SHOWFOB?"1":"0");renderBuild()};
+const newOrder=()=>{CUR=null;ls("db-cur-"+CUST,"");toast("The next unit you add starts a new order.");location.hash="build";renderBuild()};
+$("#newOrder").onclick=newOrder;$("#newOrder2").onclick=newOrder;$("#add").onclick=addToOrder;
 $("#qm").onclick=()=>$("#qty").value=Math.max(1,(+$("#qty").value||1)-1);$("#qp").onclick=()=>$("#qty").value=(+$("#qty").value||0)+1;
 $("#olist").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b){OPEN=b.dataset.o;renderOrders();$("#odetail").scrollIntoView({behavior:"smooth",block:"start"})}});
 $("#ctabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){CT=b.dataset.t;EDIT=null;renderCatalog()}});
@@ -624,8 +727,7 @@ $("#lForgot").onclick=async()=>{const em=$("#lEmail").value.trim();if(!em)return
 async function afterLogin(){
  const {data:me,error}=await sb.rpc("my_member");
  if(error||!me){await sb.auth.signOut();$("#login").hidden=false;lMsg("That email isn't on the NEI team list.",true);return}
- ME=me==="D Lapp"?"Lapp D":me==="D Glick"?"Daniel G":me;$("#me").textContent=ME;
- $("#login").hidden=true;$("#bar").hidden=false;$("#app").hidden=false;
+ ME=({"D Lapp":"Lapp D","D Glick":"Daniel G"})[me]||me;$("#me").textContent=ME;$("#login").hidden=true;$("#bar").hidden=false;$("#app").hidden=false;
  try{await loadAll()}catch(e){console.error(e);toast("Couldn't load the catalog. Check your connection.");return}
  route();
 }
