@@ -63,6 +63,8 @@ h3{font:700 18px var(--f-display);text-transform:uppercase;letter-spacing:.05em;
 .big{font:700 32px var(--f-display);color:var(--red);font-variant-numeric:tabular-nums;line-height:1.1}
 .big.fob{color:var(--ink)}
 .k{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.gal{display:flex;gap:8px;overflow-x:auto}.gal figure{margin:0;flex:none;width:120px;cursor:zoom-in}.gal img{width:120px;height:170px;object-fit:contain;background:#f5f4f0;border:1px solid var(--line);display:block}.gal figcaption{font-size:11px;color:var(--muted);line-height:1.3;margin-top:3px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}.lb img{max-width:100%;max-height:100%;background:#fff}
 .warn{color:#8a5a00;background:#fbf0d9;padding:8px 10px;font-size:13px}
 .steps{display:flex;flex-direction:column;gap:18px;min-width:0}
 fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:8px}
@@ -171,6 +173,7 @@ input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
     <div class="grid2">
       <div class="left">
         <div><div class="stage"><canvas id="cv" width="1000" height="860" role="img" aria-label="Rendering of the selected door unit, viewed from outside"></canvas></div><div class="cap" id="caption"></div></div>
+        <div class="card pad" id="photos" hidden><div class="k" style="margin-bottom:6px">Fangda photos of this design</div><div class="gal" id="gal"></div></div>
         <div class="card pad">
           <div class="prices"><div><div class="k">Customer price each</div><div class="big" id="pCust">—</div></div><div id="fobBox"><div class="k">FOB cost each</div><div class="big fob" id="pFob">—</div></div></div>
           <div class="warn" id="pWarn" hidden style="margin-top:8px"></div>
@@ -193,7 +196,7 @@ input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
           <div class="tiles gl" id="o-glass"></div>
           <div id="o-cam"></div>
           <div id="o-slglass"></div></fieldset>
-        <fieldset><legend>7 · Finish</legend><div class="row" id="o-fin"></div><div class="note">Finishes other than as-shipped are previews unless they're marked as priced in the catalog.</div></fieldset>
+        <fieldset><legend>7 · Finish</legend><div class="row" id="o-fin"></div><div class="note">Swatches are Fangda's official finish samples. Anything other than as-shipped is a preview until it's marked as priced in the catalog.</div></fieldset>
         <fieldset><legend>8 · Frame &amp; hardware prep</legend><div id="o-frame" style="display:flex;flex-direction:column;gap:8px"></div></fieldset>
         <fieldset><legend>9 · Handing &amp; swing</legend><div class="row" id="o-hand"></div>
           <div class="note" id="handNote">Stand outside facing the door. Hinges on your left = left hand (LH). Opens into the house = inswing.</div>
@@ -323,11 +326,13 @@ function img(src){if(!src)return Promise.resolve(null);if(IMG[src])return IMG[sr
 const INV={};
 function inverted(im){if(!im)return null;if(INV[im.src])return INV[im.src];const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext("2d");x.drawImage(im,0,0);
  try{const d=x.getImageData(0,0,c.width,c.height),a=d.data;for(let i=0;i<a.length;i+=4){const v=255-a[i];a[i]=a[i+1]=a[i+2]=255;a[i+3]=v}x.putImageData(d,0,0)}catch(e){return null}INV[im.src]=c;return c}
+const MEAN={};
+function meanColor(im){if(MEAN[im.src])return MEAN[im.src];let c="#b08a62";try{const cv=document.createElement("canvas");cv.width=cv.height=8;const x=cv.getContext("2d");x.drawImage(im,0,0,8,8);const d=x.getImageData(0,0,8,8).data;let r=0,g=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}const n=d.length/4;c=`rgb(${r/n|0},${g/n|0},${b/n|0})`}catch(e){}MEAN[im.src]=c;return c}
 let RENDER_ID=0;
 async function render(cv,st){
  const id=++RENDER_ID,c=CFG[st.cfg],d=slab(st.door),sl=slab(st.sl),fin=D.fin.find(f=>f.id===st.fin),G=glassP(st.glass),SG=slGlass(st);
  if(!d)return;
- const [dLine,dPhoto,slLine,slPhoto,tex,gImg,sgImg]=await Promise.all([img(d.line_img),img(d.photo_img),img(sl?.line_img),img(sl?.photo_img),img(fin?.image),img(G&&d.lite?G.sizes[d.lite]:null),img(SG?SG.sizes[sl.lite]:null)]);
+ const [dLine,dShade,slLine,slShade,tex,gImg,sgImg]=await Promise.all([img(d.line_img),img(d.shade_img),img(sl?.line_img),img(sl?.shade_img),img(fin?.image),img(G&&d.lite?G.sizes[d.lite]:null),img(SG?SG.sizes[sl.lite]:null)]);
  if(id!==RENDER_ID)return;
  const x=cv.getContext("2d"),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);x.globalCompositeOperation="source-over";x.globalAlpha=1;
  const g0=x.createLinearGradient(0,0,0,H);g0.addColorStop(0,"#c9cdc9");g0.addColorStop(1,"#b6bab5");x.fillStyle=g0;x.fillRect(0,0,W,H);
@@ -351,7 +356,7 @@ async function render(cv,st){
  for(const p of pieces){
   if(p.t==="mull"||p.t==="ast"){const w=(p.t==="mull"?mull:ast)*s,gx=x.createLinearGradient(X(p.x),0,X(p.x)+w,0);gx.addColorStop(0,"#d8d4cb");gx.addColorStop(.5,"#f7f5f0");gx.addColorStop(1,"#cfcac0");x.fillStyle=gx;x.fillRect(X(p.x),Y(bm),w,st.h*s);continue}
   const isSL=p.t==="sl",sd=isSL?sl:d,w=(isSL?st.slw:leafW)*s,h=st.h*s,px=X(p.x)+.6,py=Y(bm)+.6;
-  drawSlab(x,sd,{x:px,y:py,w:w-1.2,h:h-1.2,line:isSL?slLine:dLine,photo:isSL?slPhoto:dPhoto,fin,tex,glass:isSL?sgImg:gImg,glassName:isSL?(SG?SG.name:null):(G?G.name:null),mirror:c.leaves===2&&p.leaf===1,kindW:isSL?14:36});
+  drawSlab(x,sd,{x:px,y:py,w:w-1.2,h:h-1.2,line:isSL?slLine:dLine,shade:isSL?slShade:dShade,fin,tex,glass:isSL?sgImg:gImg,glassName:isSL?(SG?SG.name:null):(G?G.name:null),mirror:c.leaves===2&&p.leaf===1,kindW:isSL?14:36});
   if(!isSL){
    const lockLeft=c.leaves===2?p.leaf===1:!hinL;
    const lx=lockLeft?px+3.2*s:px+w-3.2*s,ly=py+(36/80)*h;
@@ -368,19 +373,19 @@ function drawSlab(x,sd,o){
  if(!sd)return;
  x.save();x.beginPath();x.rect(o.x,o.y,o.w,o.h);x.clip();
  if(o.mirror){x.translate(o.x*2+o.w,0);x.scale(-1,1)}
- const fin=o.fin,paint=fin&&fin.kind==="paint";
- if(o.photo&&fin&&fin.as_shipped){x.drawImage(o.photo,o.x,o.y,o.w,o.h)}
- else{
-  if(paint){x.fillStyle=fin.color||"#eee";x.fillRect(o.x,o.y,o.w,o.h);
-   const ng=x.createLinearGradient(o.x,0,o.x+o.w,0);ng.addColorStop(0,"rgba(255,255,255,.10)");ng.addColorStop(.5,"rgba(255,255,255,0)");ng.addColorStop(1,"rgba(0,0,0,.10)");x.fillStyle=ng;x.fillRect(o.x,o.y,o.w,o.h)}
-  else if(o.tex){x.drawImage(o.tex,o.x,o.y,o.w,o.h)}else{x.fillStyle="#b88a5a";x.fillRect(o.x,o.y,o.w,o.h)}
-  if(o.line){
-   x.globalCompositeOperation="multiply";x.globalAlpha=.85;x.drawImage(o.line,o.x,o.y,o.w,o.h);
-   x.globalAlpha=.35;x.drawImage(o.line,o.x+1.4,o.y+1.4,o.w,o.h);
-   const inv=inverted(o.line);if(inv){x.globalCompositeOperation="screen";x.globalAlpha=.45;x.drawImage(inv,o.x-1.2,o.y-1.2,o.w,o.h)}
-   x.globalCompositeOperation="source-over";x.globalAlpha=1;
-  }
- }
+ const fin=o.fin;
+ // 1) finish: Fangda's official swatch texture, tiled at real scale (no stretching)
+ if(o.tex){x.fillStyle=meanColor(o.tex);x.fillRect(o.x,o.y,o.w,o.h);
+  const tw=o.w/3.2,th=tw*o.tex.naturalHeight/o.tex.naturalWidth;x.globalAlpha=.42;
+  for(let yy=o.y,j=0;yy<o.y+o.h;yy+=th,j++){for(let xx=o.x-(j%2)*tw/2;xx<o.x+o.w;xx+=tw)x.drawImage(o.tex,xx,yy,tw+.5,th+.5)}x.globalAlpha=1}
+ else{x.fillStyle=(fin&&fin.color)||"#d8d4cc";x.fillRect(o.x,o.y,o.w,o.h)}
+ // 2) panel relief: Fangda's own product render when we have it, otherwise the catalog drawing
+ x.globalCompositeOperation="multiply";
+ if(o.shade){x.globalAlpha=1;x.drawImage(o.shade,o.x,o.y,o.w,o.h)}
+ else if(o.line){x.globalAlpha=.85;x.drawImage(o.line,o.x,o.y,o.w,o.h);x.globalAlpha=.35;x.drawImage(o.line,o.x+1.4,o.y+1.4,o.w,o.h);
+  const inv=inverted(o.line);if(inv){x.globalCompositeOperation="screen";x.globalAlpha=.45;x.drawImage(inv,o.x-1.2,o.y-1.2,o.w,o.h)}}
+ x.globalCompositeOperation="source-over";x.globalAlpha=1;
+ // 3) glass
  const gb=sd.glass_box;
  if(gb){const sx=o.w/o.kindW,sy=o.h/80,rects=(sd.lites&&sd.lites.length>1)?sd.lites:[gb];
   if(o.glass){const r=gb;x.drawImage(o.glass,o.x+r[0]*sx,o.y+r[1]*sy,r[2]*sx,r[3]*sy);
@@ -429,7 +434,7 @@ function renderBuild(){
  if(f==="glass")doors=doors.filter(s=>s.glass_box);if(f==="solid")doors=doors.filter(s=>!s.glass_box);
  if(q)doors=doors.filter(s=>(s.code+" "+s.label).toLowerCase().includes(q));
  $("#dcount").textContent=`${doors.length} shown`;
- $("#o-door").innerHTML=doors.map(s=>`<button type="button" class="tile" aria-pressed="${s.id===S.door}" data-v="${esc(s.id)}"><img loading="lazy" src="${esc(s.photo_img||s.line_img)}" alt=""><b>${esc(s.id.replace(" #"," v"))}</b><span>${esc(s.label||"")}</span></button>`).join("")||'<div class="note">No doors match.</div>';
+ $("#o-door").innerHTML=doors.map(s=>`<button type="button" class="tile" aria-pressed="${s.id===S.door}" data-v="${esc(s.id)}"><img loading="lazy" src="${esc(s.photo_img||s.shade_img||s.line_img)}" alt=""><b>${esc(s.id.replace(" #"," v"))}</b><span>${esc(s.label||"")}</span></button>`).join("")||'<div class="note">No doors match.</div>';
  bindPick("#o-door","door");
  $("#doorPick").textContent=`${d.code}${d.label?" · "+d.label:""}`;
  const sls=D.slab.filter(s=>s.active&&s.collection===S.coll&&s.kind==="sidelite");
@@ -442,7 +447,7 @@ function renderBuild(){
  bindPick("#o-w","w");bindPick("#o-h","h");bindPick("#o-slw","slw");
  $("#f-sl").hidden=!nSL;
  const sl=slab(S.sl);
- $("#o-sl").innerHTML=sls.map(s=>`<button type="button" class="tile" aria-pressed="${s.id===S.sl}" data-v="${esc(s.id)}"><img loading="lazy" src="${esc(s.photo_img||s.line_img)}" alt=""><b>${esc(s.code)}</b><span>${s.lite?liteName(s.lite):"solid"}</span></button>`).join("");
+ $("#o-sl").innerHTML=sls.map(s=>`<button type="button" class="tile" aria-pressed="${s.id===S.sl}" data-v="${esc(s.id)}"><img loading="lazy" src="${esc(s.photo_img||s.shade_img||s.line_img)}" alt=""><b>${esc(s.code)}</b><span>${s.lite?liteName(s.lite):"solid"}</span></button>`).join("");
  bindPick("#o-sl","sl");$("#slPick").textContent=sl?`${sl.code}${sl.lite?" · lite "+sl.lite:""}`:"";
  const gl=glassFor(d.lite),gq=($("#gq").value||"").trim().toLowerCase();
  $("#f-glass").hidden=!(d.glass_box||(nSL&&sl?.glass_box));
@@ -478,6 +483,9 @@ function renderBuild(){
  const w=$("#pWarn");if(t.miss.length||(SHOWFOB&&t.missF.length)){w.hidden=false;w.innerHTML=`${t.miss.length?`${t.miss.length} part${t.miss.length>1?"s have":" has"} no ${esc(CUST)} price`:""}${t.miss.length&&SHOWFOB&&t.missF.length?" · ":""}${SHOWFOB&&t.missF.length?`${t.missF.length} part${t.missF.length>1?"s have":" has"} no FOB cost`:""}. <a href="#catalog" id="toPrices">Set prices</a>`;$("#toPrices").onclick=()=>{CT="prices";PF={q:d.code,type:"",coll:"",size:""}}}else w.hidden=true;
  $("#caption").textContent=`${d.code}${nSL&&sl?" + "+sl.code+" ×"+nSL:""} · ${CFG[S.cfg].name} · ${S.w}"×${S.h}"${G?" · "+G.name+" glass":""} · ${S.hand}`;
  render($("#cv"),S);
+ {const items=[];[[d,"Door"],[nSL?sl:null,"Sidelite"]].forEach(([z,lab])=>{if(!z)return;if(z.photo_img)items.push({img:z.photo_img,c:`${z.code} · Fangda catalog render`});(z.gallery||[]).forEach(g=>items.push({img:g.img,c:`${z.code} · ${g.caption||""}`}))});
+  $("#photos").hidden=!items.length;$("#gal").innerHTML=items.map(i=>`<figure data-big="${esc(i.img)}"><img loading="lazy" src="${esc(i.img)}" alt=""><figcaption>${esc(i.c)}</figcaption></figure>`).join("");
+  $("#gal").onclick=e=>{const f=e.target.closest("[data-big]");if(!f)return;const lb=document.createElement("div");lb.className="lb";lb.innerHTML=`<img src="${f.dataset.big}" alt="">`;lb.onclick=()=>lb.remove();document.body.appendChild(lb)}}
  $("#bs").innerHTML=`<tr><th>Part #</th><th>Description</th><th class="n">Qty</th><th class="n">${esc(CUST)} price</th>${SHOWFOB?'<th class="n">FOB</th>':""}</tr>`+ps.map(p=>`<tr><td><code>${esc(p.pn)}</code></td><td>${esc(p.desc)}</td><td class="n">${p.qty}</td><td class="n">${p.p==null?'<span class="flag">NEEDED</span>':money(p.p)}</td>${SHOWFOB?`<td class="n">${p.f==null?'<span class="flag">NEEDED</span>':money(p.f)}</td>`:""}</tr>`).join("")+
   `<tr><td colspan="2" class="note">Finish: ${esc(D.fin.find(f=>f.id===S.fin)?.name||"")} · Sill ${esc(S.SILL)} · Hinges ${esc(S.HINGE)} · Sweep ${esc(S.SWEEP)} · ${esc(S.BORE)}${d.notes?` · <span class="flag">VERIFY</span> ${esc(d.notes)}`:""}</td><td></td><td class="n"><strong>${t.each==null?"—":money(t.each)}</strong></td>${SHOWFOB?`<td class="n"><strong>${t.fob==null?"—":money(t.fob)}</strong></td>`:""}</tr>`;
  $("#bsid").textContent=`${d.code} · ${S.cfg} · ${S.hand}`;
@@ -579,9 +587,9 @@ function refocus(id){const i=$(id);if(i){i.focus();i.setSelectionRange(i.value.l
 function catSlabs(){
  const B=$("#cbody");let list=D.slab.filter(s=>(!CF.coll||s.collection===CF.coll)&&(!CF.q||(s.id+" "+s.label).toLowerCase().includes(CF.q.toLowerCase())));
  B.innerHTML=`<div class="tools" style="margin-bottom:10px"><select id="cfColl"><option value="">All collections</option>${D.coll.map(c=>`<option value="${esc(c.id)}" ${CF.coll===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select><input type="search" id="cfQ" placeholder="Search code" value="${esc(CF.q)}"><span class="note">${list.length} of ${D.slab.length}</span><button class="btn red" type="button" id="newS">Add door or sidelite</button></div>
- <div class="tiles" style="max-height:none">${list.map(s=>`<button type="button" class="tile" data-e="${esc(s.id)}" style="${s.active?"":"opacity:.5"}"><img loading="lazy" src="${esc(s.photo_img||s.line_img)}" alt=""><b>${esc(s.id)}</b><span>${esc(s.collection)} · ${s.kind==="sidelite"?"SL":"door"}${s.lite?" · "+s.lite:""}</span></button>`).join("")}</div><div id="ed"></div>`;
+ <div class="tiles" style="max-height:none">${list.map(s=>`<button type="button" class="tile" data-e="${esc(s.id)}" style="${s.active?"":"opacity:.5"}"><img loading="lazy" src="${esc(s.photo_img||s.shade_img||s.line_img)}" alt=""><b>${esc(s.id)}</b><span>${esc(s.collection)} · ${s.kind==="sidelite"?"SL":"door"}${s.lite?" · "+s.lite:""}</span></button>`).join("")}</div><div id="ed"></div>`;
  $("#cfColl").onchange=e=>{CF.coll=e.target.value;catSlabs()};$("#cfQ").oninput=e=>{CF.q=e.target.value;clearTimeout(catSlabs.t);catSlabs.t=setTimeout(()=>{catSlabs();refocus("#cfQ")},300)};
- $("#newS").onclick=()=>{EDIT={_new:true,id:"",code:"",collection:CF.coll||S.coll,kind:"door",label:"",lite:null,glass_box:null,lites:[],line_img:"",photo_img:null,notes:"",sort:D.slab.length,active:true};slabEditor()};
+ $("#newS").onclick=()=>{EDIT={_new:true,id:"",code:"",collection:CF.coll||S.coll,kind:"door",label:"",lite:null,glass_box:null,lites:[],line_img:"",photo_img:null,shade_img:null,gallery:[],notes:"",sort:D.slab.length,active:true};slabEditor()};
  B.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{EDIT=JSON.parse(JSON.stringify(slab(b.dataset.e)));slabEditor()});
 }
 function slabEditor(){
@@ -593,18 +601,22 @@ function slabEditor(){
   ${fld("label","Style name",e.label)}${fld("lite","Lite size code (e.g. 2248, 0764; blank = none)",e.lite,'data-nul="1"')}
   <label class="wide">Glass opening, inches from the top-left of the drawing [x, y, width, height]<input data-k="glass_box" data-json="1" value="${esc(e.glass_box?JSON.stringify(e.glass_box):"")}" placeholder="e.g. [7, 7, 22, 48]"></label>
   <label class="wide">Separate panes for gridded lites (optional, list of [x,y,w,h])<input data-k="lites" data-json="1" value="${esc(JSON.stringify(e.lites||[]))}"></label>
-  <label>Line drawing (white background)<input type="file" accept="image/*" id="upL"></label><label>Photo-real render (optional)<input type="file" accept="image/*" id="upP"></label>
+  <label>Line drawing (white background)<input type="file" accept="image/*" id="upL"></label><label>Fangda product render, white (used for panel shading)<input type="file" accept="image/*" id="upS"></label><label>Catalog photo for thumbnails (optional)<input type="file" accept="image/*" id="upP"></label><label>Add a real photo to this design's gallery<input type="file" accept="image/*" id="upG"></label>
+  <div class="wide gal">${(e.gallery||[]).map((g,i)=>`<figure><img src="${esc(g.img)}" alt=""><figcaption>${esc(g.caption||"")}<br><button type="button" class="btn ghost" style="padding:0" data-rg="${i}">Remove</button></figcaption></figure>`).join("")}</div>
   ${fld("sort","Sort order",e.sort,'type="number"')}
   <label class="wide">Notes (show on the build sheet as VERIFY)<input data-k="notes" value="${esc(e.notes||"")}"></label>
-  <span class="checks wide"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label>${e.photo_img?`<label><input type="checkbox" id="rmP">Remove photo-real render</label>`:""}</span>
+  <span class="checks wide"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label>${e.photo_img?`<label><input type="checkbox" id="rmP">Remove catalog photo</label>`:""}</span>
  </div><div><div class="stage" style="background:#ddd"><canvas id="pv" width="500" height="560"></canvas></div><div class="note" style="margin-top:6px">Preview with clear glass. The red box is the glass opening.</div></div></div>
  <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
  const pv=async()=>{const cv=$("#pv");if(!cv)return;const x=cv.getContext("2d");x.fillStyle="#ddd";x.fillRect(0,0,cv.width,cv.height);const W=e.kind==="sidelite"?14:36,s=Math.min(480/W,540/80),ox=(cv.width-W*s)/2,oy=10;
-  const f=D.fin.find(f=>f.collections.includes(e.collection)&&f.as_shipped);const [l,p,t]=await Promise.all([img(e.line_img),img(e.photo_img),img(f?.image)]);
-  drawSlab(x,e,{x:ox,y:oy,w:W*s,h:80*s,line:l,photo:p,tex:t,fin:f,glass:null,kindW:W});
+  const f=D.fin.find(f=>f.collections.includes(e.collection)&&f.as_shipped);const [l,sh,t]=await Promise.all([img(e.line_img),img(e.shade_img),img(f?.image)]);
+  drawSlab(x,e,{x:ox,y:oy,w:W*s,h:80*s,line:l,shade:sh,tex:t,fin:f,glass:null,kindW:W});
   if(e.glass_box){x.strokeStyle="#c8102e";x.lineWidth=2;x.strokeRect(ox+e.glass_box[0]*s,oy+e.glass_box[1]*s,e.glass_box[2]*s,e.glass_box[3]*s)}};
  bindForm(ed,pv);pv();
  $("#upL").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.line_img=await upload(f,"slabs");toast("Drawing uploaded. Save to keep it.");pv()}catch(err){toast("Upload failed.")}};
+ $("#upS").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.shade_img=await upload(f,"shade");toast("Render uploaded. Save to keep it.");pv()}catch(err){toast("Upload failed.")}};
+ $("#upG").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.gallery=(e.gallery||[]).concat([{img:await upload(f,"gallery"),caption:"Fangda photo"}]);slabEditor();toast("Photo added. Save to keep it.")}catch(err){toast("Upload failed.")}};
+ ed.querySelectorAll("[data-rg]").forEach(b=>b.onclick=()=>{e.gallery.splice(+b.dataset.rg,1);slabEditor()});
  $("#upP").onchange=async ev=>{const f=ev.target.files[0];if(!f)return;try{e.photo_img=await upload(f,"slabs");toast("Render uploaded. Save to keep it.");pv()}catch(err){toast("Upload failed.")}};
  if($("#rmP"))$("#rmP").onchange=ev=>{e.photo_img=ev.target.checked?null:slab(e.id)?.photo_img;pv()};
  $("#cx").onclick=()=>{EDIT=null;ed.innerHTML=""};
