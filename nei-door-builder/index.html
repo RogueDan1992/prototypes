@@ -133,6 +133,8 @@ input.q{width:58px;padding:3px 5px;font:inherit;border:1px solid var(--line)}
 .sizes .s img{height:110px;object-fit:contain}
 input.pr{width:96px;text-align:right;font:inherit;border:1px solid var(--line);padding:4px 6px;font-variant-numeric:tabular-nums}
 input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
+.net{font:600 11px var(--f-mono,monospace);text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border:1px solid #444;color:#bbb}.net.off{background:#E23B28;border-color:#E23B28;color:#fff}.net:empty{display:none}
+#offBtn{white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0d0d0d;color:#fff;padding:10px 16px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
 .login{max-width:380px;margin:60px auto;background:var(--surface);border:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:12px}
 .login .lg{background:#0d0d0d;margin:-24px -24px 6px;padding:16px 20px}
@@ -148,7 +150,7 @@ input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
   <div class="in">
     <div class="brand"><img src="logo-onblack.png" alt="Northeast International"><span>Door Builder</span></div>
     <label class="sub" style="color:#bbb">Customer <select id="cust" aria-label="Customer"></select></label>
-    <div class="who"><span id="me"></span><button type="button" id="signOut">Sign out</button></div>
+    <div class="who"><span id="net" class="net" role="status"></span><button type="button" id="offBtn" title="Save every door, glass and finish picture on this device so the builder works with no internet">Save for offline</button><span id="me"></span><button type="button" id="signOut">Sign out</button></div>
     <nav class="tabs" aria-label="Sections">
       <a href="#build" data-v="build">Build</a>
       <a href="#orders" data-v="orders">Orders</a>
@@ -259,14 +261,71 @@ let S={coll:"M",door:null,cfg:"S",w:36,h:80,slw:14,sl:null,glass:"CLEAR",slglass
 try{Object.assign(S,JSON.parse(ls("db-state")||"{}"))}catch(e){}
 
 /* ---------- data ---------- */
+/* offline: the last catalog/prices/orders download is kept on this device; order changes made with no
+   connection are queued and sent when the connection comes back */
+let OFFLINE=false;
+const CACHE_KEYS=["coll","slab","glass","fin","comp","cost","price","customers","orders"];
+function saveCache(){try{localStorage.setItem("db-cache",JSON.stringify(Object.fromEntries(CACHE_KEYS.map(k=>[k,D[k]]))));localStorage.setItem("db-cache-at",new Date().toISOString())}catch(e){console.warn("cache",e)}}
+function readCache(){try{const c=JSON.parse(localStorage.getItem("db-cache")||"null");if(!c)return false;CACHE_KEYS.forEach(k=>D[k]=c[k]||[]);return true}catch(e){return false}}
+const queue=()=>{try{return JSON.parse(localStorage.getItem("db-queue")||"[]")}catch(e){return[]}};
+const setQueue=q=>{try{localStorage.setItem("db-queue",JSON.stringify(q))}catch(e){}};
+const isNetErr=e=>!navigator.onLine||/fetch|network|Load failed|NetworkError|Failed to fetch/i.test(String(e&&(e.message||e)));
+function netBadge(){const n=queue().length,el=$("#net");if(!el)return;
+ if(OFFLINE){const at=ls("db-cache-at");el.className="net off";el.textContent="Offline"+(at?` · catalog from ${new Date(at).toLocaleDateString()}`:"")+(n?` · ${n} change${n>1?"s":""} waiting`:"")}
+ else if(n){el.className="net";el.textContent=`${n} change${n>1?"s":""} waiting to sync`}else{el.className="net";el.textContent=""}}
+// one order write: try now; if there's no connection, apply locally and queue it
+async function orderWrite(op){
+ const local=op.id&&String(op.id).startsWith("local-");
+ if(op.op==="delete"&&local){setQueue(queue().filter(x=>(x.row&&x.row.id)!==op.id&&x.id!==op.id));netBadge();return null}
+ if(local){const q=queue();q.push(op);setQueue(q);netBadge();if(!OFFLINE)flushQueue();return null}
+ if(!OFFLINE){try{const r=await runOp(op);return r}catch(e){if(!isNetErr(e))throw e;OFFLINE=true}}
+ const q=queue();q.push(op);setQueue(q);saveCache();netBadge();return op.op==="insert"?op.row:null}
+async function runOp(op){
+ if(op.op==="insert"){const row={...op.row};delete row.id;delete row._local;const {data,error}=await sb.from(T.orders).insert(row).select().single();if(error)throw error;return data}
+ if(op.op==="update"){const {error}=await sb.from(T.orders).update(op.patch).eq("id",op.id);if(error)throw error;return null}
+ if(op.op==="delete"){const {error}=await sb.from(T.orders).delete().eq("id",op.id);if(error)throw error;return null}}
+let SYNCING=false;
+async function flushQueue(){
+ if(SYNCING)return;let q=queue();if(!q.length)return;SYNCING=true;const idMap={};
+ try{while(q.length){const op=q[0];if(op.id&&idMap[op.id])op.id=idMap[op.id];
+   if(op.op!=="insert"&&String(op.id).startsWith("local-")){q.shift();setQueue(q);continue}
+   const r=await runOp(op);
+   if(op.op==="insert"&&r){idMap[op.row.id]=r.id;const o=D.orders.find(x=>x.id===op.row.id);if(o)Object.assign(o,r);if(CUR===op.row.id){CUR=r.id;ls("db-cur-"+CUST,CUR)}q.slice(1).forEach(x=>{if(x.id===op.row.id)x.id=r.id})}
+   q.shift();setQueue(q)}
+  toast("Offline changes synced")}
+ catch(e){console.warn("sync",e);if(!isNetErr(e)){toast("An offline change couldn't sync: "+(e.message||e));q.shift();setQueue(q)}}
+ finally{SYNCING=false;netBadge()}}
 async function loadAll(){
  const q=(t,o)=>{let x=sb.from(t).select("*");return o?x.order(o):x};
- const r=await Promise.all([q(T.coll,"sort"),q(T.slab,"sort"),q(T.glass,"sort"),q(T.fin,"sort"),q(T.comp,"sort"),q(T.cost),q(T.price),q("customers","name"),sb.from(T.orders).select("*").order("updated_at",{ascending:false})]);
- for(const x of r)if(x.error)throw x.error;
- [D.coll,D.slab,D.glass,D.fin,D.comp,D.cost,D.price,D.customers,D.orders]=r.map(x=>x.data||[]);
+ try{
+  if(!navigator.onLine)throw new Error("offline");
+  OFFLINE=false;await flushQueue();
+  const r=await Promise.all([q(T.coll,"sort"),q(T.slab,"sort"),q(T.glass,"sort"),q(T.fin,"sort"),q(T.comp,"sort"),q(T.cost),q(T.price),q("customers","name"),sb.from(T.orders).select("*").order("updated_at",{ascending:false})]);
+  for(const x of r)if(x.error)throw x.error;
+  [D.coll,D.slab,D.glass,D.fin,D.comp,D.cost,D.price,D.customers,D.orders]=r.map(x=>x.data||[]);
+  saveCache();
+ }catch(e){
+  if(!isNetErr(e)&&String(e.message)!=="offline")throw e;
+  if(!readCache())throw e;OFFLINE=true;
+ }
+ netBadge();
  if(!D.customers.some(x=>x.name===CUST)&&D.customers.length)CUST=D.customers[0].name;
  $("#cust").innerHTML=D.customers.map(c=>`<option ${c.name===CUST?"selected":""}>${esc(c.name)}</option>`).join("");
  const keep=ls("db-cur-"+CUST);CUR=D.orders.some(o=>o.id===keep&&o.status==="Draft")?keep:null;
+}
+// every picture the builder can show, so it can all be saved on the device
+function allPictureUrls(){const u=new Set(),add=p=>{if(p)u.add(new URL(av(p),location.href).href)};
+ D.slab.forEach(s=>{add(s.line_img);add(s.shade_img);add(s.photo_img);add(reliefOf(s));(s.gallery||[]).forEach(g=>add(g.img))});
+ D.glass.forEach(g=>Object.values(g.sizes||{}).forEach(add));D.fin.forEach(f=>{add(f.image);add(grainOf(f))});return [...u]}
+async function saveForOffline(){
+ const b=$("#offBtn");if(!("serviceWorker" in navigator))return toast("This browser can't save the app for offline use.");
+ if(OFFLINE)return toast("Connect to the internet to save pictures for offline.");
+ const reg=await navigator.serviceWorker.ready;if(!reg.active)return toast("Try again in a moment.");
+ const urls=allPictureUrls();b.disabled=true;
+ await new Promise(res=>{const ch=new MessageChannel();ch.port1.onmessage=e=>{const m=e.data;b.textContent=`Saving ${m.done}/${m.total}`;if(m.finished){b.disabled=false;b.textContent="Saved for offline ✓";ls("db-offline-at",new Date().toISOString());
+   toast(m.failed?`Saved, but ${m.failed} picture${m.failed>1?"s":""} didn't download. Tap again to retry.`:"Everything is saved. The builder now works with no internet.");res()}};
+  reg.active.postMessage({type:"precache",urls},[ch.port2])});
+ try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
 }
 const slab=id=>D.slab.find(s=>s.id===id);
 const coll=()=>D.coll.find(c=>c.id===S.coll);
@@ -322,19 +381,33 @@ function totals(ps){const miss=ps.filter(p=>p.p==null),missF=ps.filter(p=>p.f==n
 
 /* ---------- rendering ---------- */
 const IMG={};
-function img(src){if(!src)return Promise.resolve(null);if(IMG[src])return IMG[src];IMG[src]=new Promise(res=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src});return IMG[src]}
+const av=p=>p&&/^img\/glass\//.test(p)?p+"?v=2":p;
+function img(src){if(!src)return Promise.resolve(null);src=av(src);if(IMG[src])return IMG[src];IMG[src]=new Promise(res=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src});return IMG[src]}
 const INV={};
 function inverted(im){if(!im)return null;if(INV[im.src])return INV[im.src];const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext("2d");x.drawImage(im,0,0);
  try{const d=x.getImageData(0,0,c.width,c.height),a=d.data;for(let i=0;i<a.length;i+=4){const v=255-a[i];a[i]=a[i+1]=a[i+2]=255;a[i+3]=v}x.putImageData(d,0,0)}catch(e){return null}INV[im.src]=c;return c}
 const MEAN={};
 function meanColor(im){if(MEAN[im.src])return MEAN[im.src];let c="#b08a62";try{const cv=document.createElement("canvas");cv.width=cv.height=8;const x=cv.getContext("2d");x.drawImage(im,0,0,8,8);const d=x.getImageData(0,0,8,8).data;let r=0,g=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}const n=d.length/4;c=`rgb(${r/n|0},${g/n|0},${b/n|0})`}catch(e){}MEAN[im.src]=c;return c}
+// sharp assets: relief = panel shading built from the catalog drawing (30 px/in); grain = real oak/mahogany board
+// figure coloured with Fangda's official swatch, at true scale (40 px/in). Fallbacks: old shade/line + swatch tiles.
+const reliefOf=sd=>sd&&sd.line_img&&/^img\/line\//.test(sd.line_img)&&!RELIEF_SKIP.has(sd.line_img.slice(9))?sd.line_img.replace("img/line/","img/relief/"):null;
+const RELIEF_SKIP=new Set(["FG00-LS15_SL.png", "FG00-M07_SL.png", "FG00-MS11_SL.png", "P02-K03_2.png", "P02-LS02_2.png", "P02-M04_2.png", "P02-MS02_2.png", "P03-K01.png", "P03-K01_2.png", "P03-K02.png", "P03-K03_2.png", "P03-LS01.png", "P03-LS02.png", "P03-LS02_3.png", "P03-M05.png", "P03-MS04.png", "P04-K01_SL.png", "P04-K01_SL_2.png", "P04-K03_SL.png", "P04-LS01.png", "P04-LS01_2.png", "P04-LS01_SL.png", "P04-MS01_SL.png", "P04-MS01_SL_2.png", "P06-LS01_2.png", "P06-MS04.png", "P06-MS04_2.png", "P06-MS04_SL.png"]);
+const grainOf=f=>!f||!f.image?null:/^img\/finish\/swatch_/.test(f.image)?f.image.replace("img/finish/swatch_","img/grain/"):/^img\/tex\/(oak|mahogany|fir|smooth|ms)\.jpg$/.test(f.image)?f.image.replace("img/tex/","img/grain/tex_"):null;
+const MIR=new Map();
+function mirror4(im){if(MIR.has(im))return MIR.get(im);const w=im.naturalWidth,h=im.naturalHeight,c=document.createElement("canvas");c.width=w*2;c.height=h*2;const x=c.getContext("2d");
+ x.drawImage(im,0,0);x.save();x.translate(w*2,0);x.scale(-1,1);x.drawImage(im,0,0);x.restore();x.save();x.translate(0,h*2);x.scale(1,-1);x.drawImage(im,0,0);x.drawImage(c,0,0,w*2,h,0,0,w*2,h);x.restore();
+ MIR.set(im,c);return c}
 let RENDER_ID=0;
 async function render(cv,st){
  const id=++RENDER_ID,c=CFG[st.cfg],d=slab(st.door),sl=slab(st.sl),fin=D.fin.find(f=>f.id===st.fin),G=glassP(st.glass),SG=slGlass(st);
  if(!d)return;
- const [dLine,dShade,slLine,slShade,tex,gImg,sgImg]=await Promise.all([img(d.line_img),img(d.shade_img),img(sl?.line_img),img(sl?.shade_img),img(fin?.image),img(G&&d.lite?G.sizes[d.lite]:null),img(SG?SG.sizes[sl.lite]:null)]);
+ const [dLine,dShade,slLine,slShade,tex0,gImg,sgImg,dRel,slRel,grain]=await Promise.all([img(d.line_img),img(d.shade_img),img(sl?.line_img),img(sl?.shade_img),img(fin?.image),img(G&&d.lite?G.sizes[d.lite]:null),img(SG?SG.sizes[sl.lite]:null),img(reliefOf(d)),img(reliefOf(sl)),img(grainOf(fin))]);
+ const tex=tex0;
  if(id!==RENDER_ID)return;
- const x=cv.getContext("2d"),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);x.globalCompositeOperation="source-over";x.globalAlpha=1;
+ if(!cv.dataset.w){cv.dataset.w=cv.width;cv.dataset.h=cv.height}
+ const W=+cv.dataset.w,H=+cv.dataset.h,k=Math.min(3,Math.max(1,(window.devicePixelRatio||1)*(cv.clientWidth||W)/W));
+ if(cv.width!==Math.round(W*k)){cv.width=Math.round(W*k);cv.height=Math.round(H*k)}
+ const x=cv.getContext("2d");x.setTransform(cv.width/W,0,0,cv.height/H,0,0);x.imageSmoothingQuality="high";x.clearRect(0,0,W,H);x.globalCompositeOperation="source-over";x.globalAlpha=1;
  const g0=x.createLinearGradient(0,0,0,H);g0.addColorStop(0,"#c9cdc9");g0.addColorStop(1,"#b6bab5");x.fillStyle=g0;x.fillRect(0,0,W,H);
  for(let y=0;y<H*0.86;y+=26){x.fillStyle="rgba(0,0,0,.10)";x.fillRect(0,y+23,W,2);x.fillStyle="rgba(255,255,255,.25)";x.fillRect(0,y,W,1.5)}
  const gy=H*0.86;const gs=x.createLinearGradient(0,gy,0,H);gs.addColorStop(0,"#b9b4aa");gs.addColorStop(1,"#9b968c");x.fillStyle=gs;x.fillRect(0,gy,W,H-gy);x.fillStyle="rgba(0,0,0,.18)";x.fillRect(0,gy,W,4);
@@ -356,7 +429,7 @@ async function render(cv,st){
  for(const p of pieces){
   if(p.t==="mull"||p.t==="ast"){const w=(p.t==="mull"?mull:ast)*s,gx=x.createLinearGradient(X(p.x),0,X(p.x)+w,0);gx.addColorStop(0,"#d8d4cb");gx.addColorStop(.5,"#f7f5f0");gx.addColorStop(1,"#cfcac0");x.fillStyle=gx;x.fillRect(X(p.x),Y(bm),w,st.h*s);continue}
   const isSL=p.t==="sl",sd=isSL?sl:d,w=(isSL?st.slw:leafW)*s,h=st.h*s,px=X(p.x)+.6,py=Y(bm)+.6;
-  drawSlab(x,sd,{x:px,y:py,w:w-1.2,h:h-1.2,line:isSL?slLine:dLine,shade:isSL?slShade:dShade,fin,tex,glass:isSL?sgImg:gImg,glassName:isSL?(SG?SG.name:null):(G?G.name:null),mirror:c.leaves===2&&p.leaf===1,kindW:isSL?14:36});
+  drawSlab(x,sd,{x:px,y:py,w:w-1.2,h:h-1.2,line:isSL?slLine:dLine,shade:isSL?slShade:dShade,relief:isSL?slRel:dRel,grain,fin,tex,glass:isSL?sgImg:gImg,glassName:isSL?(SG?SG.name:null):(G?G.name:null),mirror:c.leaves===2&&p.leaf===1,kindW:isSL?14:36});
   if(!isSL){
    const lockLeft=c.leaves===2?p.leaf===1:!hinL;
    const lx=lockLeft?px+3.2*s:px+w-3.2*s,ly=py+(36/80)*h;
@@ -375,15 +448,21 @@ function drawSlab(x,sd,o){
  if(o.mirror){x.translate(o.x*2+o.w,0);x.scale(-1,1)}
  const fin=o.fin;
  // 1) finish: Fangda's official swatch texture, tiled at real scale (no stretching)
- if(o.tex){x.fillStyle=meanColor(o.tex);x.fillRect(o.x,o.y,o.w,o.h);
+ if(o.grain){const ppi=o.w/o.kindW,M=mirror4(o.grain),pat=x.createPattern(M,"repeat");
+  // the sheet is 24"×36"; mirrored 2×2 so it repeats with no seams; offset per slab so stiles don't line up
+  const sc=(24*ppi)/o.grain.naturalWidth;pat.setTransform(new DOMMatrix([sc,0,0,(36*ppi)/o.grain.naturalHeight,o.x-7.3*ppi,o.y-11*ppi]));
+  x.fillStyle=pat;x.fillRect(o.x,o.y,o.w,o.h)}
+ else if(o.tex){x.fillStyle=meanColor(o.tex);x.fillRect(o.x,o.y,o.w,o.h);
   const tw=o.w/3.2,th=tw*o.tex.naturalHeight/o.tex.naturalWidth;x.globalAlpha=.42;
   for(let yy=o.y,j=0;yy<o.y+o.h;yy+=th,j++){for(let xx=o.x-(j%2)*tw/2;xx<o.x+o.w;xx+=tw)x.drawImage(o.tex,xx,yy,tw+.5,th+.5)}x.globalAlpha=1}
  else{x.fillStyle=(fin&&fin.color)||"#d8d4cc";x.fillRect(o.x,o.y,o.w,o.h)}
  // 2) panel relief: Fangda's own product render when we have it, otherwise the catalog drawing
- x.globalCompositeOperation="multiply";
+ if(o.relief){x.globalCompositeOperation="hard-light";x.globalAlpha=1;x.drawImage(o.relief,o.x,o.y,o.w,o.h)}
+ else{x.globalCompositeOperation="multiply";
  if(o.shade){x.globalAlpha=1;x.drawImage(o.shade,o.x,o.y,o.w,o.h)}
  else if(o.line){x.globalAlpha=.85;x.drawImage(o.line,o.x,o.y,o.w,o.h);x.globalAlpha=.35;x.drawImage(o.line,o.x+1.4,o.y+1.4,o.w,o.h);
   const inv=inverted(o.line);if(inv){x.globalCompositeOperation="screen";x.globalAlpha=.45;x.drawImage(inv,o.x-1.2,o.y-1.2,o.w,o.h)}}
+ }
  x.globalCompositeOperation="source-over";x.globalAlpha=1;
  // 3) glass
  const gb=sd.glass_box;
@@ -453,7 +532,7 @@ function renderBuild(){
  $("#f-glass").hidden=!(d.glass_box||(nSL&&sl?.glass_box));
  const glist=[{id:"CLEAR",name:"Clear",clear:true}].concat(gl.filter(g=>!gq||g.name.toLowerCase().includes(gq)));
  $("#gcount").textContent=d.lite?`${gl.length} patterns made in the ${liteName(d.lite)} lite`:(d.glass_box?"This door's lite isn't a standard size, so it's shown with clear glass.":"Solid door");
- $("#o-glass").innerHTML=d.glass_box?glist.map(g=>g.clear?`<button type="button" class="tile" aria-pressed="${S.glass==="CLEAR"}" data-v="CLEAR"><div style="height:110px;width:60px;background:linear-gradient(135deg,#d7e3e8,#9fb3bd)"></div><b>Clear</b><span>insulated</span></button>`:`<button type="button" class="tile" aria-pressed="${S.glass===g.id}" data-v="${esc(g.id)}"><img loading="lazy" src="${esc(g.sizes[d.lite])}" alt=""><b>${esc(g.name)}</b>${g.privacy?`<span class="pv">privacy ${g.privacy}/10</span>`:""}</button>`).join(""):"";
+ $("#o-glass").innerHTML=d.glass_box?glist.map(g=>g.clear?`<button type="button" class="tile" aria-pressed="${S.glass==="CLEAR"}" data-v="CLEAR"><div style="height:110px;width:60px;background:linear-gradient(135deg,#d7e3e8,#9fb3bd)"></div><b>Clear</b><span>insulated</span></button>`:`<button type="button" class="tile" aria-pressed="${S.glass===g.id}" data-v="${esc(g.id)}"><img loading="lazy" src="${esc(av(g.sizes[d.lite]))}" alt=""><b>${esc(g.name)}</b>${g.privacy?`<span class="pv">privacy ${g.privacy}/10</span>`:""}</button>`).join(""):"";
  bindPick("#o-glass","glass");
  const G=glassP(S.glass);$("#glPick").textContent=G?G.name:(d.glass_box?"Clear":"");
  $("#o-cam").innerHTML=G&&G.caming?.length?`<div class="row"><span class="note" style="align-self:center">Caming</span>${G.caming.map(cm=>chip(S.caming===cm,esc(cm),`data-v="${esc(cm)}"`)).join("")}</div>`:(G?`<div class="note">The glass catalog doesn't list caming finishes for ${esc(G.name)}.</div>`:"");
@@ -501,9 +580,10 @@ async function addToOrder(){
  const ln={st,qty,desc:describe(st),title:`${slab(S.door).code} · ${CFG[S.cfg].name}`,hand:S.hand,parts:ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f})),each:t.each,fob:t.fob};
  let o=D.orders.find(x=>x.id===CUR);$("#add").disabled=true;
  try{
-  if(!o){const {data,error}=await sb.from(T.orders).insert({customer:CUST,title:`${today()} ${(D.customers.find(c=>c.name===CUST)?.code||CUST)} doors`,lines:[ln]}).select().single();if(error)throw error;D.orders.unshift(data);CUR=data.id;ls("db-cur-"+CUST,CUR)}
-  else{const lines=o.lines.concat([ln]);const {error}=await sb.from(T.orders).update({lines,updated_at:new Date().toISOString()}).eq("id",o.id);if(error)throw error;o.lines=lines}
-  $("#qty").value=1;toast(`Added ${qty} × ${ln.title}${t.each==null?" (price needed)":""}`);renderBuild();
+  if(!o){const row={id:"local-"+Date.now(),customer:CUST,title:`${today()} ${(D.customers.find(c=>c.name===CUST)?.code||CUST)} doors`,status:"Draft",lines:[ln],updated_at:new Date().toISOString()};
+   const data=await orderWrite({op:"insert",row});D.orders.unshift(data);CUR=data.id;ls("db-cur-"+CUST,CUR);saveCache()}
+  else{const lines=o.lines.concat([ln]),patch={lines,updated_at:new Date().toISOString()};o.lines=lines;await orderWrite({op:"update",id:o.id,patch});saveCache()}
+  $("#qty").value=1;toast(`Added ${qty} × ${ln.title}${t.each==null?" (price needed)":""}${OFFLINE?" · saved on this device, syncs when online":""}`);renderBuild();
  }catch(e){console.error(e);toast("Couldn't save to the order. Check your connection and try again.")}finally{$("#add").disabled=false}
 }
 const oT=o=>({units:o.lines.reduce((a,x)=>a+x.qty,0),sum:o.lines.some(x=>x.each==null)?null:r2(o.lines.reduce((a,x)=>a+x.qty*x.each,0)),fob:o.lines.some(x=>x.fob==null)?null:r2(o.lines.reduce((a,x)=>a+x.qty*x.fob,0))});
@@ -528,10 +608,10 @@ function renderOrders(){
  $("#xCust").onclick=()=>excel(o,"customer");$("#xFact").onclick=()=>excel(o,"factory");
  $("#oReprice").onclick=()=>saveLines(o,L=>L.forEach(x=>{const ps=parts(x.st),t=totals(ps);x.parts=ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f}));x.each=t.each;x.fob=t.fob})).then(()=>toast("Prices updated"));
  let armed=false;$("#oDel").onclick=async e=>{if(!armed){armed=true;e.target.textContent="Tap again to delete";setTimeout(()=>{armed=false;if(e.target.isConnected)e.target.textContent="Delete order"},3000);return}
-  const {error}=await sb.from(T.orders).delete().eq("id",o.id);if(error)return toast("Couldn't delete the order.");D.orders=D.orders.filter(x=>x.id!==o.id);if(CUR===o.id)CUR=null;OPEN=null;renderOrders();toast("Order deleted")};
+  try{await orderWrite({op:"delete",id:o.id})}catch(e){return toast("Couldn't delete the order.")}D.orders=D.orders.filter(x=>x.id!==o.id);saveCache();if(CUR===o.id)CUR=null;OPEN=null;renderOrders();toast("Order deleted")};
 }
 async function saveLines(o,fn){const lines=JSON.parse(JSON.stringify(o.lines));fn(lines);await saveOrder(o,{lines})}
-async function saveOrder(o,patch){patch.updated_at=new Date().toISOString();const {error}=await sb.from(T.orders).update(patch).eq("id",o.id);if(error){toast("Couldn't save. Check your connection.");return}Object.assign(o,patch);renderOrders()}
+async function saveOrder(o,patch){patch.updated_at=new Date().toISOString();try{await orderWrite({op:"update",id:o.id,patch})}catch(e){toast("Couldn't save: "+(e.message||e));return}Object.assign(o,patch);saveCache();renderOrders()}
 async function excel(o,kind){
  if(!window.ExcelJS)return toast("Excel export didn't load. Check your connection.");
  const wb=new ExcelJS.Workbook();wb.creator="Northeast International";const font={name:"Arial",size:10,color:{argb:"FF262626"}};
@@ -639,7 +719,7 @@ function glassEditor(){
   <label class="wide">Notes<input data-k="notes" value="${esc(e.notes||"")}"></label>
   <span class="checks wide"><label><input type="checkbox" data-k="active" ${e.active?"checked":""}>Show in builder</label></span></div>
   <h3 style="margin-top:14px">Lite sizes and photos</h3><p class="note">Each lite size has its own photo. A pattern shows up for a door only when it has a photo in that door's lite size.</p>
-  <div class="sizes">${Object.entries(e.sizes||{}).map(([k,v])=>`<div class="s"><img src="${esc(v)}" alt=""><b>${esc(k)}</b><span class="note">${esc(liteName(k))}</span><button type="button" class="btn ghost" data-rs="${esc(k)}">Remove</button></div>`).join("")}</div>
+  <div class="sizes">${Object.entries(e.sizes||{}).map(([k,v])=>`<div class="s"><img src="${esc(av(v))}" alt=""><b>${esc(k)}</b><span class="note">${esc(liteName(k))}</span><button type="button" class="btn ghost" data-rs="${esc(k)}">Remove</button></div>`).join("")}</div>
   <div class="tools" style="margin-top:10px"><input id="nsz" placeholder="Lite code, e.g. 2248" style="width:160px;font:inherit;padding:6px"><input type="file" accept="image/*" id="nimg"><button class="btn" type="button" id="addSz">Add size</button></div>
   <div class="btns" style="margin-top:12px"><button class="btn red" type="button" id="sv">Save</button><button class="btn ghost" type="button" id="cx">Cancel</button></div></div>`;
  bindForm(ed);
@@ -729,7 +809,8 @@ $("#newOrder").onclick=newOrder;$("#newOrder2").onclick=newOrder;$("#add").oncli
 $("#qm").onclick=()=>$("#qty").value=Math.max(1,(+$("#qty").value||1)-1);$("#qp").onclick=()=>$("#qty").value=(+$("#qty").value||0)+1;
 $("#olist").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b){OPEN=b.dataset.o;renderOrders();$("#odetail").scrollIntoView({behavior:"smooth",block:"start"})}});
 $("#ctabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){CT=b.dataset.t;EDIT=null;renderCatalog()}});
-$("#signOut").onclick=async()=>{await sb.auth.signOut();location.reload()};
+$("#signOut").onclick=async()=>{if(queue().length)return toast("There are order changes waiting to sync. Connect to the internet first, then sign out.");
+ try{await sb.auth.signOut()}catch(e){}["db-me","db-cache","db-cache-at"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});location.reload()};
 const lMsg=(t,err)=>{$("#lMsg").textContent=t||"";$("#lMsg").style.color=err?"var(--red)":"var(--muted)"};
 $("#login").addEventListener("submit",async e=>{e.preventDefault();$("#lGo").disabled=true;lMsg("");
  try{const {error}=await sb.auth.signInWithPassword({email:$("#lEmail").value.trim(),password:$("#lPass").value});if(error)throw error;await afterLogin()}
@@ -737,14 +818,24 @@ $("#login").addEventListener("submit",async e=>{e.preventDefault();$("#lGo").dis
 $("#lForgot").onclick=async()=>{const em=$("#lEmail").value.trim();if(!em)return lMsg("Type your email above first.",true);
  const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+"/prototypes/nei-office-hub/"});lMsg(error?"Couldn't send the reset email.":"Check your email for a reset link. It opens the NEI Hub, where you set the new password.",!!error)};
 async function afterLogin(){
- const {data:me,error}=await sb.rpc("my_member");
- if(error||!me){await sb.auth.signOut();$("#login").hidden=false;lMsg("That email isn't on the NEI team list.",true);return}
+ let me=null,error=null;
+ try{if(!navigator.onLine)throw new Error("offline");({data:me,error}=await sb.rpc("my_member"));if(error&&isNetErr(error))throw error}
+ catch(e){me=ls("db-me");error=me?null:e}
+ if(error||!me){if(error&&isNetErr(error)){$("#login").hidden=false;lMsg("No internet connection. Sign in once while online; after that the builder works offline on this device.",true);return}
+  await sb.auth.signOut();$("#login").hidden=false;lMsg("That email isn't on the NEI team list.",true);return}
+ ls("db-me",me);
  ME=({"D Lapp":"Lapp D","D Glick":"Daniel G"})[me]||me;$("#me").textContent=ME;$("#login").hidden=true;$("#bar").hidden=false;$("#app").hidden=false;
  try{await loadAll()}catch(e){console.error(e);toast("Couldn't load the catalog. Check your connection.");return}
  route();
 }
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
-(async()=>{const {data:{session}}=await sb.auth.getSession();if(session)await afterLogin();else $("#login").hidden=false})();
+$("#offBtn").onclick=saveForOffline;
+window.addEventListener("online",async()=>{if(!ME)return;OFFLINE=false;netBadge();try{await loadAll();route()}catch(e){}});
+window.addEventListener("offline",()=>{OFFLINE=true;netBadge()});
+(async()=>{let session=null;try{({data:{session}}=await sb.auth.getSession())}catch(e){}
+ // offline with a saved catalog: open straight into the builder (this device signed in before)
+ if(!session&&!navigator.onLine&&ls("db-me")&&ls("db-cache"))session=true;
+ if(session)await afterLogin();else $("#login").hidden=false})();
 </script>
 </body>
 </html>
