@@ -398,7 +398,9 @@ function meanColor(im){if(MEAN[im.src])return MEAN[im.src];let c="#b08a62";try{c
 // sharp assets: relief = panel shading built from the catalog drawing (30 px/in); grain = real oak/mahogany board
 // figure coloured with Fangda's official swatch, at true scale (40 px/in). Fallbacks: old shade/line + swatch tiles.
 const reliefOf=sd=>sd&&sd.line_img&&/^img\/line\//.test(sd.line_img)&&!RELIEF_SKIP.has(sd.line_img.slice(9))?sd.line_img.replace("img/line/","img/relief/"):null;
-const RELIEF_SKIP=new Set(["CG02-K01.png","FG00-LS15_SL.png", "FG00-M07_SL.png", "FG00-MS11_SL.png", "P02-K03_2.png", "P02-LS02_2.png", "P02-M04_2.png", "P02-MS02_2.png", "P03-K01.png", "P03-K01_2.png", "P03-K02.png", "P03-K03_2.png", "P03-LS01.png", "P03-LS02.png", "P03-LS02_3.png", "P03-M05.png", "P03-MS04.png", "P04-K01_SL.png", "P04-K01_SL_2.png", "P04-K03_SL.png", "P04-LS01.png", "P04-LS01_2.png", "P04-LS01_SL.png", "P04-MS01_SL.png", "P04-MS01_SL_2.png", "P06-LS01_2.png", "P06-MS04.png", "P06-MS04_2.png", "P06-MS04_SL.png"]);
+const RELIEF_SKIP=new Set(["FG00-LS15_SL.png", "FG00-M07_SL.png", "FG00-MS11_SL.png", "P02-LS02_2.png", "P02-M04_2.png", "P02-MS02_2.png", "P03-LS01.png", "P03-LS02.png", "P03-LS02_3.png", "P03-M05.png", "P03-MS04.png", "P04-K01_SL.png", "P04-K01_SL_2.png", "P04-K03_SL.png", "P04-LS01.png", "P04-LS01_2.png", "P04-LS01_SL.png", "P04-MS01_SL.png", "P04-MS01_SL_2.png", "P06-LS01_2.png", "P06-MS04.png", "P06-MS04_2.png", "P06-MS04_SL.png"]);
+// lites that aren't rectangles: [shape, rise of the arch in inches]; glass is clipped to this outline
+const GLASS_SHAPE={"P03-K01 #2":["oval"],"P03-K03 #2":["oval"],"P08-K01 #2":["arch",2.45],"P04-K01 #2":["arch",6.0],"P04-K01 #3":["arch",2.0],"P04-K01 #4":["arch",11.4]};
 const grainOf=f=>!f||!f.image?null:/^img\/finish\/swatch_/.test(f.image)?f.image.replace("img/finish/swatch_","img/grain/"):/^img\/tex\/(oak|mahogany|fir|smooth|ms)\.jpg$/.test(f.image)?f.image.replace("img/tex/","img/grain/tex_"):null;
 const MIR=new Map();
 function mirror4(im){if(MIR.has(im))return MIR.get(im);const w=im.naturalWidth,h=im.naturalHeight,c=document.createElement("canvas");c.width=w*2;c.height=h*2;const x=c.getContext("2d");
@@ -471,15 +473,28 @@ function drawSlab(x,sd,o){
   const inv=inverted(o.line);if(inv){x.globalCompositeOperation="screen";x.globalAlpha=.45;x.drawImage(inv,o.x-1.2,o.y-1.2,o.w,o.h)}}
  }
  x.globalCompositeOperation="source-over";x.globalAlpha=1;
- // 3) glass
+ // 2b) sheen: painted and smooth skins have a soft satin highlight; stained grain a faint one
+ {const paint=fin&&(fin.kind==="paint"||/painting|smooth/.test(fin.image||""));const sg=x.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h*.35);
+  sg.addColorStop(0,"rgba(255,255,255,0)");sg.addColorStop(.32,`rgba(255,255,255,${paint?.10:.04})`);sg.addColorStop(.62,"rgba(255,255,255,0)");x.fillStyle=sg;x.fillRect(o.x,o.y,o.w,o.h)}
+ // 3) glass, clipped to the lite's real shape (oval, arch) and to each lite when there are several
  const gb=sd.glass_box;
- if(gb){const sx=o.w/o.kindW,sy=o.h/80,rects=(sd.lites&&sd.lites.length>1)?sd.lites:[gb];
-  if(o.glass){const r=gb;x.drawImage(o.glass,o.x+r[0]*sx,o.y+r[1]*sy,r[2]*sx,r[3]*sy);
-   if(sd.lites&&sd.lites.length>1&&o.line){x.save();x.beginPath();x.rect(o.x+r[0]*sx,o.y+r[1]*sy,r[2]*sx,r[3]*sy);x.clip();x.globalCompositeOperation="multiply";x.drawImage(o.line,o.x,o.y,o.w,o.h);x.restore()}}
+ if(gb){const sx=o.w/o.kindW,sy=o.h/80,multi=sd.lites&&sd.lites.length>1,rects=multi?sd.lites:[gb],shp=GLASS_SHAPE[sd.id];
+  const litePath=r=>{const rx=o.x+r[0]*sx,ry=o.y+r[1]*sy,rw=r[2]*sx,rh=r[3]*sy;
+   if(shp&&shp[0]==="oval")x.ellipse(rx+rw/2,ry+rh/2,rw/2,rh/2,0,0,Math.PI*2);
+   else if(shp&&shp[0]==="arch"){const rise=Math.min(shp[1]*sy,rh),R=(rise*rise+rw*rw/4)/(2*rise),cy=ry+R,a=Math.asin(Math.min(1,rw/2/R));x.moveTo(rx,ry+rh);x.lineTo(rx,ry+rise);x.arc(rx+rw/2,cy,R,-Math.PI/2-a,-Math.PI/2+a);x.lineTo(rx+rw,ry+rh);x.closePath()}
+   else x.rect(rx,ry,rw,rh)};
+  x.save();x.beginPath();rects.forEach(litePath);x.clip();
+  if(o.glass){const r=gb;x.drawImage(o.glass,o.x+r[0]*sx,o.y+r[1]*sy,r[2]*sx,r[3]*sy)}
   else for(const r of rects){const rx=o.x+r[0]*sx,ry=o.y+r[1]*sy,rw=r[2]*sx,rh=r[3]*sy;
-   const g=x.createLinearGradient(rx,ry,rx+rw,ry+rh);g.addColorStop(0,"#d7e3e8");g.addColorStop(.45,"#9fb3bd");g.addColorStop(1,"#c3d1d8");x.fillStyle=g;x.fillRect(rx,ry,rw,rh);
-   x.fillStyle="rgba(255,255,255,.35)";x.beginPath();x.moveTo(rx+rw*.1,ry);x.lineTo(rx+rw*.35,ry);x.lineTo(rx+rw*.05,ry+rh*.5);x.lineTo(rx,ry+rh*.45);x.closePath();x.fill();
-   x.strokeStyle="rgba(40,30,20,.6)";x.lineWidth=1.5;x.strokeRect(rx,ry,rw,rh);
+   const g=x.createLinearGradient(rx,ry,rx+rw,ry+rh);g.addColorStop(0,"#d7e3e8");g.addColorStop(.45,"#9fb3bd");g.addColorStop(1,"#c3d1d8");x.fillStyle=g;x.fillRect(rx,ry,rw,rh)}
+  // reflection and the shadow the glazing frame casts onto the glass (light from the upper left)
+  for(const r of rects){const rx=o.x+r[0]*sx,ry=o.y+r[1]*sy,rw=r[2]*sx,rh=r[3]*sy,e=.7*sx;
+   const rf=x.createLinearGradient(rx,ry,rx+rw*.9,ry+rh*.55);rf.addColorStop(0,"rgba(255,255,255,0)");rf.addColorStop(.38,"rgba(255,255,255,0)");rf.addColorStop(.46,"rgba(255,255,255,.16)");rf.addColorStop(.58,"rgba(255,255,255,.05)");rf.addColorStop(.66,"rgba(255,255,255,0)");x.fillStyle=rf;x.fillRect(rx,ry,rw,rh);
+   let s=x.createLinearGradient(rx,0,rx+e,0);s.addColorStop(0,"rgba(0,0,0,.30)");s.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=s;x.fillRect(rx,ry,e,rh);
+   s=x.createLinearGradient(0,ry,0,ry+e);s.addColorStop(0,"rgba(0,0,0,.30)");s.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=s;x.fillRect(rx,ry,rw,e)}
+  x.restore();
+  if(!o.glass)for(const r of rects){const rx=o.x+r[0]*sx,ry=o.y+r[1]*sy,rw=r[2]*sx,rh=r[3]*sy;
+   x.save();x.beginPath();litePath(r);x.strokeStyle="rgba(40,30,20,.6)";x.lineWidth=1.5;x.stroke();x.restore();
    if(o.glassName){x.save();x.translate(rx+rw/2,ry+rh/2);if(rw<rh*0.4)x.rotate(-Math.PI/2);x.fillStyle="rgba(20,35,45,.75)";x.font=`600 ${Math.max(9,Math.min(rw,rh)*0.09)}px "IBM Plex Mono",monospace`;x.textAlign="center";x.fillText(o.glassName.toUpperCase(),0,0);x.restore()}}
  }
  const eg=x.createLinearGradient(o.x,0,o.x+o.w,0);eg.addColorStop(0,"rgba(0,0,0,.22)");eg.addColorStop(.04,"rgba(0,0,0,0)");eg.addColorStop(.96,"rgba(0,0,0,0)");eg.addColorStop(1,"rgba(0,0,0,.22)");x.fillStyle=eg;x.fillRect(o.x,o.y,o.w,o.h);
@@ -487,11 +502,14 @@ function drawSlab(x,sd,o){
  x.strokeStyle="rgba(0,0,0,.45)";x.lineWidth=1;x.strokeRect(o.x,o.y,o.w,o.h);
 }
 function hardware(x,lx,ly,s,hw,active){
- const g=x.createLinearGradient(lx-s,0,lx+s,0);g.addColorStop(0,hw[0]);g.addColorStop(1,hw[1]);
+ // escutcheon plate, knob and deadbolt with a soft contact shadow and a metal highlight
+ x.save();x.shadowColor="rgba(0,0,0,.45)";x.shadowBlur=1.4*s;x.shadowOffsetX=.25*s;x.shadowOffsetY=.35*s;
+ const g=x.createLinearGradient(lx-s,0,lx+s,0);g.addColorStop(0,hw[0]);g.addColorStop(.55,hw[1]);g.addColorStop(1,hw[0]);
  x.fillStyle=g;x.beginPath();if(x.roundRect)x.roundRect(lx-.9*s,ly-1.4*s,1.8*s,4.6*s,.9*s);else x.rect(lx-.9*s,ly-1.4*s,1.8*s,4.6*s);x.fill();
- x.beginPath();x.arc(lx,ly,1.05*s,0,Math.PI*2);x.fill();
- if(active){x.beginPath();x.arc(lx,ly-5.5*s,1.15*s,0,Math.PI*2);x.fill();x.fillStyle="rgba(0,0,0,.5)";x.fillRect(lx-.12*s,ly-6*s,.24*s,1*s)}
- x.fillStyle="rgba(255,255,255,.35)";x.beginPath();x.arc(lx-.3*s,ly-.3*s,.35*s,0,Math.PI*2);x.fill();
+ const knob=(cx,cy,r)=>{const k=x.createRadialGradient(cx-.35*r,cy-.4*r,.1*r,cx,cy,r);k.addColorStop(0,"rgba(255,255,255,.9)");k.addColorStop(.18,hw[0]);k.addColorStop(1,hw[1]);x.fillStyle=k;x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.fill()};
+ knob(lx,ly,1.05*s);
+ if(active){knob(lx,ly-5.5*s,1.15*s);x.shadowColor="transparent";x.fillStyle="rgba(0,0,0,.55)";x.fillRect(lx-.12*s,ly-6*s,.24*s,1*s)}
+ x.restore();
 }
 function drawPlan(){
  const c=CFG[S.cfg],L=S.hand.startsWith("LH"),IN=S.hand.endsWith("IS"),wy=60,R=42;

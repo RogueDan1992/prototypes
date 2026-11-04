@@ -2,7 +2,7 @@
 // App page: network first (so updates arrive), cached copy when offline.
 // Libraries, logos and door/glass pictures: served from the cache once saved.
 // Supabase data is not cached here; the app keeps its own saved copy of the catalog.
-const SHELL = "nei-door-shell-v4", PICS = "nei-door-pics-v2";
+const SHELL = "nei-door-shell-v4", PICS = "nei-door-pics-v3";
 const SHELL_FILES = ["./", "index.html", "manifest.webmanifest", "logo.png", "logo-onblack.png",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js",
   "https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"];
