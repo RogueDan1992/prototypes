@@ -73,55 +73,71 @@ matched the catalog), relief re-rendered with the new lighting · **open** = nee
 | FG02-M09, FG02-M21, FG03-M01, FG04-M01 | glass doors | rebuilt, lites match the database |
 | FG05-M01 | 5 horizontal lites | **rebuilt — old drawing and glass ran past the right edge** |
 
+## Smooth (MS), page 11 left — done (batch 3)
+
+Glass sizes here were measured from the catalog's glass fill colour (more reliable than reading lines).
+
+| Slab | Catalog check | Status |
+|---|---|---|
+| P00-MS04, #2, #4 | flush / 2264 / narrow lite on the lock side | rebuilt |
+| P00-MS04 #3 | **4 small lites stacked on the lock side** — app had it flush with no glass | rebuilt; needs glass in the database. VERIFY lite size |
+| P00-MS04 SL | catalog cell is a **door** with a centered narrow lite, not a sidelite | art built as P00-MS04 #5; SL to hide |
+| P02-MS01 | 2 plank panels | **rebuilt — old drawing was stretched sideways** |
+| P02-MS02 / #2 | 2 panel / 2248 lite | rebuilt |
+| P02-MS06 SL, P02-MS13 SL | 2 panel sidelites (raised / flat) | rebuilt |
+| P02-MS07 | arch-top 2 panel (lower than P02-M08) | rebuilt (was wobbly) |
+| P02-MS09 | flat 2 panel, tall top rail-free layout | rebuilt (was wobbly) |
+| P02-MS11 | 2 panel, same layout as P02-M17 | rebuilt (was wobbly) |
+| P03-MS04 | Craftsman flats | rebuilt (relief was disabled) |
+| P04-MS01 | 4 panel BT, plus the same 3 glass versions as oak P04-K01 | rebuilt (was faint); glass versions art built as #2–#4 |
+| P04-MS01 SL, SL #2 | no matching catalog drawing (same misread as oak) | to hide |
+| P06-MS04 | 6 panel | rebuilt (was smudged) |
+| P06-MS04 #2 | catalog: **2236 cutout over 2 panels** — app had a 6 panel with no glass | rebuilt; needs glass in the database |
+| P06-MS04 SL | catalog cell is a **door with 2 tall lites** (like P04-K03-TN) | art built as P06-MS04 #3; SL to hide |
+| FG00-MS02, -MS04, -MS06 SL, -MS09 | full / narrow / 3/4 lites | rebuilt |
+| FG00-MS10 | 8-pane full lite — **stretched to the bottom edge** like FG00-M06 | rebuilt; database glass to fix |
+| FG00-MS11 SL, FG02-MS02 SL … FG02-MS13 SL | glass sidelites | rebuilt |
+| FG02-MS03, FG02-MS04 | glass + bottom panel | rebuilt |
+| FG02-MS12 | 2236 lite + panel — **old drawing stretched** | rebuilt; database glass to fix |
+| FG03-MS02, -MS05, -MS07 | Craftsman glass over 2 flat panels | rebuilt (were blurry) |
+| FG03-MS06 | **3 lites over 2 flat panels — not in the app** | art built; needs a database row |
+
+Correction to earlier batches: FG00-M06's 8-pane lite is 22.8" wide (measured from the glass fill), not 20";
+P04-K01 #2's half-round lite starts at 5.0", P04-K01 #4's round top at 5.3".
+
 ## Line-drawing blur score, all slabs (mid-gray ÷ dark pixels; clean ≈ 1, bad > 4)
 
-Oak and mahogany are fixed; the rest is the worklist for the next batches (worst first). "inf" = drawn in light gray only.
+Oak, mahogany and MS are fixed; the rest is the worklist for the next batches (worst first). "inf" = drawn in light gray only.
 
 ```
 P04-LS01_2.png     inf
-P04-MS01.png       inf
-P06-MS04_2.png     inf
-P00-MS04_3.png     inf
 P00-LS01_3.png     inf
 P02-LS10_SL.png    inf
-P00-MS04_SL.png    40.55
 P00-LS01_SL.png    40.04
-P06-MS04.png       21.28
 P03-LS02_3.png     11.62
 P03-LS02.png       10.63
-P02-MS07.png       10.13
-P02-MS11.png       10.07
 P02-LS01.png       9.73
 P02-LS07.png       9.68
-P02-MS01.png       8.14
 P00-F02.png        6.83
 FG03-F03.png       6.12
 P02-LS04.png       5.84
-P02-MS09.png       5.77
 P04-LS01.png       5.60
 P03-LS03.png       4.97
-P03-MS04.png       4.49
 P02-LS03.png       4.44
 P04-LS02.png       4.42
 FG02-LS04.png      4.34
 P02-LS02_2.png     4.23
-P00-MS04_4.png     4.21
 P00-LS01_4.png     4.21
-P02-MS02_2.png     4.19
 P03-F01.png        4.12
 P03-LS01.png       4.11
 FG05-LS02.png      4.05
-FG00-MS04.png      3.83
 FG06-LS01.png      3.63
 CG02-LS01.png      3.56
-FG03-MS05.png      3.43
 FG03-F02.png       3.39
 FG03-LS03.png      3.38
 FG05-LS01.png      3.27
 P06-LS01_2.png     3.12
 P02-LS09_SL.png    2.96
-P02-MS06_SL.png    2.93
-FG03-MS07.png      2.80
 FG03-F04.png       2.78
 P03-LS02_2.png     2.61
 ```
