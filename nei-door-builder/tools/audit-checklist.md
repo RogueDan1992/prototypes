@@ -41,9 +41,41 @@ matched the catalog), relief re-rendered with the new lighting · **open** = nee
 | CG02-K01 | 2236 cutout + 2 panels | relit; new relief now actually used (was on the skip list) |
 | FG05-K01 | 5 horizontal lites | rebuilt; glass now clipped to each lite in the app |
 
+## Mahogany (M), page 06 — done (batch 2)
+
+| Slab | Catalog check | Status |
+|---|---|---|
+| P00-M01, P00-M02-N SL | flush | unchanged |
+| P00-M01 #2 | full lite 2264 | rebuilt |
+| P02-M01 | 2 panel plank, top panel slightly arched | rebuilt (was wobbly); planks as V-grooves |
+| P02-M03 | rustic arch-top plank panels, speakeasy grille, clavos | relit; grille and studs shaded dark iron |
+| P02-M04 | 2 panel | rebuilt |
+| P02-M04 #2 | 2248 lite + bottom panel | rebuilt (was blurry, relief disabled) |
+| P02-M08 | arch-top 2 panel | relit (drawing matched) |
+| P02-M11 | 2 plank panels | rebuilt with V-grooves |
+| P02-M15 SL | 2 panel sidelite | rebuilt |
+| P02-M17 | 2 panel, narrower panels (7.7–28.3") | rebuilt (was wobbly, bottom panel misplaced) |
+| P03-M01 | bell top + inverted-bell bottom, scroll panels | relit (drawing matched) |
+| P03-M01 #2 | **catalog's 2nd P03-M01 cell: same with oval lite — not in the app** | art built; needs a database row |
+| P03-M02 / #2 | Craftsman: flat panels / 2215 lite | rebuilt (P03-M02 was blurry) |
+| P03-M05 | bell top + 2 small panels | rebuilt (was wobbly; same geometry as P03-K01) |
+| P05-M01 | 5 vertical planks in one raised frame | rebuilt |
+| P06-M01 | 6 panel | relit |
+| P07-M01 | horizontal boards | rebuilt as grooves |
+| P08-M01, #2, P08-M02 | 8 panel | relit; #2 gets its arch-top lite frame |
+| FG00-M01 SL, FG00-M02 | full lite | rebuilt |
+| FG00-M06 | 2264 lite, 2 × 4 grid | **rebuilt — old drawing and glass were stretched to the bottom edge.** VERIFY: grid bars drawn as wood muntins; may be a grille |
+| FG00-M07 SL | 0764 lite, 4 panes | rebuilt (relief was disabled) |
+| FG00-M10 | narrow lite | **rebuilt — was stretched to the bottom edge** |
+| FG02-M01, FG03-M02 | — | done in the earlier batch |
+| FG02-M05 | 2248 lite, 2 × 3 grid + bottom panel | **rebuilt — was stretched (panel ran to the bottom edge)** |
+| FG02-M07 SL … FG02-M18 SL | glass sidelites | rebuilt, lites match the database |
+| FG02-M09, FG02-M21, FG03-M01, FG04-M01 | glass doors | rebuilt, lites match the database |
+| FG05-M01 | 5 horizontal lites | **rebuilt — old drawing and glass ran past the right edge** |
+
 ## Line-drawing blur score, all slabs (mid-gray ÷ dark pixels; clean ≈ 1, bad > 4)
 
-Oak is fixed; the rest is the worklist for the next batches (worst first). "inf" = drawn in light gray only.
+Oak and mahogany are fixed; the rest is the worklist for the next batches (worst first). "inf" = drawn in light gray only.
 
 ```
 P04-LS01_2.png     inf
@@ -57,13 +89,10 @@ P00-LS01_SL.png    40.04
 P06-MS04.png       21.28
 P03-LS02_3.png     11.62
 P03-LS02.png       10.63
-P03-M05.png        10.49
-P02-M01.png        10.44
 P02-MS07.png       10.13
 P02-MS11.png       10.07
 P02-LS01.png       9.73
 P02-LS07.png       9.68
-P02-M17.png        9.56
 P02-MS01.png       8.14
 P00-F02.png        6.83
 FG03-F03.png       6.12
@@ -80,25 +109,19 @@ P00-MS04_4.png     4.21
 P00-LS01_4.png     4.21
 P02-MS02_2.png     4.19
 P03-F01.png        4.12
-P03-M02.png        4.11
 P03-LS01.png       4.11
 FG05-LS02.png      4.05
-P02-M04_2.png      3.97
 FG00-MS04.png      3.83
 FG06-LS01.png      3.63
 CG02-LS01.png      3.56
-FG00-M10.png       3.45
 FG03-MS05.png      3.43
 FG03-F02.png       3.39
 FG03-LS03.png      3.38
-FG05-M01.png       3.34
 FG05-LS01.png      3.27
 P06-LS01_2.png     3.12
 P02-LS09_SL.png    2.96
 P02-MS06_SL.png    2.93
-P02-M15_SL.png     2.81
 FG03-MS07.png      2.80
 FG03-F04.png       2.78
-FG00-M07_SL.png    2.68
 P03-LS02_2.png     2.61
 ```

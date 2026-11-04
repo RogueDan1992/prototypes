@@ -398,9 +398,9 @@ function meanColor(im){if(MEAN[im.src])return MEAN[im.src];let c="#b08a62";try{c
 // sharp assets: relief = panel shading built from the catalog drawing (30 px/in); grain = real oak/mahogany board
 // figure coloured with Fangda's official swatch, at true scale (40 px/in). Fallbacks: old shade/line + swatch tiles.
 const reliefOf=sd=>sd&&sd.line_img&&/^img\/line\//.test(sd.line_img)&&!RELIEF_SKIP.has(sd.line_img.slice(9))?sd.line_img.replace("img/line/","img/relief/"):null;
-const RELIEF_SKIP=new Set(["FG00-LS15_SL.png", "FG00-M07_SL.png", "FG00-MS11_SL.png", "P02-LS02_2.png", "P02-M04_2.png", "P02-MS02_2.png", "P03-LS01.png", "P03-LS02.png", "P03-LS02_3.png", "P03-M05.png", "P03-MS04.png", "P04-K01_SL.png", "P04-K01_SL_2.png", "P04-K03_SL.png", "P04-LS01.png", "P04-LS01_2.png", "P04-LS01_SL.png", "P04-MS01_SL.png", "P04-MS01_SL_2.png", "P06-LS01_2.png", "P06-MS04.png", "P06-MS04_2.png", "P06-MS04_SL.png"]);
+const RELIEF_SKIP=new Set(["FG00-LS15_SL.png", "FG00-MS11_SL.png", "P02-LS02_2.png", "P02-MS02_2.png", "P03-LS01.png", "P03-LS02.png", "P03-LS02_3.png", "P03-MS04.png", "P04-K01_SL.png", "P04-K01_SL_2.png", "P04-K03_SL.png", "P04-LS01.png", "P04-LS01_2.png", "P04-LS01_SL.png", "P04-MS01_SL.png", "P04-MS01_SL_2.png", "P06-LS01_2.png", "P06-MS04.png", "P06-MS04_2.png", "P06-MS04_SL.png"]);
 // lites that aren't rectangles: [shape, rise of the arch in inches]; glass is clipped to this outline
-const GLASS_SHAPE={"P03-K01 #2":["oval"],"P03-K03 #2":["oval"],"P08-K01 #2":["arch",2.45],"P04-K01 #2":["arch",6.0],"P04-K01 #3":["arch",2.0],"P04-K01 #4":["arch",11.4]};
+const GLASS_SHAPE={"P03-K01 #2":["oval"],"P03-K03 #2":["oval"],"P08-K01 #2":["arch",2.45],"P04-K01 #2":["arch",6.0],"P04-K01 #3":["arch",2.0],"P04-K01 #4":["arch",11.4],"P03-M01 #2":["oval"],"P08-M01 #2":["arch",2.45]};
 const grainOf=f=>!f||!f.image?null:/^img\/finish\/swatch_/.test(f.image)?f.image.replace("img/finish/swatch_","img/grain/"):/^img\/tex\/(oak|mahogany|fir|smooth|ms)\.jpg$/.test(f.image)?f.image.replace("img/tex/","img/grain/tex_"):null;
 const MIR=new Map();
 function mirror4(im){if(MIR.has(im))return MIR.get(im);const w=im.naturalWidth,h=im.naturalHeight,c=document.createElement("canvas");c.width=w*2;c.height=h*2;const x=c.getContext("2d");

@@ -114,6 +114,7 @@ def lite_frame(dout, m):
 def heightfield(W, items):
     H = np.zeros((80 * P, int(W * P)), np.float32)
     lines = []          # (signed-distance field, level) pairs and miter segments for the line drawing
+    global inks; inks = []
     yy = xx = None
     for it in items:
         t = it["t"]
@@ -132,6 +133,10 @@ def heightfield(W, items):
             for m in trace_masks(it["src"], W):
                 sd = sdist(m); prof, e = raised_profile(sd, it.get("bevel", 1.5))
                 H = np.where(sd > 0, prof, H)
+                if it.get("ink"):   # dark metalwork drawn inside the panel field (clavos, speakeasy grille)
+                    a = np.asarray(Image.open(it["src"]).convert("L")).astype(np.float32) / 255
+                    a = cv2.resize(a, (H.shape[1], H.shape[0]), interpolation=cv2.INTER_CUBIC)
+                    inks.append(np.where(sd > e + 0.35, 1 - a, 0))
         elif t == "lite":
             shp = it.get("shape") or ("rect", *it["box"])
             sd = sdist(mask(W, poly(shp))); m = it.get("frame", 0.9)
@@ -146,8 +151,8 @@ def heightfield(W, items):
             vx, vy = x1 - x0, y1 - y0; L2 = vx * vx + vy * vy
             u = np.clip(((xx - x0) * vx + (yy - y0) * vy) / L2, 0, 1)
             dd = np.hypot(xx - (x0 + u * vx), yy - (y0 + u * vy))
-            w = it.get("w", 0.16)
-            H = H - np.where(dd < w, 0.22 * (1 - dd / w), 0).astype(np.float32)
+            w = it.get("w", 0.20)
+            H = H - np.where(dd < w, 0.34 * np.clip(1 - dd / w, 0, 1) ** 0.8, 0).astype(np.float32)
             lines.append(("seg", x0, y0, x1, y1))
     return H, lines
 
@@ -198,8 +203,16 @@ def build(slab_id, W, items, root, line=True):
     fn = slab_id.replace(" #", "_").replace(" ", "_")
     items = [dict(it, src=it["src"].format(root=root)) if "src" in it else it for it in items]
     H, lines = heightfield(W, items)
-    rel = Image.fromarray(light(H).astype(np.uint8)).resize((int(W * RPI), 80 * RPI), Image.LANCZOS)
+    v = light(H)
+    for ink in inks: v = v * (1 - 0.82 * np.clip(ink * 1.6, 0, 1))
+    rel = Image.fromarray(v.astype(np.uint8)).resize((int(W * RPI), 80 * RPI), Image.LANCZOS)
     if line: line_drawing(W, H, lines).save(f"{root}/line/{fn}.png", optimize=True)
+    elif lines:   # traced panels keep their drawing; add the extra items (lite frames) on top of it
+        src = next(it["src"] for it in items if it["t"] == "trace")
+        base = np.asarray(Image.open(src).convert("L"))
+        add = np.asarray(line_drawing(W, H, lines).convert("L"))
+        b = int(0.3 * LPI); add = add.copy(); add[:b] = 255; add[-b:] = 255; add[:, :b] = 255; add[:, -b:] = 255
+        Image.fromarray(np.minimum(base, add)).save(f"{root}/line/{fn}.png", optimize=True)
     rel.save(f"{root}/relief/{fn}.png", optimize=True)
 
 # ---------- geometry ----------
@@ -261,6 +274,60 @@ DOORS = {
   "P08-K01 #2": (36, [TRACE("P08-K01_2.png", 1.5), dict(t="lite", shape=("arch", 15.5, 15.7, 4.9, 37.0, 2.45), frame=0.7)]),
   "FG05-K01": (36, [LITE(*b, 0.6) for b in ((6.9, 8.5, 22.1, 5.2), (6.9, 22.2, 22.1, 5.2), (6.9, 36, 22.1, 5.1), (6.9, 49.8, 22.1, 5.2), (6.9, 63.6, 22.1, 5.2))]),
 }
+# Mahogany (M), catalog page 06. Same conventions as oak; where the app drawing already matched the
+# catalog its numbers are kept. Several glass doors were stretched to the full 80" (no bottom rail): rebuilt.
+def grid(x, y, w, h, cols, rows, bar=0.8):
+    cw, rh = (w - bar * (cols - 1)) / cols, (h - bar * (rows - 1)) / rows
+    return [(round(x + c * (cw + bar), 2), round(y + r * (rh + bar), 2), round(cw, 2), round(rh, 2)) for r in range(rows) for c in range(cols)]
+def lites(boxes, m=0.6): return [LITE(*b, m) for b in boxes]
+def planks(x0, x1, y0, y1, xs): return [dict(t="groove", a=(x, y0), b=(x, y1)) for x in xs]
+P03M_FLATS = [F(6.33, 6.75, 23.33, 15.58), F(6.58, 27.42, 9.33, 41.33), F(20.25, 27.33, 9.42, 41.25)]
+FG00M06 = grid(8.0, 7.0, 20.0, 61.0, 2, 4)
+FG02M05 = grid(6.8, 7.7, 22.1, 45.0, 2, 3)
+DOORS.update({
+  "P00-M01": (36, []),
+  "P00-M01 #2": (36, [LITE(8.0, 7.1, 20.0, 60.9)]),
+  "P02-M01": (36, [dict(t="raised", shape=("arch", 5.8, 7.6, 24.4, 34.7, 1.0), bevel=1.4), R(5.8, 48.1, 24.4, 18.8, 1.4)]
+              + planks(0, 0, 9.4, 40.6, (12.7, 16.2, 19.7, 23.3)) + planks(0, 0, 49.9, 65.1, (12.7, 16.2, 19.7, 23.3))),
+  "P02-M03": (36, [dict(TRACE("P02-M03.png", 1.4), ink=True)]),
+  "P02-M04": (36, [R(6.33, 7.25, 23.17, 46.0, 1.8), R(6.33, 57.0, 23.17, 12.33, 1.8)]),
+  "P02-M04 #2": (36, [LITE(6.8, 7.7, 22.1, 45.0), R(6.33, 57.0, 23.17, 12.33, 1.8)]),
+  "P02-M08": (36, [TRACE("P02-M08.png", 1.6)]),
+  "P02-M11": (36, [R(4.67, 4.75, 26.58, 42.75, 1.4), R(4.67, 52.83, 26.58, 20.17, 1.4)]
+              + planks(0, 0, 6.5, 45.7, (10.8, 15.6, 20.3, 25.0)) + planks(0, 0, 54.6, 71.2, (10.8, 15.6, 20.3, 25.0))),
+  "P02-M15 SL": (14, [R(2.42, 10.25, 9.17, 12.33, 1.6), R(2.42, 51.0, 9.17, 20.42, 1.6)]),
+  "P02-M17": (36, [R(7.7, 4.6, 20.6, 40.6, 1.5), R(7.7, 50.2, 20.6, 21.1, 1.5)]),
+  "P03-M01": (36, [TRACE("P03-M01.png", 1.6)]),
+  "P03-M01 #2": (36, [TRACE("P03-M01.png", 1.6), dict(t="lite", shape=OVAL, frame=0.9)]),   # catalog p06, 2nd P03-M01 cell; not in the database yet
+  "P03-M02": (36, P03M_FLATS),
+  "P03-M02 #2": (36, [LITE(7.0, 7.4, 22.0, 14.4)] + P03M_FLATS[1:]),
+  "P03-M05": (36, [dict(t="raised", shape=P03_TOP, bevel=1.8)] + bottom_pair(58.0, 12.4)),
+  "P05-M01": (36, [R(4.67, 4.67, 26.58, 68.17, 1.4)] + planks(0, 0, 6.4, 71.1, (11.0, 15.6, 20.4, 25.0))),
+  "P06-M01": (36, [TRACE("P06-M01.png", 1.8)]),
+  "P07-M01": (36, planks(0, 0, 0.3, 79.7, (6.4, 29.6)) + [dict(t="groove", a=(6.4, y), b=(29.6, y)) for y in (11.0, 21.8, 32.6, 43.4, 54.2, 65.0)]),
+  "P08-M01": (36, [TRACE("P08-M01.png", 1.5)]),
+  "P08-M01 #2": (36, [TRACE("P08-M01_2.png", 1.5), dict(t="lite", shape=("arch", 15.5, 15.7, 4.9, 37.0, 2.45), frame=0.7)]),
+  "P08-M02": (36, [TRACE("P08-M02.png", 1.5)]),
+  "FG00-M01 SL": (14, [LITE(4.1, 7.6, 5.9, 59.9, 0.8)]),
+  "FG00-M02": (36, [LITE(8.0, 7.0, 20.0, 61.0)]),
+  "FG00-M06": (36, [LITE(8.0, 7.0, 20.0, 61.0)] + lites(FG00M06, 0.4)),          # VERIFY bars: wood muntins vs grille
+  "FG00-M07 SL": (14, [LITE(4.4, 7.5, 5.1, 59.0, 0.8)] + lites([(4.4, 7.5, 5.1, 12.9), (4.4, 22.8, 5.1, 13), (4.4, 38, 5.1, 13), (4.4, 53.4, 5.1, 13.1)], 0.4)),
+  "FG00-M10": (36, [LITE(5.9, 5.5, 5.4, 64.6, 0.8)]),
+  "FG02-M05": (36, [LITE(6.8, 7.7, 22.1, 45.0)] + lites(FG02M05, 0.4) + [R(6.05, 59.3, 23.6, 12.0, 1.2)]),
+  "FG02-M07 SL": (14, [LITE(2.9, 6.9, 8.1, 45.8, 0.8), R(2.42, 57.08, 9.25, 12.33, 1.3)]),
+  "FG02-M09": (36, lites([(7.2, 8.5, 9.9, 16), (18.6, 8.5, 9.9, 16), (7.2, 26.1, 9.9, 15.9), (18.6, 26.1, 9.9, 15.9)], 0.7) + [R(6.75, 48.33, 22.33, 21.0, 1.6)]),
+  "FG02-M10 SL": (14, lites([(3, 8.5, 8, 16.3), (3, 25.9, 8, 16.1)], 0.6) + [R(2.5, 48.33, 9.08, 21.0, 1.5)]),
+  "FG02-M11 SL": (14, lites([(3.3, 6.9, 7.4, 14.4), (3.3, 22.3, 7.4, 14.4), (3.3, 37.5, 7.4, 14.3)], 0.6) + [R(2.92, 55.92, 8.33, 13.17, 1.3)]),
+  "FG02-M13 SL": (14, lites([(4.4, 7.1, 5.1, 6.4), (4.4, 15.4, 5.1, 6.2)], 0.6) + [F(3.92, 27.5, 6.25, 42.08)]),
+  "FG02-M18 SL": (14, [LITE(3.5, 7.1, 7.1, 14.4, 0.6), F(3.0, 27.58, 8.33, 42.0)]),
+  "FG02-M21": (36, lites([(7, 7.3, 6, 10.4), (15, 7.3, 5.9, 10.4), (22.6, 7.3, 6.1, 10.4), (7, 19.4, 6, 10), (15, 19.4, 5.9, 10), (22.6, 19.5, 6.1, 10),
+                         (7, 31.2, 6, 10.4), (15, 31.2, 5.9, 10.4), (22.6, 31.2, 6.1, 10.4)], 0.6) + [R(6.25, 48.0, 9.5, 20.83, 1.6), R(20.08, 48.0, 9.5, 20.83, 1.6)]),
+  "FG03-M01": (36, lites([(7.6, 7.6, 20.5, 15.8), (7.6, 30.1, 20.5, 15.7), (7.6, 52.5, 20.5, 15.9)], 0.7)),
+  "FG04-M01": (36, lites([(7.1, 7.3, 6.1, 6.2), (15, 7.4, 5.9, 6.1), (22.6, 7.3, 5.9, 6.2), (7.1, 15.4, 6.1, 6.2), (15, 15.4, 5.9, 6.2), (22.6, 15.4, 5.9, 6.2)], 0.5)
+                + [F(6.67, 27.58, 5.92, 42.0), F(14.92, 27.58, 5.92, 42.0), F(23.33, 27.58, 5.92, 42.0)]),
+  "FG05-M01": (36, [LITE(*b, 0.6) for b in ((6.9, 8.5, 22.1, 5.2), (6.9, 22.2, 22.1, 5.2), (6.9, 36, 22.1, 5.1), (6.9, 49.8, 22.1, 5.2), (6.9, 63.6, 22.1, 5.2))]),
+})
+
 TRACED = {k for k, (_, its) in DOORS.items() if any(i["t"] == "trace" for i in its)}
 
 if __name__ == "__main__":
