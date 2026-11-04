@@ -58,6 +58,7 @@ h3{font:700 18px var(--f-display);text-transform:uppercase;letter-spacing:.05em;
 .stage canvas{width:100%;height:auto;display:block}
 .cap{font-size:13px;font-weight:600;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-top:0}
 .card{background:var(--surface);border:1px solid var(--line)}
+.unitrow td{font-weight:600;background:var(--red-soft)}
 .pad{padding:12px}
 .prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .big{font:700 32px var(--f-display);color:var(--red);font-variant-numeric:tabular-nums;line-height:1.1}
@@ -333,6 +334,9 @@ const comp=id=>D.comp.find(c=>c.id===id);
 const glassP=id=>D.glass.find(g=>g.id===id);
 const cost=item=>D.cost.find(c=>c.item===item)?.fob??null;
 const price=(item,cust=CUST)=>D.price.find(p=>p.customer===cust&&p.item===item)?.price??null;
+// unit price: one factory price for a complete pre-hung unit (door + sidelites + frame + prehang, clear glass)
+function unitKey(st){const c=CFG[st.cfg];if(!c||!st.door)return null;const n=c.sl.length;return `U:${st.door}:${c.leaves}D${n}SL:${st.w}x${st.h}`+(n?`:${st.sl}:${st.slw}`:"")}
+const UCFG={"1D0SL":"Single","1D1SL":"1 sidelite","1D2SL":"2 sidelites","2D0SL":"Double","2D2SL":"Double + 2 SL"};
 function lookup(keys){for(const k of keys){const p=price(k),f=cost(k);if(p!=null||f!=null)return {key:k,p,f}}return {key:keys[keys.length-1],p:null,f:null}}
 
 /* ---------- configuration ---------- */
@@ -375,6 +379,9 @@ function parts(st=S){
  const j=comp(st.jamb);if(j)add(["C:"+j.id],j.id,j.name+" (set)",1);
  const t=comp(st.trim);if(t&&t.id!=="NONE-TRIM")add(["C:"+t.id],t.id,t.name+" (set)",1);
  const ph=comp("PREHANG");if(ph&&ph.active)add(["C:PREHANG"],"PREHANG",ph.name,1);
+ const uk=unitKey(st),up=uk?price(uk):null,uf=uk?cost(uk):null;
+ if(uk&&(up!=null||uf!=null)){out.forEach(x=>{if(!x.key.startsWith("G:")){x.incl=true;x.p=0;x.f=0}});
+  out.unshift({key:uk,pn:`${d.code} unit`,desc:`Pre-hung unit · ${c.name} · ${st.w}"×${st.h}"${n&&sl?` · SL ${sl.code} ${st.slw}"`:""} · clear glass, frame and prehang included`,qty:1,p:up,f:uf,unit:true})}
  return out;
 }
 function totals(ps){const miss=ps.filter(p=>p.p==null),missF=ps.filter(p=>p.f==null);return {each:miss.length?null:r2(ps.reduce((a,p)=>a+p.p*p.qty,0)),fob:missF.length?null:r2(ps.reduce((a,p)=>a+p.f*p.qty,0)),miss,missF}}
@@ -565,7 +572,7 @@ function renderBuild(){
  {const items=[];[[d,"Door"],[nSL?sl:null,"Sidelite"]].forEach(([z,lab])=>{if(!z)return;if(z.photo_img)items.push({img:z.photo_img,c:`${z.code} · Fangda catalog render`});(z.gallery||[]).forEach(g=>items.push({img:g.img,c:`${z.code} · ${g.caption||""}`}))});
   $("#photos").hidden=!items.length;$("#gal").innerHTML=items.map(i=>`<figure data-big="${esc(i.img)}"><img loading="lazy" src="${esc(i.img)}" alt=""><figcaption>${esc(i.c)}</figcaption></figure>`).join("");
   $("#gal").onclick=e=>{const f=e.target.closest("[data-big]");if(!f)return;const lb=document.createElement("div");lb.className="lb";lb.innerHTML=`<img src="${f.dataset.big}" alt="">`;lb.onclick=()=>lb.remove();document.body.appendChild(lb)}}
- $("#bs").innerHTML=`<tr><th>Part #</th><th>Description</th><th class="n">Qty</th><th class="n">${esc(CUST)} price</th>${SHOWFOB?'<th class="n">FOB</th>':""}</tr>`+ps.map(p=>`<tr><td><code>${esc(p.pn)}</code></td><td>${esc(p.desc)}</td><td class="n">${p.qty}</td><td class="n">${p.p==null?'<span class="flag">NEEDED</span>':money(p.p)}</td>${SHOWFOB?`<td class="n">${p.f==null?'<span class="flag">NEEDED</span>':money(p.f)}</td>`:""}</tr>`).join("")+
+ $("#bs").innerHTML=`<tr><th>Part #</th><th>Description</th><th class="n">Qty</th><th class="n">${esc(CUST)} price</th>${SHOWFOB?'<th class="n">FOB</th>':""}</tr>`+ps.map(p=>`<tr${p.unit?' class="unitrow"':""}><td><code>${esc(p.pn)}</code></td><td>${p.incl?'<span class="note">↳ </span>':""}${esc(p.desc)}</td><td class="n">${p.qty}</td><td class="n">${p.incl?'<span class="note">incl.</span>':p.p==null?'<span class="flag">NEEDED</span>':money(p.p)}</td>${SHOWFOB?`<td class="n">${p.incl?'<span class="note">incl.</span>':p.f==null?'<span class="flag">NEEDED</span>':money(p.f)}</td>`:""}</tr>`).join("")+
   `<tr><td colspan="2" class="note">Finish: ${esc(D.fin.find(f=>f.id===S.fin)?.name||"")} · Sill ${esc(S.SILL)} · Hinges ${esc(S.HINGE)} · Sweep ${esc(S.SWEEP)} · ${esc(S.BORE)}${d.notes?` · <span class="flag">VERIFY</span> ${esc(d.notes)}`:""}</td><td></td><td class="n"><strong>${t.each==null?"—":money(t.each)}</strong></td>${SHOWFOB?`<td class="n"><strong>${t.fob==null?"—":money(t.fob)}</strong></td>`:""}</tr>`;
  $("#bsid").textContent=`${d.code} · ${S.cfg} · ${S.hand}`;
  const o=D.orders.find(x=>x.id===CUR);$("#curOrder").textContent=o?`${o.title} (${o.lines.reduce((a,x)=>a+x.qty,0)} units)`:"New order (starts when you add a unit)";
@@ -577,7 +584,7 @@ function describe(st){const d=slab(st.door),sl=slab(st.sl),c=CFG[st.cfg],G=glass
  return [`${d.code} ${d.label||""}`.trim()+` ${st.w}"×${st.h}"`,c.name+(c.sl.length&&sl?` · SL ${sl.code} ${st.slw}"`:""),`Glass: ${G?G.name+(st.caming?" ("+st.caming+")":""):(d.glass_box?"clear":"none")}${c.sl.length&&sl?.lite?` · SL glass: ${SG?SG.name:"clear"}`:""}`,`Finish: ${fin?.name||""}`,`Frame: ${comp(st.jamb)?.name||""}, ${comp(st.trim)?.name||""}, sill ${st.SILL}, hinges ${st.HINGE}, sweep ${st.SWEEP}, ${st.BORE}`].join("\n")}
 async function addToOrder(){
  const qty=Math.max(1,parseInt($("#qty").value)||1),ps=parts(),t=totals(ps),st={...S};
- const ln={st,qty,desc:describe(st),title:`${slab(S.door).code} · ${CFG[S.cfg].name}`,hand:S.hand,parts:ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f})),each:t.each,fob:t.fob};
+ const ln={st,qty,desc:describe(st),title:`${slab(S.door).code} · ${CFG[S.cfg].name}`,hand:S.hand,parts:ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f,incl:!!p.incl,unit:!!p.unit})),each:t.each,fob:t.fob};
  let o=D.orders.find(x=>x.id===CUR);$("#add").disabled=true;
  try{
   if(!o){const row={id:"local-"+Date.now(),customer:CUST,title:`${today()} ${(D.customers.find(c=>c.name===CUST)?.code||CUST)} doors`,status:"Draft",lines:[ln],updated_at:new Date().toISOString()};
@@ -636,7 +643,7 @@ async function excel(o,kind){
  }else{
   const ws=wb.addWorksheet("Factory Order");const cols=[["Line",6],["Part #",22],["Description",50],["Qty per unit",10],["Units",8],["Total qty",10],["FOB each",12],["FOB total",13],["Handing",10]];
   head(ws,"Factory Order",`${cc} · ${o.title} · ${d} · FOB USD`,cols);let r=r0;const roll={};
-  o.lines.forEach((x,i)=>{x.parts.forEach(p=>{ws.getRow(r).values=[i+1,p.pn,p.desc,p.qty,x.qty,{formula:`D${r}*E${r}`},p.f??"TBD",p.f==null?"TBD":{formula:`F${r}*G${r}`},x.hand];r++;const k=p.pn+"|"+p.desc;roll[k]=roll[k]||{pn:p.pn,desc:p.desc,q:0,f:p.f};roll[k].q+=p.qty*x.qty});
+  o.lines.forEach((x,i)=>{x.parts.forEach(p=>{ws.getRow(r).values=[i+1,p.pn,p.desc,p.qty,x.qty,{formula:`D${r}*E${r}`},p.incl?"incl. in unit":(p.f??"TBD"),p.incl?"":p.f==null?"TBD":{formula:`F${r}*G${r}`},x.hand];r++;const k=p.pn+"|"+p.desc+(p.incl?"|i":"");roll[k]=roll[k]||{pn:p.pn,desc:p.desc,q:0,f:p.incl?"incl. in unit":p.f};roll[k].q+=p.qty*x.qty});
    ws.getRow(r).values=["",`Line ${i+1} options`,x.desc.split("\n").slice(3).join(" · "),"","","","","",""];r++});
   body(ws,r0,r-1,cols.length,[7,8]);tot(ws,r,cols.length,[[8,`SUM(H${r0}:H${r-1})`,"$#,##0.00"]]);
   const ws2=wb.addWorksheet("Parts Rollup");const c2=[["Part #",26],["Description",50],["Total qty",10],["FOB each",12]];head(ws2,"Parts Rollup",`All ${oT(o).units} units`,c2);
@@ -769,15 +776,19 @@ function collEditor(){const e=EDIT,ed=$("#ed");
 function priceItems(){const it=[];
  D.slab.forEach(s=>{const c=D.coll.find(x=>x.id===s.collection);it.push({type:s.kind==="door"?"door":"sidelite",coll:s.collection,base:`S:${s.id}`,label:s.id,desc:`${c?.name||s.collection} ${s.kind}${s.label?" · "+s.label:""}`,sizes:s.kind==="door"?(c?.widths||[]).flatMap(w=>(c?.heights||[]).map(h=>w+"x"+h)):(c?.sl_widths||[]).flatMap(w=>(c?.heights||[]).map(h=>w+"x"+h))})});
  D.glass.forEach(g=>Object.keys(g.sizes||{}).forEach(k=>it.push({type:"glass",coll:"",base:`G:${g.id}:${k}`,label:`${g.name} ${k}`,desc:`Glass lite ${liteName(k)}`,sizes:[]})));
- D.comp.filter(c=>c.type!=="option").forEach(c=>it.push({type:"part",coll:"",base:`C:${c.id}`,label:c.id,desc:c.name,sizes:[]}));return it}
+ D.comp.filter(c=>c.type!=="option").forEach(c=>it.push({type:"part",coll:"",base:`C:${c.id}`,label:c.id,desc:c.name,sizes:[]}));
+ const cur=unitKey(S),uks=new Set([...D.cost,...D.price].map(x=>x.item).filter(k=>k&&k.startsWith("U:")));if(cur)uks.add(cur);
+ [...uks].sort().forEach(k=>{const [,door,cfg,size,sl,slw]=k.split(":"),ds=slab(door);
+  it.unshift({type:"unit",coll:ds?.collection||"",base:k,label:`${ds?.code||door} unit`,desc:`Pre-hung unit · ${UCFG[cfg]||cfg} · ${String(size).replace("x",'"×')}"${sl?` · SL ${slab(sl)?.code||sl} ${slw}"`:""}${ds?"":" · VERIFY: door not in catalog"}${k===cur?" · the unit on the Build tab":""}`,sizes:[]})});
+ return it}
 function catPrices(){
  const B=$("#cbody"),all=priceItems();let list=all.filter(i=>(!PF.type||i.type===PF.type)&&(!PF.coll||i.coll===PF.coll)&&(!PF.q||(i.label+" "+i.desc).toLowerCase().includes(PF.q.toLowerCase())));
  const key=i=>PF.size&&i.sizes.includes(PF.size)?i.base+":"+PF.size:i.base;
  const shown=list.slice(0,250),sizesAll=[...new Set(all.flatMap(i=>i.sizes))].sort();
  const others=D.customers.filter(c=>c.name!==CUST&&D.price.some(p=>p.customer===c.name));
- B.innerHTML=`<div class="card"><div class="secthead"><div><h3>Prices · ${esc(CUST)}</h3><div class="sub">FOB cost is shared across customers. Customer price is for ${esc(CUST)} (switch customer at the top). Changed cells turn red until you save.</div></div>
+ B.innerHTML=`<div class="card"><div class="secthead"><div><h3>Prices · ${esc(CUST)}</h3><div class="sub">FOB cost is shared across customers. Customer price is for ${esc(CUST)} (switch customer at the top). Changed cells turn red until you save. A unit price covers the whole pre-hung unit (door, sidelites, frame, prehang, clear glass); set one from the Build tab and it replaces the parts total. Decorative glass is still added on top.</div></div>
   <div class="btns">${others.length?`<select id="cpFrom">${others.map(c=>`<option>${esc(c.name)}</option>`).join("")}</select><button class="btn" type="button" id="cpGo">Copy missing prices from</button>`:""}<button class="btn red" type="button" id="psave">Save prices</button></div></div>
-  <div class="pad tools"><select id="pfT"><option value="">All items</option>${["door","sidelite","glass","part"].map(t=>`<option ${PF.type===t?"selected":""}>${t}</option>`).join("")}</select>
+  <div class="pad tools"><select id="pfT"><option value="">All items</option>${["unit","door","sidelite","glass","part"].map(t=>`<option ${PF.type===t?"selected":""}>${t}</option>`).join("")}</select>
   <select id="pfC"><option value="">All collections</option>${D.coll.map(c=>`<option value="${esc(c.id)}" ${PF.coll===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
   <label class="note">Door/sidelite size <select id="pfS"><option value="">Base price (all sizes)</option>${sizesAll.map(z=>`<option ${PF.size===z?"selected":""}>${z}</option>`).join("")}</select></label>
   <input type="search" id="pfQ" placeholder="Search" value="${esc(PF.q)}"><span class="note">${list.length} items${list.length>250?" (first 250 shown; narrow the filter)":""}</span></div>
