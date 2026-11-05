@@ -90,7 +90,11 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .ctop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .cname{min-width:0;display:grid;gap:2px}
 .cdate{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
-.ctag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--red)}
+.ctag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cstat{font-size:14px;font-weight:500;overflow-wrap:anywhere}
+.cstat.late{color:var(--late)}
+.cnew{flex:none;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--ink);color:var(--surface);white-space:nowrap}
+.cstage{font-size:13px;color:var(--muted)}
 .ctitle{font-weight:600;font-size:17px;line-height:1.25}
 .pill{flex:none;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--chip);white-space:nowrap}
 .pill.s-mid{background:var(--warn-soft);color:var(--warn)}
@@ -108,8 +112,8 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .fu{font-family:var(--f-mono)}
 .fu.late{color:var(--late);font-weight:600}
 .track{display:flex;gap:4px;align-items:center}
-.track i{width:22px;height:6px;border-radius:3px;background:var(--line)}
-.track i.on{background:var(--ok)}
+.track i{width:18px;height:6px;border-radius:3px;background:var(--line)}
+.track i.on{background:var(--ink)}
 .track i.na{background:transparent;border:1px dashed var(--line)}
 
 .fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--red);color:#fff;border:0;border-radius:999px;padding:14px 22px;font-weight:600;font-size:16px;box-shadow:0 6px 20px rgba(0,0,0,.25);min-height:52px;z-index:6}
@@ -125,10 +129,15 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 14px;min-height:44px;font-weight:500}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.steps small{font-size:12px;color:var(--muted);font-weight:400}
+.stagerow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.stagerow .linkbtn{min-height:44px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.stagerow .linkbtn[aria-pressed="true"]{text-decoration:none;background:var(--chip);border-radius:8px;padding:6px 12px}
+.flrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .steps button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;min-height:52px;text-align:left;display:flex;gap:10px;align-items:center;font-weight:500}
-.steps button .box{width:22px;height:22px;border-radius:6px;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:14px;color:#fff}
-.steps button[data-v="Yes"] .box{background:var(--ok);border-color:var(--ok)}
+.steps button .box{width:22px;height:22px;border-radius:6px;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:14px;color:var(--surface)}
+.steps button[data-v="Yes"] .box{background:var(--ink);border-color:var(--ink)}
 .steps button[data-v="N/A"]{color:var(--muted)}
 .steps button[data-v="N/A"] .box{border-style:dashed}
 input[type=text],input[type=date],input[type=url],input[type=search],textarea{width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:48px}
@@ -150,7 +159,7 @@ textarea{min-height:70px;resize:vertical}
 .btn{border:0;border-radius:12px;padding:14px 20px;min-height:52px;font-weight:600;font-size:16px}
 .btn.primary{background:var(--red);color:#fff;flex:1}
 .btn.ghost{background:var(--chip)}
-.folder{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--red);text-decoration:none}
+.folder{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink);text-decoration:none}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:999px;font-size:14px;z-index:20}
 .who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .who button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;min-height:36px;font-size:13px;font-weight:500}
@@ -188,9 +197,10 @@ textarea{min-height:70px;resize:vertical}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
 .tabs button[aria-selected="true"] span{background:var(--ink);color:var(--surface)}
 .card{cursor:pointer}
-.cfolder{font-size:13px;font-weight:600;color:var(--red);text-decoration:none;padding:6px 10px;margin:-6px -6px -6px 0;border-radius:8px;white-space:nowrap}
-.cfolder:hover{background:var(--red-soft)}
-.cright{display:flex;gap:10px;align-items:center}
+.cfolder svg{width:20px;height:20px;display:block}
+.cfolder{display:grid;place-items:center;min-width:44px;min-height:44px;margin:-12px -10px -12px -4px;color:var(--ink);border-radius:8px}
+.cfolder:hover{background:var(--chip)}
+.cright{display:flex;gap:10px;align-items:center;white-space:nowrap;margin-left:auto}
 .sfolder{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sfolder a{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:#fff;text-decoration:none;font-weight:600;border-radius:10px;padding:10px 16px;min-height:44px}
 .mimg{display:block;max-width:220px;width:100%;border-radius:10px;margin:2px 0;cursor:zoom-in}
@@ -425,9 +435,24 @@ const OPEN_ORDER = ["Order Placed","In Production","Ready to Ship","Shipped"];
 const CLOSED = ["Delivered","Completed","Dead"];
 const TABS=[["progress","In progress",s=>!CLOSED.includes(s)&&!OPEN_ORDER.includes(s)],["ordered","Ordered",s=>OPEN_ORDER.includes(s)],["completed","Completed",s=>s==="Delivered"||s==="Completed"],["dead","Dead",s=>s==="Dead"]];
 const tabOf=s=>TABS.find(t=>t[2](s))[0];
-const STAGE_GROUPS = [["Getting quotes",["New Request","Quoting","Needs Info"]],["Quoted, waiting on decision",["Quote Sent","Samples","Ready to Order"]],["On hold",["On Hold"]],["Order placed",["Order Placed"]],["In production",["In Production"]],["Ready to ship",["Ready to Ship"]],["Shipped",["Shipped"]],["Delivered",["Delivered"]],["Completed",["Completed"]],["Dead",["Dead"]]];
+/* Milestones set the stage. The saved status is kept as-is in the database; older values map onto a stage here
+   (and count as a floor, so nothing looks like it went backwards). Flags cover what milestones can't say. */
+const STEP_LABEL = {"Factory Quote":"Factory quote","Quote Sent":"Quote sent","Sample Approved":"Sample approved","Order Placed":"Order placed","Shipped":"Shipped","Delivered":"Delivered"};
+const STAGE_NAME = ["New request","Factory quote in","Quote sent","Sample approved","Order placed","Shipped","Delivered"]; // index = stage + 1
+const STAGE_STATUS = ["New Request","Quoting","Quote Sent","Ready to Order","Order Placed","Shipped","Delivered"];      // status written for each stage
+const STATUS_RANK = {"New Request":-1,"Quoting":-1,"Quote Sent":1,"Samples":1,"Ready to Order":2,"Order Placed":3,"In Production":3,"Ready to Ship":3,"Shipped":4,"Delivered":5,"Completed":5};
+const FLAGS = ["Needs Info","On Hold","Dead"];
+const FLAG_LABEL = {"Needs Info":"Needs info","On Hold":"On hold","Dead":"Dead"};
+const stepStage = steps => { let s=-1; STEPS.forEach((k,i)=>{ if((steps||{})[k]==="Yes") s=i; }); return s; };
+const stageOf = p => Math.max(stepStage(p.steps), STATUS_RANK[p.status] ?? -1);
+const flagOf = p => FLAGS.includes(p.status)?p.status:"";
+const es = p => flagOf(p) || STAGE_STATUS[stageOf(p)+1];          // effective status, used for lists, tabs and counts
+const stageLabel = p => flagOf(p) ? FLAG_LABEL[flagOf(p)] : STAGE_NAME[stageOf(p)+1];
+// Milestones as they should look for the stage (older projects get earlier steps filled in, skipped steps stay skipped)
+const filledSteps = p => { const s=stageOf(p), out={}; STEPS.forEach((k,i)=>{ const v=(p.steps||{})[k]; out[k]=v==="N/A"?"N/A":i<=s?"Yes":"No"; }); return out; };
+const STAGE_GROUPS = [["New request",["New Request"]],["Factory quote in",["Quoting"]],["Quote sent",["Quote Sent"]],["Sample approved",["Ready to Order"]],["Needs info",["Needs Info"]],["On hold",["On Hold"]],["Order placed",["Order Placed"]],["Shipped",["Shipped"]],["Delivered",["Delivered"]],["Dead",["Dead"]]];
 const LANES = ["NEI D Lapp","NEI D Glick","Factory","Customer","Freight","Nobody"];
-const LANE_LABEL = {"NEI D Lapp":"Waiting on Lapp D","NEI D Glick":"Waiting on D Glick","Factory":"Waiting on factory","Customer":"Waiting on customer","Freight":"Waiting on freight","Nobody":"Not waiting on anyone"};
+const LANE_LABEL = {"NEI D Lapp":"Waiting on Lapp D","NEI D Glick":"Waiting on Daniel G","Factory":"Waiting on factory","Customer":"Waiting on customer","Freight":"Waiting on freight","Nobody":"Not waiting on anyone"};
 const pillClass = s => ["Order Placed","In Production","Ready to Ship","Shipped","Delivered","Completed"].includes(s)?"s-order":["Quote Sent","Samples","Ready to Order","Quoting"].includes(s)?"s-mid":["On Hold","Dead"].includes(s)?"s-hold":s==="Needs Info"?"s-info":"";
 
 const uid=()=>(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
@@ -451,7 +476,7 @@ const save=()=>{ try{localStorage.setItem(KEY,JSON.stringify({tab:state.tab,view
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const isOpen=p=>!CLOSED.includes(p.status);
+const isOpen=p=>!CLOSED.includes(es(p));
 const isLate=p=>p.fu && isOpen(p) && new Date(p.fu+"T00:00")<=TODAY;
 const fmt=d=>{ if(!d) return ""; const x=new Date(d+"T00:00"); return (x.getMonth()+1)+"/"+x.getDate() };
 const split=n=>{ const m=n.match(/^(\d{4}-\d{2}-\d{2})\s+(.*)$/); return m?[m[1],m[2]]:["",n] };
@@ -476,14 +501,14 @@ function scoped(){
 function renderCusts(){
   const q=query.toLowerCase();
   const list=state.customers.filter(c=>!q || c.toLowerCase().includes(q) || state.projects.some(p=>p.customer===c && (p.name+" "+p.vendor).toLowerCase().includes(q)));
-  const stat=c=>{ const ps=state.projects.filter(p=>(!c||p.customer===c)); const ip=ps.filter(p=>tabOf(p.status)==="progress").length, od=ps.filter(p=>tabOf(p.status)==="ordered").length, d=ps.filter(isLate).length; return `${ip} in progress · ${od} ordered${d?` · <em>${d} due</em>`:""}`; };
+  const stat=c=>{ const ps=state.projects.filter(p=>(!c||p.customer===c)); const ip=ps.filter(p=>tabOf(es(p))==="progress").length, od=ps.filter(p=>tabOf(es(p))==="ordered").length, d=ps.filter(isLate).length; return `${ip} in progress · ${od} ordered${d?` · <em>${d} due</em>`:""}`; };
   $("#custs").innerHTML=`<button class="cbtn" aria-pressed="${!custFilter}" data-c=""><span class="cn">All customers</span><span class="cc">${stat(null)}</span></button>`+
     list.map(c=>`<button class="cbtn" aria-pressed="${custFilter===c}" data-c="${esc(c)}"><span class="cn">${esc(c)}</span><span class="cc">${stat(c)}</span></button>`).join("")+
     `<button class="cbtn addc" id="addCust">+ Add customer</button>`;
 }
 function renderTiles(){
   const all=scoped();
-  $("#tabs").innerHTML=TABS.map(([k,l,f])=>`<button role="tab" data-tab="${k}" aria-selected="${!tileFilter&&state.tab===k}">${l}<span>${all.filter(p=>f(p.status)).length}</span></button>`).join("");
+  $("#tabs").innerHTML=TABS.map(([k,l,f])=>`<button role="tab" data-tab="${k}" aria-selected="${!tileFilter&&state.tab===k}">${l}<span>${all.filter(p=>f(es(p))).length}</span></button>`).join("");
   const ps=all.filter(isOpen);
   const t=[
     {k:"late",l:"Follow-ups due",n:ps.filter(isLate).length,alert:true},
@@ -497,19 +522,28 @@ function renderTiles(){
   $("#scope").innerHTML=parts.join(" · ")+((custFilter||tileFilter||query)?` <button class="clear" id="reset">Clear filters</button>`:"");
   $("#seg").innerHTML=[["waiting","Who has it"],["customer","Customer"],["stage","Stage"]].map(([k,l])=>`<button data-g="${k}" aria-pressed="${state.groupBy===k}">${l}</button>`).join("");
 }
-function cardHTML(p,showCust){
+function cardHTML(p,showCust,noWaiting){
   const [d,n]=split(p.name);
   const late=isLate(p);
-  const dots=STEPS.map(s=>`<i class="${p.steps[s]==="Yes"?"on":p.steps[s]==="N/A"?"na":""}" title="${s}"></i>`).join("");
-  const last=p.notes[p.notes.length-1];
-  const un=unseenFor(p,state.me);
-  const note=last?`<div class="cnote"><span class="nd">${un?'<span class="dot" title="You were tagged"></span>':""}${last.by?`<span class="who-says">${esc(TEAM_LABEL[last.by]||last.by)}</span>`:""}<span>${esc(whenTxt(last.at))}${p.notes.length>1?` · ${p.notes.length} messages`:""}</span></span><span class="nt">${mentionHTML(last.text)}</span></div>`:"";
+  const fs=filledSteps(p), done=STEPS.filter(s=>fs[s]==="Yes").length;
+  const dots=STEPS.map(s=>`<i class="${fs[s]==="Yes"?"on":fs[s]==="N/A"?"na":""}" title="${esc(STEP_LABEL[s])}${fs[s]==="N/A"?" (skipped)":""}"></i>`).join("");
+  const un=unseenFor(p,state.me), line=statusLine(p,noWaiting);
   return `<div class="card ${late?"late":""}" data-id="${p.id}" role="button" tabindex="0">
-    <div class="ctop"><div class="cname">${showCust?`<span class="ctag">${esc(p.customer)}</span>`:""}<span class="cdate">${esc(d)}${p.vendor?" · "+esc(p.vendor):""}</span><span class="ctitle">${esc(n)}</span></div><span class="pill ${pillClass(p.status)}">${esc(p.status)}</span></div>
-    <div class="next ${p.next?"":"empty"}">${p.next?esc(p.next):"Not set"}</div>
-    ${note}
-    <div class="cmeta"><span class="track" aria-label="Milestones">${dots}</span><span class="cright"><span class="fu ${late?"late":""}">${p.fu&&isOpen(p)?(late?"Due ":"Follow up ")+fmt(p.fu):""}</span>${safeUrl(p.folder)?`<a class="cfolder" href="${esc(safeUrl(p.folder))}" target="_blank" rel="noopener">OneDrive ↗</a>`:""}</span></div>
+    <div class="ctop"><div class="cname">${showCust?`<span class="ctag">${esc(p.customer)}</span>`:""}<span class="cdate">${esc(fmt(d)||d)}${p.vendor?" · "+esc(p.vendor):""}</span><span class="ctitle">${esc(n)}</span></div>${un?`<span class="cnew">${un} new for you</span>`:""}</div>
+    ${line?`<div class="cstat ${late?"late":""}">${esc(line)}</div>`:""}
+    <div class="cmeta"><span class="track" role="img" aria-label="${done} of 6 milestones done">${dots}</span><span class="cright"><span class="cstage">${esc(STAGE_NAME[stageOf(p)+1])}</span>${safeUrl(p.folder)?`<a class="cfolder" href="${esc(safeUrl(p.folder))}" target="_blank" rel="noopener" aria-label="Open OneDrive folder" title="Open OneDrive folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></a>`:""}</span></div>
   </div>`;
+}
+// One line saying where the project stands: flag · who has it · follow-up (red when overdue)
+function statusLine(p,noWaiting){
+  const parts=[], f=flagOf(p), open=isOpen(p);
+  if(f) parts.push(FLAG_LABEL[f]);
+  if(open){
+    const w=p.waiting&&LANE_OF[state.me]===p.waiting?"Waiting on you":p.waiting==="Customer"?"Waiting on "+p.customer:(LANE_LABEL[p.waiting]||"");
+    if(w&&!noWaiting) parts.push(w);
+    if(p.fu){ const x=new Date(p.fu+"T00:00"); parts.push(+x===+TODAY?"follow up today":x<TODAY?"follow-up was due "+fmt(p.fu):"follow up "+fmt(p.fu)); }
+  }
+  const t=parts.map(x=>x.charAt(0).toLowerCase()+x.slice(1)).join(" · "); return t.charAt(0).toUpperCase()+t.slice(1);
 }
 function renderGroups(){
   let ps=scoped().slice().sort((a,b)=>a.name.localeCompare(b.name));
@@ -519,25 +553,25 @@ function renderGroups(){
     else if(tileFilter==="tagged") ps=ps.filter(p=>unseenFor(p,state.me));
     else if(tileFilter.startsWith("w:")) ps=ps.filter(p=>p.waiting===tileFilter.slice(2));
   } else {
-    const f=TABS.find(t=>t[0]===state.tab)[2]; ps=ps.filter(p=>f(p.status));
+    const f=TABS.find(t=>t[0]===state.tab)[2]; ps=ps.filter(p=>f(es(p)));
   }
   // In progress keeps going: open orders follow below the waiting groups, so one scroll shows everything still open
   let orders=[];
-  if(!tileFilter&&state.tab==="progress"){ const fo=TABS.find(t=>t[0]==="ordered")[2]; orders=scoped().slice().sort((a,b)=>a.name.localeCompare(b.name)).filter(p=>fo(p.status)); }
+  if(!tileFilter&&state.tab==="progress"){ const fo=TABS.find(t=>t[0]==="ordered")[2]; orders=scoped().slice().sort((a,b)=>a.name.localeCompare(b.name)).filter(p=>fo(es(p))); }
   const showCust=!custFilter;
   const archive=!tileFilter&&(state.tab==="completed"||state.tab==="dead");
   let gb=state.groupBy; if(archive&&gb==="waiting") gb="customer";
   let groups=[];
   if(gb==="waiting") groups=LANES.map(w=>[LANE_LABEL[w],ps.filter(p=>p.waiting===w)]);
   else if(gb==="customer") groups=state.customers.map(c=>[c,ps.filter(p=>p.customer===c)]);
-  else groups=STAGE_GROUPS.map(([l,ss])=>[l,ps.filter(p=>ss.includes(p.status))]);
+  else groups=STAGE_GROUPS.map(([l,ss])=>[l,ps.filter(p=>ss.includes(es(p)))]);
   const sc=gb!=="customer"&&showCust;
   const emptyMsg={progress:"Nothing in progress here.",ordered:"No open orders here.",completed:"No completed projects yet. Set a project to Delivered or Completed and it lands here.",dead:"No dead projects. Set a project to Dead and it moves here."}[state.tab];
-  const grp=([l,g])=>`<section class="group"><h2>${esc(l)}<span>${g.length}</span></h2><div class="cards">${g.map(p=>cardHTML(p,sc)).join("")}</div></section>`;
-  let html=groups.filter(g=>g[1].length).map(grp).join("");
+  const grp=([l,g],ord)=>`<section class="group"><h2>${esc(l)}<span>${g.length}</span></h2><div class="cards">${g.map(p=>cardHTML(p,sc,gb==="waiting"&&!ord)).join("")}</div></section>`;
+  let html=groups.filter(g=>g[1].length).map(g=>grp(g)).join("");
   if(orders.length){
-    const og=gb==="customer"?state.customers.map(c=>["Ordered · "+c,orders.filter(p=>p.customer===c)]):STAGE_GROUPS.filter(([,ss])=>ss.some(x=>OPEN_ORDER.includes(x))).map(([l,ss])=>["Ordered · "+l.toLowerCase(),orders.filter(p=>ss.includes(p.status))]);
-    html+=`<div class="orders-break"><span>Ordered</span><b>${orders.length}</b></div>`+og.filter(g=>g[1].length).map(grp).join("");
+    const og=gb==="customer"?state.customers.map(c=>["Ordered · "+c,orders.filter(p=>p.customer===c)]):STAGE_GROUPS.filter(([,ss])=>ss.some(x=>OPEN_ORDER.includes(x))).map(([l,ss])=>["Ordered · "+l.toLowerCase(),orders.filter(p=>ss.includes(es(p)))]);
+    html+=`<div class="orders-break"><span>Ordered</span><b>${orders.length}</b></div>`+og.filter(g=>g[1].length).map(g=>grp(g,true)).join("");
   }
   $("#groups").innerHTML=html||`<div class="empty-state">${tileFilter||query?"Nothing matches. Tap Clear filters.":emptyMsg}</div>`;
 }
@@ -566,7 +600,7 @@ function renderOffice(){
   const mine=O.tasks.filter(t=>t.to===me&&t.status!=="Done").sort(byDue);
   const open=state.projects.filter(isOpen);
   const lane=LANE_OF[me];
-  const gl=[["mine","Projects waiting on you",lane?open.filter(p=>p.waiting===lane).length:0,false],["tagged","Projects you're tagged in",open.filter(p=>unseenFor(p,me)).length,true],["late","Overdue follow-ups",open.filter(isLate).length,true],["orders","Open orders",open.filter(p=>OPEN_ORDER.includes(p.status)).length,false]];
+  const gl=[...(lane?[["mine","Projects waiting on you",open.filter(p=>p.waiting===lane).length,false]]:[]),["tagged","Projects you're tagged in",open.filter(p=>unseenFor(p,me)).length,true],["late","Overdue follow-ups",open.filter(isLate).length,true],["orders","Open orders",open.filter(p=>OPEN_ORDER.includes(es(p))).length,false]];
   const cats=["All",...OCATS];
   const shown=O.tasks.filter(t=>officeCat==="All"||t.cat===officeCat).sort((a,b)=>(a.status==="Done")-(b.status==="Done")||byDue(a,b));
   const need=O.supplies.filter(x=>!x.got).length, onOrder=O.supplies.filter(x=>x.got&&!x.dlv).length;
@@ -668,17 +702,19 @@ function guardClose(isDirty,close){ let armed=false, t=null;
 
 function openSheet(p,isNew){
   const draft=JSON.parse(JSON.stringify(p)), orig=JSON.parse(JSON.stringify(p));
+  // show older projects with their earlier milestones filled in; only a real change gets saved
+  draft.steps=filledSteps(p); orig.steps={...draft.steps}; draft.flag=orig.flag=flagOf(p);
   const [d,n]=split(draft.name);
   const chips=(name,opts,val,labels)=>`<div class="chips" data-field="${name}">${opts.map((o,i)=>`<button type="button" aria-pressed="${o===val}" data-v="${esc(o)}">${esc(labels?labels[i]:o)}</button>`).join("")}</div>`;
   const plus=k=>{const x=new Date(TODAY);x.setDate(x.getDate()+k);return iso(x)};
-  const laneLabels=LANES.map(w=>w==="Customer"?(draft.customer||"Customer"):(w==="NEI D Lapp"?"Lapp D":w.replace("NEI ","")));
+  const laneLabels=LANES.map(w=>w==="Customer"?(draft.customer||"Customer"):(w==="NEI D Lapp"?"Lapp D":w==="NEI D Glick"?"Daniel G":w));
   $("#sheetHost").innerHTML=`<div class="scrim" id="scrim"></div>
   <div class="sheet" role="dialog" aria-modal="true" aria-label="Edit project">
     <div class="grab"></div>
     <div class="shead"><div><div class="ctag">${isNew?"New project":esc(draft.customer)}</div><div class="cdate">${isNew?"":esc(d)}</div><h3>${isNew?"Add a project":esc(n)}</h3></div><button class="x" id="close" aria-label="Close">×</button></div>
     ${isNew?`<div class="field"><span class="flabel">Customer</span>${chips("customer",state.customers,draft.customer)}<input type="text" id="fNewCust" placeholder="Or type a new customer name"></div>
       <div class="row2"><div class="field"><label class="flabel" for="fDate">Date customer first asked</label><input type="date" id="fDate" value="${iso(TODAY)}"></div><div class="field"><label class="flabel" for="fName">Product</label><input type="text" id="fName" placeholder="Matches the OneDrive folder name"></div></div>`
-    :`<div class="field"><div class="sfolder">${safeUrl(draft.folder)?`<a href="${esc(safeUrl(draft.folder))}" target="_blank" rel="noopener">Open OneDrive folder ↗</a>`:`<span style="color:var(--muted);font-size:14px">No OneDrive link yet. Paste it at the bottom.</span>`}</div></div>`}
+    :""}
     <div class="field"><span class="flabel">Conversation</span>
       <div class="thread" id="thread"></div>
       <div class="compose"><div class="suggest" id="suggest" hidden></div>
@@ -686,12 +722,13 @@ function openSheet(p,isNew){
         <div class="pending" id="pend" hidden></div>
         <div class="cbox"><label class="pic" title="Add a photo"><input type="file" accept="image/*" id="fPic" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Add photo</span></label><textarea id="fNote" placeholder="Write an update. Type @ to tag someone."></textarea><button type="button" class="send" id="addNote">Send</button></div>
       </div></div>
-    <div class="field"><span class="flabel">Status</span>${chips("status",STATUSES,draft.status)}</div>
+    <div class="field"><span class="flabel" id="progL">Progress</span><div class="steps" id="steps" role="group" aria-labelledby="progL"></div>
+      <div class="stagerow"><span id="stageTxt"></span><button type="button" class="linkbtn" id="skipMode" aria-pressed="false">Mark a step not needed</button></div></div>
+    <div class="field"><span class="flabel">Flag</span>${chips("flag",["",...FLAGS],draft.flag,["None",...FLAGS.map(f=>FLAG_LABEL[f])])}</div>
     <div class="field"><span class="flabel">Waiting on</span>${chips("waiting",LANES,draft.waiting,laneLabels)}</div>
-    <div class="field"><span class="flabel">Milestones (tap to cycle: No, Yes, N/A)</span><div class="steps" id="steps">${STEPS.map(s=>`<button type="button" data-s="${s}" data-v="${draft.steps[s]||"No"}"><span class="box">${draft.steps[s]==="Yes"?"✓":""}</span>${s}</button>`).join("")}</div></div>
-    <div class="field"><label class="flabel" for="fNext">Next action</label><input type="text" id="fNext" value="${esc(draft.next)}" placeholder="What has to happen next"></div>
+    <div class="field"><label class="flabel" for="fNext">Next step</label><input type="text" id="fNext" value="${esc(draft.next)}" placeholder="What has to happen next"></div>
     <div class="field"><label class="flabel" for="fFu">Follow up</label><div class="quick"><button type="button" data-q="1">Tomorrow</button><button type="button" data-q="3">3 days</button><button type="button" data-q="7">1 week</button><button type="button" data-q="14">2 weeks</button><button type="button" data-q="0">Clear</button></div><input type="date" id="fFu" value="${esc(draft.fu)}"></div>
-    <div class="row2"><div class="field"><label class="flabel" for="fVendor">Factory / vendor</label><input type="text" id="fVendor" value="${esc(draft.vendor)}"></div><div class="field"><label class="flabel" for="fFolder">OneDrive link</label><input type="url" id="fFolder" value="${esc(draft.folder)}" placeholder="Paste folder link"></div></div>
+    <div class="row2"><div class="field"><label class="flabel" for="fVendor">Factory / vendor</label><input type="text" id="fVendor" value="${esc(draft.vendor)}"></div><div class="field"><span class="flrow"><label class="flabel" for="fFolder">OneDrive link</label>${safeUrl(draft.folder)?`<a class="folder" href="${esc(safeUrl(draft.folder))}" target="_blank" rel="noopener">Open ↗</a>`:""}</span><input type="url" id="fFolder" value="${esc(draft.folder)}" placeholder="Paste folder link"></div></div>
     ${isNew?"":`<details class="field hist" id="hist"><summary class="flabel">Change history</summary><div class="hlist" id="hlist">Loading…</div></details>`}
     <div class="actions"><button class="btn ghost" id="cancel">Cancel</button><button class="btn primary" id="saveBtn">${isNew?"Add project":"Save"}</button></div>
   </div>`;
@@ -724,7 +761,18 @@ function openSheet(p,isNew){
     sug.innerHTML=opts.map(n=>`<button type="button" data-pick="${esc(n)}">@${esc(TEAM_LABEL[n])}</button>`).join(""); sug.hidden=false; });
   sug.addEventListener("click",e=>{ const b=e.target.closest("[data-pick]"); if(b) insertTag(b.dataset.pick); });
   host.querySelectorAll(".chips").forEach(c=>c.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;c.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));draft[c.dataset.field]=b.dataset.v;}));
-  $("#steps").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const nx={"No":"Yes","":"Yes","Yes":"N/A","N/A":"No"}[b.dataset.v];b.dataset.v=nx;b.querySelector(".box").textContent=nx==="Yes"?"✓":"";draft.steps[b.dataset.s]=nx;});
+  // Progress: tap a step to move the project to it; tap the last ticked step to undo it. Skip mode marks a step not needed.
+  let skip=false;
+  const drawSteps=()=>{ $("#steps").innerHTML=STEPS.map((s,i)=>{ const v=draft.steps[s]||"No"; return `<button type="button" data-i="${i}" data-v="${v}" aria-pressed="${v==="Yes"}"><span class="box">${v==="Yes"?"✓":""}</span>${esc(STEP_LABEL[s])}${v==="N/A"?' <small>not needed</small>':""}</button>`; }).join("");
+    $("#stageTxt").textContent="Stage: "+(draft.flag?FLAG_LABEL[draft.flag]+" · ":"")+STAGE_NAME[stepStage(draft.steps)+1]; };
+  drawSteps();
+  $("#steps").addEventListener("click",e=>{ const b=e.target.closest("[data-i]"); if(!b) return; const i=+b.dataset.i, k=STEPS[i];
+    if(skip){ draft.steps[k]=draft.steps[k]==="N/A"?(i<=stepStage(draft.steps)?"Yes":"No"):"N/A"; drawSteps(); return; }
+    const cur=stepStage(draft.steps); let to=i; if(i===cur){ to=-1; for(let j=i-1;j>=0;j--) if(draft.steps[STEPS[j]]!=="N/A"){ to=j; break; } }
+    STEPS.forEach((s,j)=>{ if(j===i&&to===i) draft.steps[s]="Yes"; else if(draft.steps[s]!=="N/A") draft.steps[s]=j<=to?"Yes":"No"; });
+    drawSteps(); });
+  $("#skipMode").onclick=e=>{ skip=!skip; e.currentTarget.setAttribute("aria-pressed",skip); e.currentTarget.textContent=skip?"Done":"Mark a step not needed"; };
+  host.querySelector('[data-field="flag"]').addEventListener("click",()=>setTimeout(drawSteps));
   host.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>{$("#fFu").value=+b.dataset.q?plus(+b.dataset.q):""}));
   const close=()=>host.innerHTML="";
   const FIELDS=["status","waiting","next","fu","vendor","folder"];
@@ -732,29 +780,34 @@ function openSheet(p,isNew){
   const isDirty=()=>{ if(!$("#fNote")) return false; readInputs();
     if($("#fNote").value.trim()||pendImg) return true;
     if(isNew&&(($("#fName").value.trim())||$("#fNewCust").value.trim()||draft.notes.length||draft.customer!==orig.customer)) return true;
-    return FIELDS.some(k=>(draft[k]||"")!==(orig[k]||""))||STEPS.some(s=>(draft.steps[s]||"")!==(orig.steps[s]||"")); };
+    return draft.flag!==orig.flag||FIELDS.some(k=>(draft[k]||"")!==(orig[k]||""))||STEPS.some(s=>(draft.steps[s]||"")!==(orig.steps[s]||"")); };
+  const stepsChanged=()=>STEPS.some(s=>(draft.steps[s]||"")!==(orig.steps[s]||""));
   $("#close").onclick=$("#cancel").onclick=$("#scrim").onclick=guardClose(isDirty,close);
   $("#saveBtn").onclick=()=>{
     if(!isNew&&!live()){ sheetClose=null; close(); toast("Someone else deleted this project. Nothing was saved.",{ms:4000}); return; }
     if($("#fNote").value.trim()) sendMsg();
     readInputs();
+    // the status follows the flag, or the milestones; it's only rewritten when one of those changed
+    const st=draft.flag||STAGE_STATUS[stepStage(draft.steps)+1];
+    if(isNew||stepsChanged()||draft.flag!==orig.flag) draft.status=st;
+    const save_=x=>{ delete x.flag; return x; };
     if(isNew){
       const nc=$("#fNewCust").value.trim(); if(nc){ draft.customer=nc; if(!state.customers.includes(nc)) state.customers.push(nc); }
       if(!draft.customer){ toast("Pick a customer first"); return; }
       const nm=$("#fName").value.trim(); if(!nm){ $("#fName").focus(); toast("Add a product name first"); return; }
-      draft.name=$("#fDate").value+" "+nm; state.projects.push(draft);
+      draft.name=$("#fDate").value+" "+nm; state.projects.push(save_(draft));
     } else {
       // Only write the fields this person changed, onto the latest copy, so a teammate's edits made meanwhile survive
-      const cur=live(); const was=tabOf(cur.status);
+      const cur=live(); const was=tabOf(es(cur));
       FIELDS.forEach(k=>{ if((draft[k]||"")!==(orig[k]||"")) cur[k]=draft[k]; });
-      STEPS.forEach(s=>{ if((draft.steps[s]||"")!==(orig.steps[s]||"")) cur.steps={...cur.steps,[s]:draft.steps[s]}; });
-      var moved=tabOf(cur.status)!==was?TABS.find(t=>t[0]===tabOf(cur.status))[1]:null; }
+      if(stepsChanged()) cur.steps={...draft.steps};
+      var moved=tabOf(es(cur))!==was?TABS.find(t=>t[0]===tabOf(es(cur)))[1]:null; }
     sheetClose=null; save(); close(); render(); toast(isNew?"Project added":moved?"Saved. Moved to "+moved:"Saved");
   };
 }
 
 /* change history: recorded by the database on every save */
-const H_LABEL={status:"status",waiting:"waiting on",next:"next action",fu:"follow-up",vendor:"factory / vendor",name:"product",customer:"customer",folder:"OneDrive link"};
+const H_LABEL={status:"status",waiting:"waiting on",next:"next step",fu:"follow-up",vendor:"factory / vendor",name:"product",customer:"customer",folder:"OneDrive link"};
 const hVal=(f,v)=>{ if(v==null||v==="") return "blank"; if(f==="waiting") return (LANE_LABEL[v]||v).replace("Waiting on ","").replace("Not waiting on anyone","nobody"); if(f==="fu") return fmt(v); if(f==="name") return split(v)[1]; return v; };
 async function loadHistory(id){
   const el=$("#hlist"); if(!el) return;
@@ -762,7 +815,7 @@ async function loadHistory(id){
   if(!$("#hlist")) return;
   if(error){ el.textContent="Couldn't load the history. Try again."; return; }
   el.innerHTML=data.length?data.map(h=>{ const who=h.actor==="Automatic"?"Set automatically":esc(TEAM_LABEL[h.actor]||h.actor||"Someone");
-    const what=h.field==="created"?"created this project":h.field==="next"?`changed the next action to “${esc(h.new_value||"")}”`:`changed ${H_LABEL[h.field]||h.field} from ${esc(hVal(h.field,h.old_value))} to ${esc(hVal(h.field,h.new_value))}`;
+    const what=h.field==="created"?"created this project":h.field==="next"?`changed the next step to “${esc(h.new_value||"")}”`:`changed ${H_LABEL[h.field]||h.field} from ${esc(hVal(h.field,h.old_value))} to ${esc(hVal(h.field,h.new_value))}`;
     return `<div class="hi"><span>${h.actor==="Automatic"?`<b>Follow-up set automatically</b> to ${esc(hVal("fu",h.new_value))} after the stage changed`:`<b>${who}</b> ${what}`}</span><span class="hw">${esc(whenTxt(h.at))}</span></div>`; }).join("")
     :`<div class="hi" style="color:var(--muted)">No changes recorded yet. Changes made from now on show up here.</div>`;
 }
@@ -789,10 +842,10 @@ function openCustSheet(){
 /* ---------- AI assistant ---------- */
 let sampleFn=null, aiTurns=[], aiBusy=null;
 (async()=>{ try{ sampleFn=await window.claude?.use?.("sample"); }catch(e){ sampleFn=null; } if(sampleFn) $("#aiOpen").hidden=false; })();
-const compact=p=>({id:p.id,customer:p.customer,project:p.name,status:p.status,list:TABS.find(t=>t[0]===tabOf(p.status))[1],waitingOn:p.waiting==="Customer"?"Customer ("+p.customer+")":p.waiting,next:p.next,followUp:p.fu||null,vendor:p.vendor||null,latest:p.notes.length?((p.notes[p.notes.length-1].by?TEAM_LABEL[p.notes[p.notes.length-1].by]+": ":"")+p.notes[p.notes.length-1].text).slice(0,160):null,messages:p.notes.length,hasOneDrive:!!p.folder});
+const compact=p=>({id:p.id,customer:p.customer,project:p.name,stage:stageLabel(p),list:TABS.find(t=>t[0]===tabOf(es(p)))[1],waitingOn:p.waiting==="Customer"?"Customer ("+p.customer+")":p.waiting,next:p.next,followUp:p.fu||null,vendor:p.vendor||null,latest:p.notes.length?((p.notes[p.notes.length-1].by?TEAM_LABEL[p.notes[p.notes.length-1].by]+": ":"")+p.notes[p.notes.length-1].text).slice(0,160):null,messages:p.notes.length,hasOneDrive:!!p.folder});
 function aiRules(){
   return `You are the assistant inside Northeast International's project tracker. The team: Lapp D (Daniel Lapp, also written D Lapp), Daniel G (Daniel Glick, also written D Glick), Kristin, Patty. You are talking with ${TEAM_LABEL[state.me]}. Today is ${iso(TODAY)}.
-Projects move through statuses: ${STATUSES.join(", ")}. Lists: In progress, Ordered (Order Placed through Shipped), Completed (Delivered/Completed), Dead.
+Projects move through stages set by their milestones (${STEPS.join(", ")}): ${STAGE_NAME.join(", ")}. A project can also be flagged Needs Info, On Hold or Dead. Each project's stage field shows where it is. Lists: In progress, Ordered (Order placed and Shipped), Completed (Delivered), Dead. To move a project forward, tick milestones by hand; through update_project you may set status to one of: New Request, Quoting, Quote Sent, Ready to Order, Order Placed, Shipped, Needs Info, On Hold.
 "Waiting on" is one of: NEI D Lapp, NEI D Glick, Factory, Customer, Freight, Nobody. A follow-up date on or before today is overdue.
 Customers: ${state.customers.map(c=>c+(state.custInfo[c]?.code?" ("+state.custInfo[c].code+")":"")).join(", ")}.
 You can read everything in the tracker. You can edit existing projects and office requests (status, waiting on, next step, follow-up, vendor, assignee, due date) and add NEW items. You can NOT delete anything, mark a project Delivered, Completed or Dead, or mark a request Done; if asked, say that is done by hand. You can also add NEW items (projects, customers, office requests, supply list items, office board posts, messages in a project conversation), and every add or edit shows the person a Confirm button first; nothing saves until they tap it. Only add what the person asked for. If they paste a quote, proforma or email, pull out the customer, product and next step and propose a new project. If they tap Cancel, do not try again unless they ask. Keep answers short and plain, a few lines or a short list, written for someone on an iPad. Refer to projects by product name and customer, never by id. You cannot reach OneDrive, email or anything outside this tracker yet; say so if asked.
@@ -824,7 +877,7 @@ const AI_TOOLS=[
     save(); render(); const [,n]=split(p.name);
     // Undo puts back only these fields, on the current copy, so messages and teammates' edits since then are kept
     aiLogChange(`${n} (${p.customer}): ${ch.join(", ")}`,()=>{ const cur=state.projects.find(x=>x.id===p.id); if(cur) ks.forEach(k=>cur[k]=before[k]); });
-    return {changed:ch,nowIn:TABS.find(t=>t[0]===tabOf(p.status))[1]}; }},
+    return {changed:ch,nowIn:TABS.find(t=>t[0]===tabOf(es(p)))[1]}; }},
  {name:"post_message",description:"Post a message in a project's conversation as the person you are talking with. To tag teammates pass their names in tag (Lapp D, Daniel G, Kristin, Patty); tagged people get emailed.",
   inputSchema:{type:"object",properties:{id:{type:"string"},text:{type:"string"},tag:{type:"array",items:{type:"string"}}},required:["id","text"]},
   execute:({id,text,tag})=>{ const p=findP(id); const names=(Array.isArray(tag)?tag:[]).map(t=>TEAM.find(n=>n.toLowerCase()===String(t).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(t).toLowerCase())).filter(Boolean);
@@ -1235,7 +1288,7 @@ async function buildReport(ps,filterText,oneCustomer){
   const us=d=>{ const m=String(d||"").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?`${m[2]}/${m[3]}/${m[1]}`:(d||""); };
   const F=(o)=>Object.assign({name:"Arial",size:12,color:{argb:TEXT}},o);
   const fill=a=>({type:"pattern",pattern:"solid",fgColor:{argb:a}});
-  const COLS=[["#",5],["Project",34],["Status",16],["Who has it",15],["Next step",38],["Follow-up",14],["Vendor",18],["Requested",13],["Steps done",28],["Latest message",46],["OneDrive",14]];
+  const COLS=[["#",5],["Project",34],["Stage",16],["Who has it",15],["Next step",38],["Follow-up",14],["Vendor",18],["Requested",13],["Steps done",28],["Latest message",46],["OneDrive",14]];
   const N=COLS.length, colL=n=>String.fromCharCode(64+n);
   const wb=new ExcelJS.Workbook(); wb.creator="Northeast International";
   const ws=wb.addWorksheet("Open Projects",{views:[{showGridLines:false}]});
@@ -1272,14 +1325,14 @@ async function buildReport(ps,filterText,oneCustomer){
   const showBands=custs.length>1;
   let r=HR+1;
   custs.forEach(cu=>{
-    const list=ps.filter(p=>p.customer===cu).sort((a,b)=>STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status)||a.name.localeCompare(b.name));
+    const list=ps.filter(p=>p.customer===cu).sort((a,b)=>stageOf(a)-stageOf(b)||a.name.localeCompare(b.name));
     if(showBands){ const br=ws.getRow(r); br.height=30;
       const c=br.getCell(1); c.value=`${cu.toUpperCase()}   (${list.length} open)`; c.font=F({size:14,bold:true}); c.alignment={vertical:"bottom"};
       for(let k=1;k<=N;k++) br.getCell(k).border={bottom:{style:"medium",color:{argb:RED}}};
       r++; }
     list.forEach((p,i)=>{ const [d,n]=split(p.name); const last=p.notes[p.notes.length-1]; const late=isLate(p);
       const row=ws.getRow(r);
-      const vals=[i+1,n,p.status,laneShort(p.waiting),p.next||"",p.fu?us(p.fu)+(late?" (due)":""):"",p.vendor||"",us(d),
+      const vals=[i+1,n,stageLabel(p),laneShort(p.waiting),p.next||"",p.fu?us(p.fu)+(late?" (due)":""):"",p.vendor||"",us(d),
         STEPS.filter(s=>p.steps[s]==="Yes").join(", "),
         last?((last.by?(TEAM_LABEL[last.by]||last.by)+": ":"")+plainTags(last.text)).slice(0,500):"",
         p.folder?{text:"Open folder",hyperlink:p.folder}:""];
@@ -1304,16 +1357,17 @@ async function buildReport(ps,filterText,oneCustomer){
 }
 function openReportSheet(){
   const open=state.projects.filter(isOpen);
-  const custs=reportCustomers(open), stages=STATUSES.filter(s=>!CLOSED.includes(s)&&open.some(p=>p.status===s)), lanes=LANES;
+  const custs=reportCustomers(open), stages=[...STAGE_STATUS,...FLAGS].filter(s=>!CLOSED.includes(s)&&open.some(p=>es(p)===s)), lanes=LANES;
   const sel={c:new Set(),s:new Set(),w:new Set()};
+  const stLabel=x=>FLAG_LABEL[x]||STAGE_NAME[STAGE_STATUS.indexOf(x)]||x;
   const grp=(k,label,opts,labels)=>`<div class="field"><span class="flabel">${label}</span><div class="chips" data-rf="${k}"><button type="button" data-all="1" aria-pressed="true">All</button>${opts.map((o,i)=>`<button type="button" aria-pressed="false" data-v="${esc(o)}">${esc(labels?labels[i]:o)}</button>`).join("")}</div></div>`;
   $("#sheetHost").innerHTML=`<div class="scrim" id="scrim"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Download report">
     <div class="grab"></div><div class="shead"><h3>Open projects report</h3><button class="x" id="close" aria-label="Close">×</button></div>
     <p style="margin:6px 0 0;color:var(--muted);font-size:14px">Excel file, grouped by customer. Pick one or more of each, or leave them on All.</p>
-    ${grp("c","Customer",custs)}${grp("s","Stage",stages)}${grp("w","Who has it",lanes,lanes.map(laneShort))}
+    ${grp("c","Customer",custs)}${grp("s","Stage",stages,stages.map(stLabel))}${grp("w","Who has it",lanes,lanes.map(laneShort))}
     <p id="repCount" style="margin:18px 0 0;font-weight:600"></p>
     <div class="actions"><button class="btn ghost" id="repFull">Full report (everything open)</button><button class="btn primary" id="repGo">Download report</button></div></div>`;
-  const pick=()=>open.filter(p=>(!sel.c.size||sel.c.has(p.customer))&&(!sel.s.size||sel.s.has(p.status))&&(!sel.w.size||sel.w.has(p.waiting||"Nobody")));
+  const pick=()=>open.filter(p=>(!sel.c.size||sel.c.has(p.customer))&&(!sel.s.size||sel.s.has(es(p)))&&(!sel.w.size||sel.w.has(p.waiting||"Nobody")));
   const upd=()=>{ const n=pick().length; $("#repCount").textContent=`${n} open project${n===1?"":"s"} match`; $("#repGo").disabled=!n; };
   document.querySelectorAll("[data-rf]").forEach(g=>g.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; const set=sel[g.dataset.rf];
     if(b.dataset.all) set.clear(); else { const v=b.dataset.v; set.has(v)?set.delete(v):set.add(v); }
@@ -1321,7 +1375,7 @@ function openReportSheet(){
     upd(); });
   const close=()=>$("#sheetHost").innerHTML="";
   $("#close").onclick=$("#scrim").onclick=close;
-  const desc=()=>{ const f=(k,l,m)=>`${l}: ${sel[k].size?[...sel[k]].map(m||(x=>x)).join(", "):"All"}`; return [f("c","Customer"),f("s","Stage"),f("w","Who has it",laneShort)].join(" · "); };
+  const desc=()=>{ const f=(k,l,m)=>`${l}: ${sel[k].size?[...sel[k]].map(m||(x=>x)).join(", "):"All"}`; return [f("c","Customer"),f("s","Stage",stLabel),f("w","Who has it",laneShort)].join(" · "); };
   const go=async(full)=>{ const ps=full?open:pick(); if(!ps.length){ toast("No open projects match"); return; }
     try{ toast("Building report…"); await loadXLSX();
       const one=!full&&sel.c.size===1?[...sel.c][0]:null; const code=one&&state.custInfo[one]?.code;
