@@ -778,7 +778,10 @@ function openSheet(p,isNew){
     th.scrollTop=th.scrollHeight; };
   drawNotes();
   const box=$("#fNote"), sug=$("#suggest");
-  const insertTag=n=>{ const v=box.value; const m=v.match(/@([\w ]{0,10})$/); box.value=(m?v.slice(0,m.index):v.replace(/\s*$/,v?" ":""))+"@"+n+" "; sug.hidden=true; box.focus(); };
+  // Adds a tag at the end. Only a half-typed "@name" is replaced, so several people can be tagged in a row; a name already tagged is not added twice.
+  const insertTag=n=>{ let v=box.value; const m=v.match(/@(\w{0,10})$/); if(m&&!parseMentions(normTags(m[0])).length) v=v.slice(0,m.index); v=v.replace(/\s*$/,v.trim()?" ":"");
+    if(!parseMentions(normTags(v)).includes(n)) v+="@"+n+" ";
+    box.value=v; sug.hidden=true; box.focus(); box.setSelectionRange(v.length,v.length); };
   let pendImg=null; const pend=$("#pend");
   const showPend=()=>{ pend.hidden=!pendImg; pend.innerHTML=pendImg?`<img src="${pendImg}" alt="Photo to send"><span>Photo ready to send</span><button type="button" id="rmPic">Remove</button>`:""; };
   $("#fPic").addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const k=Math.min(1,1000/Math.max(im.width,im.height)); const c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); pendImg=c.toDataURL("image/jpeg",0.72); showPend(); }; im.src=r.result; }; r.readAsDataURL(f); e.target.value=""; });
