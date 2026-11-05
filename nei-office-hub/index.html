@@ -763,7 +763,7 @@ function openSheet(p,isNew){
   host.querySelectorAll(".chips").forEach(c=>c.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;c.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));draft[c.dataset.field]=b.dataset.v;}));
   // Progress: tap a step to move the project to it; tap the last ticked step to undo it. Skip mode marks a step not needed.
   let skip=false;
-  const drawSteps=()=>{ $("#steps").innerHTML=STEPS.map((s,i)=>{ const v=draft.steps[s]||"No"; return `<button type="button" data-i="${i}" data-v="${v}" aria-pressed="${v==="Yes"}"><span class="box">${v==="Yes"?"✓":""}</span>${esc(STEP_LABEL[s])}${v==="N/A"?' <small>not needed</small>':""}</button>`; }).join("");
+  const drawSteps=()=>{ if(!$("#steps")) return; $("#steps").innerHTML=STEPS.map((s,i)=>{ const v=draft.steps[s]||"No"; return `<button type="button" data-i="${i}" data-v="${v}" aria-pressed="${v==="Yes"}"><span class="box">${v==="Yes"?"✓":""}</span>${esc(STEP_LABEL[s])}${v==="N/A"?' <small>not needed</small>':""}</button>`; }).join("");
     $("#stageTxt").textContent="Stage: "+(draft.flag?FLAG_LABEL[draft.flag]+" · ":"")+STAGE_NAME[stepStage(draft.steps)+1]; };
   drawSteps();
   $("#steps").addEventListener("click",e=>{ const b=e.target.closest("[data-i]"); if(!b) return; const i=+b.dataset.i, k=STEPS[i];
