@@ -322,6 +322,7 @@ textarea{min-height:70px;resize:vertical}
 .s-by{font-size:12px;color:var(--muted)}
 .s-qty{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
 .s-x{border:0;background:transparent;color:var(--muted);width:32px;height:32px;border-radius:8px;font-size:17px}
+.s-x.arm{width:auto;padding:0 10px;background:var(--red);color:#fff;font-size:13px;font-weight:600}
 .supadd{display:grid;gap:8px}
 .s-sub{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .s-sub a{color:var(--red);font-weight:600;text-decoration:none}
@@ -507,7 +508,7 @@ function cardHTML(p,showCust){
     <div class="ctop"><div class="cname">${showCust?`<span class="ctag">${esc(p.customer)}</span>`:""}<span class="cdate">${esc(d)}${p.vendor?" · "+esc(p.vendor):""}</span><span class="ctitle">${esc(n)}</span></div><span class="pill ${pillClass(p.status)}">${esc(p.status)}</span></div>
     <div class="next ${p.next?"":"empty"}">${p.next?esc(p.next):"Not set"}</div>
     ${note}
-    <div class="cmeta"><span class="track" aria-label="Milestones">${dots}</span><span class="cright"><span class="fu ${late?"late":""}">${p.fu&&isOpen(p)?(late?"Due ":"Follow up ")+fmt(p.fu):""}</span>${p.folder?`<a class="cfolder" href="${esc(p.folder)}" target="_blank" rel="noopener">OneDrive ↗</a>`:""}</span></div>
+    <div class="cmeta"><span class="track" aria-label="Milestones">${dots}</span><span class="cright"><span class="fu ${late?"late":""}">${p.fu&&isOpen(p)?(late?"Due ":"Follow up ")+fmt(p.fu):""}</span>${safeUrl(p.folder)?`<a class="cfolder" href="${esc(safeUrl(p.folder))}" target="_blank" rel="noopener">OneDrive ↗</a>`:""}</span></div>
   </div>`;
 }
 function renderGroups(){
@@ -569,6 +570,8 @@ function renderOffice(){
   const cats=["All",...OCATS];
   const shown=O.tasks.filter(t=>officeCat==="All"||t.cat===officeCat).sort((a,b)=>(a.status==="Done")-(b.status==="Done")||byDue(a,b));
   const need=O.supplies.filter(x=>!x.got).length, onOrder=O.supplies.filter(x=>x.got&&!x.dlv).length;
+  // keep anything half-typed on this page when a live update redraws it
+  const keep=["postBox","supItem","supQty","supLink"].map(id=>[id,document.getElementById(id)?.value]);
   $("#officeView").innerHTML=`
   <section class="o-hello"><div><h1>${greet}, ${esc(TEAM_LABEL[me]||"")}</h1><p>${TODAY.toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"})} · Here's what's going on in the office.</p></div></section>
   <div class="o-grid">
@@ -585,15 +588,16 @@ function renderOffice(){
       <section class="panel" id="supPanel"><div class="ph"><h2>Supply wish list<span>${need} needed${onOrder?` · ${onOrder} on order`:""}</span></h2>${O.supplies.some(x=>x.dlv)?`<button class="linkbtn" id="clrGot">Clear delivered</button>`:""}</div>
         <div class="supadd"><div class="addrow"><input type="text" id="supItem" placeholder="Add an item" aria-label="Item"><input type="number" id="supQty" value="1" min="1" aria-label="Quantity"><button type="button" id="supAdd">Add</button></div>
         <input type="url" id="supLink" placeholder="Link (Amazon, Staples...) optional" aria-label="Link"></div>
-        <div class="sups">${O.supplies.map(x=>`<div class="sup ${x.got?"got":""} ${x.dlv?"dlv":""}"><div class="s-main"><span class="s-name" data-esup="${x.id}">${esc(x.item)}${x.ex?'<span class="ex">Example</span>':""}</span><span class="s-sub"><span>Added by ${esc(TEAM_LABEL[x.by]||x.by)}${x.dlv?" · delivered":x.got?" · ordered":""}</span>${x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener">Open link ↗</a>`:""}<button class="linkbtn" style="padding:0;font-size:12px" data-esup="${x.id}">${x.note?"Edit":"Add note"}</button></span>${x.note?`<span class="s-note">${esc(x.note)}</span>`:""}</div><span class="s-qty">×${x.qty}</span><span class="steps2"><button class="stp ${x.got?"on":""}" data-got="${x.id}" aria-label="${x.got?"Unmark ordered":"Mark ordered"}"><span class="chk">✓</span>Ordered</button><button class="stp ${x.dlv?"on":""}" data-dlv="${x.id}" aria-label="${x.dlv?"Unmark delivered":"Mark delivered"}"><span class="chk">✓</span>Delivered</button></span><button class="s-x" data-rmsup="${x.id}" aria-label="Remove">×</button></div>`).join("")||`<div class="empty-state">The list is empty.</div>`}</div></section>
+        <div class="sups">${O.supplies.map(x=>`<div class="sup ${x.got?"got":""} ${x.dlv?"dlv":""}"><div class="s-main"><span class="s-name" data-esup="${x.id}">${esc(x.item)}${x.ex?'<span class="ex">Example</span>':""}</span><span class="s-sub"><span>Added by ${esc(TEAM_LABEL[x.by]||x.by)}${x.dlv?" · delivered":x.got?" · ordered":""}</span>${safeUrl(x.link)?`<a href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener">Open link ↗</a>`:""}<button class="linkbtn" style="padding:0;font-size:12px" data-esup="${x.id}">${x.note?"Edit":"Add note"}</button></span>${x.note?`<span class="s-note">${esc(x.note)}</span>`:""}</div><span class="s-qty">×${x.qty}</span><span class="steps2"><button class="stp ${x.got?"on":""}" data-got="${x.id}" aria-label="${x.got?"Unmark ordered":"Mark ordered"}"><span class="chk">✓</span>Ordered</button><button class="stp ${x.dlv?"on":""}" data-dlv="${x.id}" aria-label="${x.dlv?"Unmark delivered":"Mark delivered"}"><span class="chk">✓</span>Delivered</button></span><button class="s-x" data-rmsup="${x.id}" aria-label="Remove">×</button></div>`).join("")||`<div class="empty-state">The list is empty.</div>`}</div></section>
       <section class="panel"><div class="ph"><h2>Office board</h2><span class="note">Updates for everyone</span></div>
         <div class="cbox"><textarea id="postBox" placeholder="Post an update for the office. Type @ to tag someone."></textarea><button type="button" class="send" id="postAdd">Post</button></div>
         <div class="posts">${O.posts.slice().reverse().map(x=>`<div class="post"><span class="avt ${x.by===me?"me":""}">${avIni(x.by)}</span><div class="pb"><span class="pm"><b>${esc(TEAM_LABEL[x.by])}</b> · ${esc(whenTxt(x.at))}</span><span class="pt">${mentionHTML(x.text)}</span></div></div>`).join("")||`<div style="color:var(--muted);font-size:14px">No posts yet. Closed early Friday? Vendor visit tomorrow? Post it here.</div>`}</div></section>
     </div>
   </div>`;
+  keep.forEach(([id,v])=>{ const el=document.getElementById(id); if(el&&v!=null) el.value=v; });
 }
-function openReq(t,isNew){
-  const d=JSON.parse(JSON.stringify(t));
+function openReq(t,isNew,origIn){
+  const d=JSON.parse(JSON.stringify(t)), orig=origIn||JSON.parse(JSON.stringify(t));
   const plus=k=>{const x=new Date(TODAY);x.setDate(x.getDate()+k);return iso(x)};
   const people=[...TEAM,"Anyone"], plab=people.map(n=>n==="Anyone"?"Anyone":TEAM_LABEL[n]);
   const chips=(f,opts,val,labels)=>`<div class="chips" data-f="${f}">${opts.map((o,i)=>`<button type="button" aria-pressed="${o===val}" data-v="${esc(o)}">${esc(labels?labels[i]:o)}</button>`).join("")}</div>`;
@@ -611,38 +615,59 @@ function openReq(t,isNew){
   const host=$("#sheetHost"), close=()=>host.innerHTML="";
   host.querySelectorAll(".chips").forEach(c=>c.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;c.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));d[c.dataset.f]=b.dataset.v;}));
   host.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>{$("#rDue").value=+b.dataset.q<0?"":plus(+b.dataset.q)}));
-  $("#close").onclick=$("#scrim").onclick=close; if($("#cancel")) $("#cancel").onclick=close;
-  if($("#rComAdd")) $("#rComAdd").onclick=()=>{ const v=normTags($("#rCom").value.trim()); if(!v) return; const live=state.office.tasks.find(x=>x.id===d.id); const c={by:state.me,at:new Date().toISOString(),text:v,mentions:parseMentions(v)}; live.comments.push(c); d.comments.push(c); save(); openReq(d,false); render(); if(c.mentions.length) toast("Tagged "+c.mentions.map(n=>TEAM_LABEL[n]).join(", ")); };
+  const RF=["title","cat","to","due","status","details"];
+  const pull=()=>{ d.title=$("#rTitle").value.trim(); d.due=$("#rDue").value; d.details=$("#rDet").value.trim(); };
+  const isDirty=()=>{ if(!$("#rTitle")) return false; pull(); if($("#rCom")&&$("#rCom").value.trim()) return true; return RF.some(k=>(d[k]||"")!==(orig[k]||"")); };
+  $("#close").onclick=$("#scrim").onclick=guardClose(isDirty,close); if($("#cancel")) $("#cancel").onclick=$("#close").onclick;
+  if($("#rComAdd")) $("#rComAdd").onclick=()=>{ const v=normTags($("#rCom").value.trim()); if(!v) return; const live=state.office.tasks.find(x=>x.id===d.id);
+    if(!live){ sheetClose=null; close(); toast("Someone else deleted this request.",{ms:4000}); return; }
+    pull(); const c={by:state.me,at:new Date().toISOString(),text:v,mentions:parseMentions(v)}; live.comments.push(c); d.comments=live.comments.slice(); save(); openReq(d,false,orig); render(); if(c.mentions.length) toast("Tagged "+c.mentions.map(n=>TEAM_LABEL[n]).join(", ")); };
   if($("#rDel")) $("#rDel").onclick=e=>{ const b=e.currentTarget; if(!b.classList.contains("arm")){ b.classList.add("arm"); b.textContent="Tap again to delete"; return; } state.office.tasks=state.office.tasks.filter(x=>x.id!==d.id); save(); close(); render(); toast("Request deleted"); };
-  $("#rSave").onclick=()=>{ d.title=$("#rTitle").value.trim(); if(!d.title){ $("#rTitle").focus(); toast("Say what needs doing"); return; }
-    d.due=$("#rDue").value; d.details=$("#rDet").value.trim(); delete d.ex;
+  $("#rSave").onclick=()=>{ pull(); if(!d.title){ $("#rTitle").focus(); toast("Say what needs doing"); return; }
+    delete d.ex;
     const prev=state.office.tasks.find(x=>x.id===d.id);
-    if(isNew) state.office.tasks.push(d); else { d.comments=prev.comments; Object.assign(prev,d); }
-
-    save(); close(); render();
-    const newly=(isNew||prev.to!==t.to||isNew)&&d.to!==state.me&&d.to!=="Anyone";
+    if(!isNew&&!prev){ sheetClose=null; close(); toast("Someone else deleted this request. Nothing was saved.",{ms:4000}); return; }
+    // Only write the fields this person changed, onto the latest copy
+    if(isNew) state.office.tasks.push(d); else { RF.forEach(k=>{ if((d[k]||"")!==(orig[k]||"")) prev[k]=d[k]; }); delete prev.ex; }
+    if($("#rCom")&&$("#rCom").value.trim()) $("#rComAdd").click();
+    sheetClose=null; save(); close(); render();
+    const newly=(isNew||d.to!==orig.to)&&d.to!==state.me&&d.to!=="Anyone";
     toast(newly?`Assigned to ${TEAM_LABEL[d.to]}`:isNew?"Request added":"Saved"); };
 }
 function openSup(x){
   $("#sheetHost").innerHTML=`<div class="scrim" id="scrim"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Supply item">
     <div class="grab"></div><div class="shead"><div><div class="ctag">Supply wish list · added by ${esc(TEAM_LABEL[x.by]||x.by)}</div><h3>${esc(x.item)}</h3></div><button class="x" id="close" aria-label="Close">×</button></div>
     <div class="row2"><div class="field"><label class="flabel" for="eItem">Item</label><input type="text" id="eItem" value="${esc(x.item)}"></div><div class="field"><label class="flabel" for="eQty">Quantity</label><input type="text" inputmode="numeric" id="eQty" value="${esc(x.qty)}"></div></div>
-    <div class="field"><label class="flabel" for="eLink">Link</label><input type="url" id="eLink" value="${esc(x.link||"")}" placeholder="Paste an Amazon, Staples or other link">${x.link?`<a class="folder" href="${esc(x.link)}" target="_blank" rel="noopener">Open link ↗</a>`:""}</div>
+    <div class="field"><label class="flabel" for="eLink">Link</label><input type="url" id="eLink" value="${esc(x.link||"")}" placeholder="Paste an Amazon, Staples or other link">${safeUrl(x.link)?`<a class="folder" href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener">Open link ↗</a>`:""}</div>
     <div class="field"><label class="flabel" for="eNote">Note</label><textarea id="eNote" placeholder="Color, size, which printer, why it's needed...">${esc(x.note||"")}</textarea></div>
     <div class="actions"><button class="del2" id="eDel">Delete</button><button class="btn primary" id="eSave">Save</button></div></div>`;
   const close=()=>$("#sheetHost").innerHTML="";
-  $("#close").onclick=$("#scrim").onclick=close;
+  const vals=()=>({item:$("#eItem").value.trim(),qty:Math.max(1,parseInt($("#eQty").value)||1),link:fixUrl($("#eLink").value),note:$("#eNote").value.trim()});
+  const isDirty=()=>{ if(!$("#eItem")) return false; const v=vals(); return Object.keys(v).some(k=>String(v[k]??"")!==String(x[k]??"")); };
+  $("#close").onclick=$("#scrim").onclick=guardClose(isDirty,close);
   $("#eDel").onclick=e=>{ const b=e.currentTarget; if(!b.classList.contains("arm")){ b.classList.add("arm"); b.textContent="Tap again to delete"; return; } state.office.supplies=state.office.supplies.filter(y=>y.id!==x.id); save(); close(); render(); toast("Removed from the list"); };
-  $("#eSave").onclick=()=>{ const it=$("#eItem").value.trim(); if(!it){ $("#eItem").focus(); return; }
-    x.item=it; x.qty=Math.max(1,parseInt($("#eQty").value)||1); x.link=$("#eLink").value.trim(); x.note=$("#eNote").value.trim(); delete x.ex;
-    save(); close(); render(); toast("Saved"); };
+  $("#eSave").onclick=()=>{ const v=vals(); if(!v.item){ $("#eItem").focus(); return; }
+    // Look the item up again: a live update may have replaced the copy this sheet opened with
+    const cur=state.office.supplies.find(y=>y.id===x.id);
+    if(!cur){ sheetClose=null; close(); toast("Someone else removed this item. Nothing was saved.",{ms:4000}); return; }
+    Object.keys(v).forEach(k=>{ if(String(v[k]??"")!==String(x[k]??"")) cur[k]=v[k]; }); delete cur.ex;
+    sheetClose=null; save(); close(); render(); toast("Saved"); };
 }
 function render(){ renderWho(); renderView(); renderCusts(); renderTiles(); renderGroups(); $("#qclr").hidden=!query; }
 
-function toast(m){ $("#toastHost").innerHTML=`<div class="toast" role="status">${esc(m)}</div>`; clearTimeout(toast.t); toast.t=setTimeout(()=>$("#toastHost").innerHTML="",1800); }
+function toast(m,o){ $("#toastHost").innerHTML=`<div class="toast" role="status">${esc(m)}</div>`; clearTimeout(toast.t); if(!(o&&o.sticky)) toast.t=setTimeout(()=>$("#toastHost").innerHTML="",o&&o.ms||1800); }
+// Only http(s) links are shown as links; photos must be inline images
+const safeUrl=u=>{ u=String(u||"").trim(); return /^https?:\/\//i.test(u)?u:""; };
+const fixUrl=u=>{ u=String(u||"").trim(); if(u&&!/^[a-z][a-z0-9+.-]*:/i.test(u)) u="https://"+u; return u; };
+const safeImg=s=>/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s||"")?s:"";
+// Closing a sheet with unsaved changes needs a second tap
+let sheetClose=null;
+function guardClose(isDirty,close){ let armed=false, t=null;
+  const fn=()=>{ if(armed||!isDirty()){ clearTimeout(t); sheetClose=null; close(); return; } armed=true; toast("You have unsaved changes. Tap again to discard them.",{ms:3500}); t=setTimeout(()=>armed=false,3500); };
+  sheetClose=fn; return fn; }
 
 function openSheet(p,isNew){
-  const draft=JSON.parse(JSON.stringify(p));
+  const draft=JSON.parse(JSON.stringify(p)), orig=JSON.parse(JSON.stringify(p));
   const [d,n]=split(draft.name);
   const chips=(name,opts,val,labels)=>`<div class="chips" data-field="${name}">${opts.map((o,i)=>`<button type="button" aria-pressed="${o===val}" data-v="${esc(o)}">${esc(labels?labels[i]:o)}</button>`).join("")}</div>`;
   const plus=k=>{const x=new Date(TODAY);x.setDate(x.getDate()+k);return iso(x)};
@@ -653,7 +678,7 @@ function openSheet(p,isNew){
     <div class="shead"><div><div class="ctag">${isNew?"New project":esc(draft.customer)}</div><div class="cdate">${isNew?"":esc(d)}</div><h3>${isNew?"Add a project":esc(n)}</h3></div><button class="x" id="close" aria-label="Close">×</button></div>
     ${isNew?`<div class="field"><span class="flabel">Customer</span>${chips("customer",state.customers,draft.customer)}<input type="text" id="fNewCust" placeholder="Or type a new customer name"></div>
       <div class="row2"><div class="field"><label class="flabel" for="fDate">Date customer first asked</label><input type="date" id="fDate" value="${iso(TODAY)}"></div><div class="field"><label class="flabel" for="fName">Product</label><input type="text" id="fName" placeholder="Matches the OneDrive folder name"></div></div>`
-    :`<div class="field"><div class="sfolder">${draft.folder?`<a href="${esc(draft.folder)}" target="_blank" rel="noopener">Open OneDrive folder ↗</a>`:`<span style="color:var(--muted);font-size:14px">No OneDrive link yet. Paste it at the bottom.</span>`}</div></div>`}
+    :`<div class="field"><div class="sfolder">${safeUrl(draft.folder)?`<a href="${esc(safeUrl(draft.folder))}" target="_blank" rel="noopener">Open OneDrive folder ↗</a>`:`<span style="color:var(--muted);font-size:14px">No OneDrive link yet. Paste it at the bottom.</span>`}</div></div>`}
     <div class="field"><span class="flabel">Conversation</span>
       <div class="thread" id="thread"></div>
       <div class="compose"><div class="suggest" id="suggest" hidden></div>
@@ -676,7 +701,7 @@ function openSheet(p,isNew){
   // opening the project marks your tags as seen
   if(!isNew){ live().notes.forEach(m=>{ if(m.mentions.includes(state.me)&&!m.seen.includes(state.me)) m.seen.push(state.me); }); save(); render(); }
   const drawNotes=()=>{ const th=$("#thread"); const ms=live().notes;
-    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${m.img?`<img class="mimg" src="${m.img}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">Notified ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:14px">No messages yet. Start the conversation below.</span>`;
+    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${safeImg(m.img)?`<img class="mimg" src="${safeImg(m.img)}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">Notified ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:14px">No messages yet. Start the conversation below.</span>`;
     th.scrollTop=th.scrollHeight; };
   drawNotes();
   const box=$("#fNote"), sug=$("#suggest");
@@ -702,18 +727,29 @@ function openSheet(p,isNew){
   $("#steps").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const nx={"No":"Yes","":"Yes","Yes":"N/A","N/A":"No"}[b.dataset.v];b.dataset.v=nx;b.querySelector(".box").textContent=nx==="Yes"?"✓":"";draft.steps[b.dataset.s]=nx;});
   host.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click",()=>{$("#fFu").value=+b.dataset.q?plus(+b.dataset.q):""}));
   const close=()=>host.innerHTML="";
-  $("#close").onclick=$("#cancel").onclick=$("#scrim").onclick=close;
+  const FIELDS=["status","waiting","next","fu","vendor","folder"];
+  const readInputs=()=>{ draft.next=$("#fNext").value.trim(); draft.fu=$("#fFu").value; draft.vendor=$("#fVendor").value.trim(); draft.folder=fixUrl($("#fFolder").value); };
+  const isDirty=()=>{ if(!$("#fNote")) return false; readInputs();
+    if($("#fNote").value.trim()||pendImg) return true;
+    if(isNew&&(($("#fName").value.trim())||$("#fNewCust").value.trim()||draft.notes.length||draft.customer!==orig.customer)) return true;
+    return FIELDS.some(k=>(draft[k]||"")!==(orig[k]||""))||STEPS.some(s=>(draft.steps[s]||"")!==(orig.steps[s]||"")); };
+  $("#close").onclick=$("#cancel").onclick=$("#scrim").onclick=guardClose(isDirty,close);
   $("#saveBtn").onclick=()=>{
+    if(!isNew&&!live()){ sheetClose=null; close(); toast("Someone else deleted this project. Nothing was saved.",{ms:4000}); return; }
     if($("#fNote").value.trim()) sendMsg();
-    if(!isNew) draft.notes=live().notes;
-    draft.next=$("#fNext").value.trim(); draft.fu=$("#fFu").value; draft.vendor=$("#fVendor").value.trim(); draft.folder=$("#fFolder").value.trim();
+    readInputs();
     if(isNew){
       const nc=$("#fNewCust").value.trim(); if(nc){ draft.customer=nc; if(!state.customers.includes(nc)) state.customers.push(nc); }
       if(!draft.customer){ toast("Pick a customer first"); return; }
       const nm=$("#fName").value.trim(); if(!nm){ $("#fName").focus(); toast("Add a product name first"); return; }
       draft.name=$("#fDate").value+" "+nm; state.projects.push(draft);
-    } else { const i=state.projects.findIndex(x=>x.id===draft.id); const was=tabOf(state.projects[i].status); state.projects[i]=draft; var moved=tabOf(draft.status)!==was?TABS.find(t=>t[0]===tabOf(draft.status))[1]:null; }
-    save(); close(); render(); toast(isNew?"Project added":moved?"Saved. Moved to "+moved:"Saved");
+    } else {
+      // Only write the fields this person changed, onto the latest copy, so a teammate's edits made meanwhile survive
+      const cur=live(); const was=tabOf(cur.status);
+      FIELDS.forEach(k=>{ if((draft[k]||"")!==(orig[k]||"")) cur[k]=draft[k]; });
+      STEPS.forEach(s=>{ if((draft.steps[s]||"")!==(orig.steps[s]||"")) cur.steps={...cur.steps,[s]:draft.steps[s]}; });
+      var moved=tabOf(cur.status)!==was?TABS.find(t=>t[0]===tabOf(cur.status))[1]:null; }
+    sheetClose=null; save(); close(); render(); toast(isNew?"Project added":moved?"Saved. Moved to "+moved:"Saved");
   };
 }
 
@@ -777,22 +813,24 @@ const AI_TOOLS=[
   execute:({id})=>{ const p=findP(id); return {...compact(p),milestones:p.steps,conversation:p.notes.slice(-15).map(m=>({by:m.by?TEAM_LABEL[m.by]:"note from old tracker",when:m.at||null,text:m.text}))}; }},
  {name:"update_project",description:"Change fields on one project. Only pass the fields to change. You cannot set Delivered, Completed or Dead. status must be one of the listed statuses; waitingOn one of the waiting-on values; followUp is YYYY-MM-DD or empty string to clear. Returns what changed.",
   inputSchema:{type:"object",properties:{id:{type:"string"},status:{type:"string"},waitingOn:{type:"string"},next:{type:"string"},followUp:{type:"string"},vendor:{type:"string"}},required:["id"]},
-  execute:(a)=>{ const p=findP(a.id); const before=JSON.parse(JSON.stringify(p)); const ch=[];
+  execute:(a)=>{ const p=findP(a.id); const before=JSON.parse(JSON.stringify(p)); const ch=[]; const ks=[];
     if(a.status!=null){ const st=STATUSES.find(x=>x.toLowerCase()===String(a.status).toLowerCase()); if(!st) throw new Error("Unknown status "+a.status); if(CLOSED.includes(st)) throw new Error("Marking a project "+st+" is off for the assistant. The person has to do that by hand."); if(st!==p.status){ ch.push(`status ${p.status} → ${st}`); p.status=st; } }
     if(a.waitingOn!=null){ let w=String(a.waitingOn); if(state.customers.includes(w)) w="Customer"; const lw=LANES.find(x=>x.toLowerCase()===w.toLowerCase()||x.toLowerCase()==="nei "+w.toLowerCase()); if(!lw) throw new Error("Unknown waiting-on "+a.waitingOn); if(lw!==p.waiting){ ch.push(`waiting on ${LANE_LABEL[lw].replace("Waiting on ","").replace("Not waiting on anyone","nobody")}`); p.waiting=lw; } }
     if(a.next!=null){ p.next=String(a.next); ch.push("next action updated"); }
     if(a.followUp!=null){ const f=String(a.followUp); if(f&&!/^\d{4}-\d{2}-\d{2}$/.test(f)) throw new Error("followUp must be YYYY-MM-DD"); p.fu=f; ch.push(f?"follow up "+fmt(f):"follow-up cleared"); }
     if(a.vendor!=null){ p.vendor=String(a.vendor); ch.push("vendor "+p.vendor); }
     if(!ch.length) return "Nothing changed";
+    ["status","waiting","next","fu","vendor"].forEach(k=>{ if(p[k]!==before[k]) ks.push(k); });
     save(); render(); const [,n]=split(p.name);
-    aiLogChange(`${n} (${p.customer}): ${ch.join(", ")}`,()=>{ const i=state.projects.findIndex(x=>x.id===p.id); state.projects[i]=before; });
+    // Undo puts back only these fields, on the current copy, so messages and teammates' edits since then are kept
+    aiLogChange(`${n} (${p.customer}): ${ch.join(", ")}`,()=>{ const cur=state.projects.find(x=>x.id===p.id); if(cur) ks.forEach(k=>cur[k]=before[k]); });
     return {changed:ch,nowIn:TABS.find(t=>t[0]===tabOf(p.status))[1]}; }},
  {name:"post_message",description:"Post a message in a project's conversation as the person you are talking with. To tag teammates pass their names in tag (Lapp D, Daniel G, Kristin, Patty); tagged people get emailed.",
   inputSchema:{type:"object",properties:{id:{type:"string"},text:{type:"string"},tag:{type:"array",items:{type:"string"}}},required:["id","text"]},
   execute:({id,text,tag})=>{ const p=findP(id); const names=(Array.isArray(tag)?tag:[]).map(t=>TEAM.find(n=>n.toLowerCase()===String(t).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(t).toLowerCase())).filter(Boolean);
     const body=(names.map(n=>"@"+n).join(" ")+" "+String(text)).trim(); const m={id:uid(),at:new Date().toISOString(),by:state.me,text:body,mentions:names,seen:[]};
     p.notes.push(m); save(); render(); const [,n]=split(p.name);
-    aiLogChange(`Posted in ${n}${names.length?" and tagged "+names.map(x=>TEAM_LABEL[x]).join(", "):""}`,()=>{ p.notes=p.notes.filter(x=>x.id!==m.id); });
+    aiLogChange(`Posted in ${n}${names.length?" and tagged "+names.map(x=>TEAM_LABEL[x]).join(", "):""}`,()=>{ const cur=state.projects.find(x=>x.id===p.id); if(cur) cur.notes=cur.notes.filter(x=>x.id!==m.id); });
     return "Posted"; }},
  {name:"add_project",description:"Create a new project. date is the day the customer first asked (YYYY-MM-DD, default today); product is the short product name used for the OneDrive folder.",
   inputSchema:{type:"object",properties:{customer:{type:"string"},product:{type:"string"},date:{type:"string"},next:{type:"string"}},required:["customer","product"]},
@@ -817,7 +855,8 @@ const AI_TOOLS=[
     if(a.status){ const st=["Open","In progress","Done"].find(x=>x.toLowerCase()===String(a.status).toLowerCase()); if(!st) throw new Error("Bad status"); if(st==="Done") throw new Error("Marking a request Done is off for the assistant. The person has to do that by hand."); t.status=st; ch.push(st); }
     if(a.assignTo){ const w=TEAM.find(n=>n.toLowerCase()===String(a.assignTo).toLowerCase()||TEAM_LABEL[n].toLowerCase()===String(a.assignTo).toLowerCase())||"Anyone"; t.to=w; ch.push("assigned to "+(w==="Anyone"?"anyone":TEAM_LABEL[w])); }
     if(a.due!=null){ t.due=/^\d{4}-\d{2}-\d{2}$/.test(String(a.due))?String(a.due):""; ch.push(t.due?"due "+fmt(t.due):"no due date"); }
-    save(); render(); aiLogChange(`${t.title}: ${ch.join(", ")}`,()=>{ Object.assign(t,before); }); return ch; }},
+    const ks=["status","to","due"].filter(k=>t[k]!==before[k]);
+    save(); render(); aiLogChange(`${t.title}: ${ch.join(", ")}`,()=>{ const cur=state.office.tasks.find(x=>x.id===t.id); if(cur) ks.forEach(k=>cur[k]=before[k]); }); return ch; }},
  {name:"add_supply",description:"Add an item to the office supply wish list.",
   inputSchema:{type:"object",properties:{item:{type:"string"},qty:{type:"number"},link:{type:"string"},note:{type:"string"}},required:["item"]},
   execute:({item,qty,link,note})=>{ const x={id:uid(),item:String(item),qty:Math.max(1,parseInt(qty)||1),by:state.me,got:false,link:String(link||""),note:String(note||"")}; state.office.supplies.push(x); save(); render(); aiLogChange(`Wish list: ${x.item} ×${x.qty}`,()=>{ state.office.supplies=state.office.supplies.filter(y=>y.id!==x.id); }); return "Added"; }},
@@ -892,19 +931,19 @@ async function askAI(q){
 
 document.addEventListener("click",e=>{
   const vw=e.target.closest("[data-view]"); if(vw){ state.view=vw.dataset.view; save(); render(); window.scrollTo(0,0); return; }
-  const dn=e.target.closest("[data-done]"); if(dn){ const t=state.office.tasks.find(x=>x.id===dn.dataset.done); t.status=t.status==="Done"?"Open":"Done"; save(); render(); toast(t.status==="Done"?"Marked done":"Reopened"); return; }
-  const rq=e.target.closest("[data-req]"); if(rq){ openReq(state.office.tasks.find(x=>x.id===rq.dataset.req),false); return; }
+  const dn=e.target.closest("[data-done]"); if(dn){ const t=state.office.tasks.find(x=>x.id===dn.dataset.done); if(!t) return; t.status=t.status==="Done"?"Open":"Done"; save(); render(); toast(t.status==="Done"?"Marked done":"Reopened"); return; }
+  const rq=e.target.closest("[data-req]"); if(rq){ const t=state.office.tasks.find(x=>x.id===rq.dataset.req); if(t) openReq(t,false); return; }
   const oc=e.target.closest("[data-ocat]"); if(oc){ officeCat=oc.dataset.ocat; render(); return; }
   const gl=e.target.closest("[data-glance]"); if(gl){ const k=gl.dataset.glance; state.view="projects"; custFilter=null; query="";
     if(k==="mine"){ const ln=LANE_OF[state.me]; tileFilter=ln?"w:"+ln:null; } else if(k==="orders"){ tileFilter=null; state.tab="ordered"; } else tileFilter=k;
     save(); render(); window.scrollTo(0,0); return; }
-  const gt=e.target.closest("[data-got]"); if(gt){ const x=state.office.supplies.find(y=>y.id===gt.dataset.got); x.got=!x.got; if(!x.got) x.dlv=false; save(); render(); toast(x.got?"Marked ordered":"Marked needed"); return; }
-  const dv=e.target.closest("[data-dlv]"); if(dv){ const x=state.office.supplies.find(y=>y.id===dv.dataset.dlv); x.dlv=!x.dlv; if(x.dlv) x.got=true; save(); render(); toast(x.dlv?"Delivered, crossed off":"Marked not delivered"); return; }
-  const es=e.target.closest("[data-esup]"); if(es){ openSup(state.office.supplies.find(y=>y.id===es.dataset.esup)); return; }
-  const rs=e.target.closest("[data-rmsup]"); if(rs){ state.office.supplies=state.office.supplies.filter(y=>y.id!==rs.dataset.rmsup); save(); render(); return; }
+  const gt=e.target.closest("[data-got]"); if(gt){ const x=state.office.supplies.find(y=>y.id===gt.dataset.got); if(!x) return; x.got=!x.got; if(!x.got) x.dlv=false; save(); render(); toast(x.got?"Marked ordered":"Marked needed"); return; }
+  const dv=e.target.closest("[data-dlv]"); if(dv){ const x=state.office.supplies.find(y=>y.id===dv.dataset.dlv); if(!x) return; x.dlv=!x.dlv; if(x.dlv) x.got=true; save(); render(); toast(x.dlv?"Delivered, crossed off":"Marked not delivered"); return; }
+  const es=e.target.closest("[data-esup]"); if(es){ const x=state.office.supplies.find(y=>y.id===es.dataset.esup); if(x) openSup(x); return; }
+  const rs=e.target.closest("[data-rmsup]"); if(rs){ if(!rs.classList.contains("arm")){ rs.classList.add("arm"); rs.textContent="Remove?"; setTimeout(()=>{ if(rs.isConnected){ rs.classList.remove("arm"); rs.textContent="×"; } },3000); return; } state.office.supplies=state.office.supplies.filter(y=>y.id!==rs.dataset.rmsup); save(); render(); return; }
   if(e.target.id==="clrGot"){ state.office.supplies=state.office.supplies.filter(y=>!y.dlv); save(); render(); toast("Cleared delivered items"); return; }
-  if(e.target.id==="supAdd"){ const it=$("#supItem").value.trim(); if(!it){ $("#supItem").focus(); return; } state.office.supplies.push({id:uid(),item:it,qty:Math.max(1,parseInt($("#supQty").value)||1),by:state.me,got:false,link:$("#supLink").value.trim(),note:""}); save(); render(); $("#supItem").focus(); toast("Added to the wish list"); return; }
-  if(e.target.id==="postAdd"){ const v=normTags($("#postBox").value.trim()); if(!v) return; const m=parseMentions(v); state.office.posts.push({id:uid(),by:state.me,at:new Date().toISOString(),text:v,mentions:m}); save(); render(); toast(m.length?"Posted and tagged "+m.map(n=>TEAM_LABEL[n]).join(", "):"Posted to the office board"); return; }
+  if(e.target.id==="supAdd"){ const it=$("#supItem").value.trim(); if(!it){ $("#supItem").focus(); return; } state.office.supplies.push({id:uid(),item:it,qty:Math.max(1,parseInt($("#supQty").value)||1),by:state.me,got:false,link:fixUrl($("#supLink").value),note:""}); $("#supItem").value=""; $("#supLink").value=""; $("#supQty").value="1"; save(); render(); $("#supItem").focus(); toast("Added to the wish list"); return; }
+  if(e.target.id==="postAdd"){ const v=normTags($("#postBox").value.trim()); if(!v) return; const m=parseMentions(v); state.office.posts.push({id:uid(),by:state.me,at:new Date().toISOString(),text:v,mentions:m}); $("#postBox").value=""; save(); render(); toast(m.length?"Posted and tagged "+m.map(n=>TEAM_LABEL[n]).join(", "):"Posted to the office board"); return; }
   if(e.target.id==="add"&&state.view==="office"){ openReq({id:uid(),title:"",cat:"Office",to:"Anyone",from:state.me,due:"",status:"Open",details:"",comments:[]},true); return; }
   if(e.target.closest("#aiOpen")){ openAI(); return; }
   const ask=e.target.closest("[data-ask]"); if(ask){ askAI(ask.dataset.ask); return; }
@@ -925,7 +964,7 @@ document.addEventListener("click",e=>{
 });
 $("#q").addEventListener("input",e=>{ query=e.target.value.trim(); const exact=state.customers.find(c=>c.toLowerCase()===query.toLowerCase()); if(exact){ custFilter=exact; } render(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.id==="supItem"){ e.preventDefault(); $("#supAdd").click(); } });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#lb")) $("#lb").remove(); else $("#sheetHost").innerHTML=""; } const c=e.target.closest&&e.target.closest(".card"); if(c&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); c.click(); } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#lb")) $("#lb").remove(); else if($("#npanel")){} else if(sheetClose&&$("#sheetHost").innerHTML) sheetClose(); else $("#sheetHost").innerHTML=""; } const c=e.target.closest&&e.target.closest(".card"); if(c&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); c.click(); } });
 
 /* ---------- Supabase: login, shared data, live updates ---------- */
 const SB_URL="https://regdgwfnrtznyfmxtwqu.supabase.co";
@@ -961,7 +1000,15 @@ async function doSync(){
     if(del.length){ const {error}=await sb.from(t).delete().in(k,del); if(error) throw error; del.forEach(x=>last[t].delete(x)); } }
   setDot("");
 }
-function queueSync(){ syncChain=syncChain.then(doSync).catch(e=>{ console.error(e); setDot("off"); toast("Couldn't save that change. Check your connection and try again."); }); return syncChain; }
+// A failed save stays queued: the banner stays up, the hub retries, and nothing reloads over it until it goes through
+let syncFailed=false;
+function queueSync(){ syncChain=syncChain.then(doSync).then(()=>{ if(syncFailed){ syncFailed=false; toast("All changes saved"); } })
+  .catch(e=>{ console.error(e); setDot("off");
+    // the database refused it (not a connection problem): retrying won't help, so show the saved version again
+    if(e&&typeof e.code==="string"&&e.code&&!/fetch|network|load failed/i.test(String(e.message||""))){ syncFailed=false; toast("Couldn't save that change. The server refused it, so the hub reloaded.",{ms:5000}); setTimeout(reloadData,0); return; }
+    if(!syncFailed) toast("Not saved yet. Check your connection; the hub will keep trying.",{sticky:true}); syncFailed=true; }); return syncChain; }
+setInterval(()=>{ if(syncFailed&&navigator.onLine!==false) queueSync(); },15000);
+window.addEventListener("online",()=>{ if(!state.me) return; if(syncFailed) queueSync(); scheduleReload(); });
 /* ---------- email notices: tags, assignments, board mentions ---------- */
 const labelTags=txt=>String(txt||"").replace(/@(D Lapp|D Glick|Kristen|Patty)/g,(m,k)=>"@"+TEAM_LABEL[k]);
 function notices(t,row,prevJson){
@@ -1047,7 +1094,7 @@ const deviceName=()=>{ const u=navigator.userAgent; const os=/iPhone/.test(u)?"i
 async function initPush(){
   if(!("serviceWorker" in navigator)) return;
   try{ swReg=await navigator.serviceWorker.register("sw.js"); }catch(e){ console.error(e); return; }
-  navigator.serviceWorker.addEventListener("message",e=>{ const d=e.data||{}; if(d.type==="push") loadNotifs(); if(d.type==="open"){ loadNotifs(); if(d.anchor&&!openAnchor(d.anchor)) loadAll().then(()=>openAnchor(d.anchor)); } });
+  navigator.serviceWorker.addEventListener("message",e=>{ const d=e.data||{}; if(d.type==="push") loadNotifs(); if(d.type==="open"){ loadNotifs(); if(d.anchor&&!openAnchor(d.anchor)) reloadData().then(()=>openAnchor(d.anchor)); } });
   if(PUSH_OK){ try{ pushSub=await swReg.pushManager.getSubscription(); }catch(e){} }
 }
 async function saveSub(sub){
@@ -1155,9 +1202,12 @@ async function loadAll(){
 function safeRender(){ const a=document.activeElement; if(a&&/INPUT|TEXTAREA/.test(a.tagName)&&a.closest("main")){ pendingRender=true; return; } pendingRender=false; render(); }
 document.addEventListener("focusout",()=>{ if(pendingRender) setTimeout(()=>{ if(pendingRender) safeRender(); },50); });
 let reloadT=null;
-function scheduleReload(){ clearTimeout(reloadT); reloadT=setTimeout(async()=>{ await syncChain; try{ await loadAll(); }catch(e){ console.error(e); } },600); }
-function subscribe(){ sb.channel("hub").on("postgres_changes",{event:"*",schema:"public"},pl=>{ if(pl.table==="notifications"){ if(pl.eventType==="INSERT") onNotifInsert(pl.new); return; } scheduleReload(); }).subscribe(); }
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&state.me) loadNotifs(); });
+async function reloadData(){ await syncChain; if(syncFailed){ await queueSync(); if(syncFailed) return false; } try{ await loadAll(); return true; }catch(e){ console.error(e); return false; } }
+function scheduleReload(){ clearTimeout(reloadT); reloadT=setTimeout(reloadData,600); }
+let hubCh=null;
+function subscribe(){ if(hubCh) sb.removeChannel(hubCh); hubCh=sb.channel("hub").on("postgres_changes",{event:"*",schema:"public"},pl=>{ if(pl.table==="notifications"){ if(pl.eventType==="INSERT") onNotifInsert(pl.new); return; } scheduleReload(); }).subscribe(); }
+// iPads drop the live connection while asleep: on wake, reconnect and catch up on anything missed
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState!=="visible"||!state.me) return; loadNotifs(); if(hubCh&&hubCh.state&&hubCh.state!=="joined") subscribe(); scheduleReload(); });
 
 
 // ---- Customer Projects report: Excel download (built in the browser, no extra service) ----
