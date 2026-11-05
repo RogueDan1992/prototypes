@@ -306,12 +306,14 @@ textarea{min-height:70px;resize:vertical}
 .ex{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:2px}
 .avt{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--chip);color:var(--ink)}
 .avt.me{background:var(--ink);color:var(--surface)}
-.glance{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.gl{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;display:grid;gap:2px;min-height:70px}
-.gl .n{font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1}
-.gl .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-.gl.alert .n{color:var(--late)}
-.gl.zero .n{color:var(--muted)}
+.glist{display:grid}
+.glrow{display:flex;align-items:center;gap:12px;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:8px 2px;min-height:52px;text-align:left}
+.glrow:first-child{border-top:0}
+.glrow .n{font-family:var(--f-display);font-weight:700;font-size:26px;line-height:1;min-width:30px}
+.glrow .l{flex:1;font-size:15px}
+.glrow .chev{color:var(--muted);font-size:22px;line-height:1}
+.glrow.alert .n{color:var(--late)}
+.glrow.zero .n,.glrow.zero .l{color:var(--muted)}
 .addrow{display:flex;gap:8px}
 .addrow input[type=text]{flex:1;min-width:0}
 .addrow input[type=number]{width:72px;font:inherit;font-size:16px;padding:12px 8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:48px;text-align:center}
@@ -600,25 +602,26 @@ function renderOffice(){
   const mine=O.tasks.filter(t=>t.to===me&&t.status!=="Done").sort(byDue);
   const open=state.projects.filter(isOpen);
   const lane=LANE_OF[me];
-  const gl=[...(lane?[["mine","Projects waiting on you",open.filter(p=>p.waiting===lane).length,false]]:[]),["tagged","Projects you're tagged in",open.filter(p=>unseenFor(p,me)).length,true],["late","Overdue follow-ups",open.filter(isLate).length,true],["orders","Open orders",open.filter(p=>OPEN_ORDER.includes(es(p))).length,false]];
+  const gl=[...(lane?[["mine","Waiting on you",open.filter(p=>p.waiting===lane).length,false]]:[]),["tagged","Tagged you",open.filter(p=>unseenFor(p,me)).length,true],["late","Overdue follow-ups",open.filter(isLate).length,true],["orders","Open orders",open.filter(p=>OPEN_ORDER.includes(es(p))).length,false]];
   const cats=["All",...OCATS];
-  const shown=O.tasks.filter(t=>officeCat==="All"||t.cat===officeCat).sort((a,b)=>(a.status==="Done")-(b.status==="Done")||byDue(a,b));
+  const others=O.tasks.filter(t=>!(t.to===me&&t.status!=="Done"));
+  const shown=others.filter(t=>officeCat==="All"||t.cat===officeCat).sort((a,b)=>(a.status==="Done")-(b.status==="Done")||byDue(a,b));
   const need=O.supplies.filter(x=>!x.got).length, onOrder=O.supplies.filter(x=>x.got&&!x.dlv).length;
   // keep anything half-typed on this page when a live update redraws it
   const keep=["postBox","supItem","supQty","supLink"].map(id=>[id,document.getElementById(id)?.value]);
   $("#officeView").innerHTML=`
-  <section class="o-hello"><div><h1>${greet}, ${esc(TEAM_LABEL[me]||"")}</h1><p>${TODAY.toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"})} · Here's what's going on in the office.</p></div></section>
+  <section class="o-hello"><div><h1>${greet}, ${esc(TEAM_LABEL[me]||"")}</h1><p>${TODAY.toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"})}${mine.length?` · ${mine.length} on your plate${mine.filter(t=>t.due&&new Date(t.due+"T00:00")<=TODAY).length?`, ${mine.filter(t=>t.due&&new Date(t.due+"T00:00")<=TODAY).length} due`:""}`:""}</p></div></section>
   <div class="o-grid">
     <div class="o-col">
       <section class="panel"><div class="ph"><h2>On your plate<span>${mine.length}</span></h2></div>
-        <div class="reqs">${mine.map(reqRow).join("")||`<div class="empty-state">Nothing assigned to you. Nice.</div>`}</div></section>
-      <section class="panel"><div class="ph"><h2>Office requests<span>${O.tasks.filter(t=>t.status!=="Done").length} open</span></h2>
+        <div class="reqs">${mine.map(reqRow).join("")||`<div class="empty-state">Nothing assigned to you.</div>`}</div></section>
+      <section class="panel"><div class="ph"><h2>Office requests<span>${others.filter(t=>t.status!=="Done").length} open</span></h2>
         <div class="fchips">${cats.map(c=>`<button data-ocat="${esc(c)}" aria-pressed="${officeCat===c}">${esc(c)}</button>`).join("")}</div></div>
         <div class="reqs">${shown.map(reqRow).join("")||`<div class="empty-state">No ${officeCat==="All"?"":esc(officeCat.toLowerCase())+" "}requests. Tap + New request to add one.</div>`}</div></section>
     </div>
     <div class="o-col">
-      <section class="panel"><div class="ph"><h2>Projects at a glance</h2></div>
-        <div class="glance">${gl.map(([k,l,n,a])=>`<button class="gl ${a&&n?"alert":""} ${n?"":"zero"}" data-glance="${k}"><span class="n">${n}</span><span class="l">${l}</span></button>`).join("")}</div></section>
+      <section class="panel"><div class="ph"><h2>Customer projects</h2></div>
+        <div class="glist">${gl.map(([k,l,n,a])=>`<button class="glrow ${a&&n?"alert":""} ${n?"":"zero"}" data-glance="${k}"><span class="n">${n}</span><span class="l">${l}</span><span class="chev" aria-hidden="true">›</span></button>`).join("")}</div></section>
       <section class="panel" id="supPanel"><div class="ph"><h2>Supply wish list<span>${need} needed${onOrder?` · ${onOrder} on order`:""}</span></h2>${O.supplies.some(x=>x.dlv)?`<button class="linkbtn" id="clrGot">Clear delivered</button>`:""}</div>
         <div class="supadd"><div class="addrow"><input type="text" id="supItem" placeholder="Add an item" aria-label="Item"><input type="number" id="supQty" value="1" min="1" aria-label="Quantity"><button type="button" id="supAdd">Add</button></div>
         <input type="url" id="supLink" placeholder="Link (Amazon, Staples...) optional" aria-label="Link"></div>
@@ -941,10 +944,10 @@ AI_TOOLS.forEach(t=>{ const d=AI_CONFIRM[t.name]; if(!d) return; const ex=t.exec
 function openAI(){
   if($("#aiPanel")){ $("#aiPanel").remove(); return; }
   $("#aiHost").innerHTML=`<aside class="ai" id="aiPanel" role="dialog" aria-label="AI assistant">
-    <div class="ai-head"><div><h3>Ask Claude</h3><small>Reads, updates and adds items after you confirm</small></div><button class="x" id="aiClose" aria-label="Close">×</button></div>
+    <div class="ai-head"><div><h3>Ask Claude</h3></div><button class="x" id="aiClose" aria-label="Close">×</button></div>
     <div class="ai-log" id="aiLog"></div>
     <div class="ai-foot"><div class="cbox"><textarea id="aiBox" placeholder="Ask a question, or paste a quote or email to start a project"></textarea><button type="button" class="send" id="aiSend">Send</button></div>
-    <div class="ai-note">Runs on the company Claude account. Nothing saves until you tap Confirm, and each save has an Undo.</div></div></aside>`;
+    <div class="ai-note">Changes wait for your Confirm, and each one can be undone.</div></div></aside>`;
   drawAI();
   $("#aiClose").onclick=()=>{ aiBusy?.abort(); $("#aiPanel").remove(); };
   $("#aiSend").onclick=()=>askAI($("#aiBox").value);
@@ -953,7 +956,7 @@ function openAI(){
 function drawAI(){
   const log=$("#aiLog"); if(!log) return;
   log.innerHTML=aiTurns.length?aiTurns.map(t=>`<div class="ai-msg ${t.role==="user"?"u":"a"}">${esc(t.content)}</div>`).join(""):
-   `<div class="ai-msg a">Hi ${esc(TEAM_LABEL[state.me])}. I can answer questions, update projects and requests, and add new projects, requests, supply items and posts. Paste a factory quote or customer email and I'll set up the project. I won't delete anything or mark things completed, and nothing saves until you tap Confirm.</div>
+   `<div class="ai-msg a">Hi ${esc(TEAM_LABEL[state.me])}. Ask about projects and requests, or paste a factory quote or customer email to start a project. I can't delete anything or mark it delivered.</div>
     <div class="ai-sugg">${["What's on my plate today?","What's overdue right now?","Give me a quick rundown of each customer","Add 2 boxes of printer paper to the supply list","Draft a status update for Pro Fence"].map(q=>`<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
   log.scrollTop=log.scrollHeight;
 }
