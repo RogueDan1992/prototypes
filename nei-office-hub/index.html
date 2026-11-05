@@ -391,6 +391,13 @@ textarea{min-height:70px;resize:vertical}
   @keyframes slidein{from{transform:translateX(24px);opacity:.6}}
   @keyframes toastin{from{opacity:0;transform:translate(-50%,8px)}}
 }
+.aisugg{margin-top:var(--sp-2);border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:var(--sp-3);display:flex;gap:var(--sp-3);align-items:center;justify-content:space-between;flex-wrap:wrap}
+.aisugg-wait{font-size:var(--fs-sm);color:var(--muted)}
+.aisugg-txt{display:grid;gap:2px;min-width:0;flex:1 1 220px;font-size:var(--fs-md);overflow-wrap:anywhere}
+.aisugg .eyebrow{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted)}
+.aisugg-btns{display:flex;gap:var(--sp-2)}
+.aisugg-btns button{min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-weight:600}
+.aisugg-btns button.ok{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 </style>
 </head><body>
 <header>
@@ -732,6 +739,7 @@ function openSheet(p,isNew){
     :""}
     <div class="field"><span class="flabel">Conversation</span>
       <div class="thread" id="thread"></div>
+      <div class="aisugg" id="aiSugg" hidden aria-live="polite"></div>
       <div class="compose"><div class="suggest" id="suggest" hidden></div>
         <div class="tagrow">Tag: ${TEAM.filter(n=>n!==state.me).map(n=>`<button type="button" data-tag="${esc(n)}">@${esc(TEAM_LABEL[n])}</button>`).join("")}</div>
         <div class="pending" id="pend" hidden></div>
@@ -762,12 +770,34 @@ function openSheet(p,isNew){
   const showPend=()=>{ pend.hidden=!pendImg; pend.innerHTML=pendImg?`<img src="${pendImg}" alt="Photo to send"><span>Photo ready to send</span><button type="button" id="rmPic">Remove</button>`:""; };
   $("#fPic").addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const k=Math.min(1,1000/Math.max(im.width,im.height)); const c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); pendImg=c.toDataURL("image/jpeg",0.72); showPend(); }; im.src=r.result; }; r.readAsDataURL(f); e.target.value=""; });
   pend.addEventListener("click",e=>{ if(e.target.id==="rmPic"){ pendImg=null; showPend(); } });
+  let skipSuggest=false;
   const sendMsg=()=>{ const t=normTags(box.value.trim()); if(!t&&!pendImg) return; const mentions=parseMentions(t);
     live().notes.push({id:uid(),at:new Date().toISOString(),by:state.me,text:t,mentions,seen:[],...(pendImg?{img:pendImg}:{})});
     pendImg=null; showPend();
     if(!isNew) save();
     box.value=""; sug.hidden=true; drawNotes(); render();
-    if(mentions.length) toast("Tagged "+mentions.map(n=>TEAM_LABEL[n]).join(", ")); };
+    if(mentions.length) toast("Tagged "+mentions.map(n=>TEAM_LABEL[n]).join(", "));
+    if(!isNew&&t&&!skipSuggest) askSuggestion(); };
+  // Claude reads the new message and offers one tap to update next step, waiting on and follow-up. Nothing changes until Apply.
+  let sugSeq=0;
+  const sugHost=$("#aiSugg");
+  const askSuggestion=async()=>{ if(!AI_ON||!state.me) return; const seq=++sugSeq;
+    sugHost.hidden=false; sugHost.innerHTML=`<span class="aisugg-wait">Checking whether this changes the next step…</span>`;
+    let sg=null; try{ sg=await suggestUpdate(live()); }catch(e){ console.error(e); }
+    if(seq!==sugSeq||!document.body.contains(sugHost)) return;
+    if(!sg){ sugHost.hidden=true; sugHost.innerHTML=""; return; }
+    const cur=live(), parts=[];
+    if(sg.waiting) parts.push(sg.waiting==="Customer"?"Waiting on "+cur.customer:LANE_LABEL[sg.waiting]);
+    if(sg.fu) parts.push("follow up "+fmt(sg.fu));
+    if(sg.next) parts.push("Next: "+sg.next);
+    sugHost.innerHTML=`<div class="aisugg-txt"><span class="eyebrow">Suggested update</span><span>${esc(parts.join(" · "))}</span></div><div class="aisugg-btns"><button type="button" class="ok" id="sgApply">Apply</button><button type="button" id="sgIgnore">Ignore</button></div>`;
+    $("#sgIgnore").onclick=()=>{ sugHost.hidden=true; sugHost.innerHTML=""; };
+    $("#sgApply").onclick=()=>{ const c=live(); if(!c){ sugHost.hidden=true; return; }
+      if(sg.next!=null){ c.next=draft.next=orig.next=sg.next; $("#fNext").value=sg.next; }
+      if(sg.waiting){ c.waiting=draft.waiting=orig.waiting=sg.waiting; host.querySelectorAll('[data-field="waiting"] button').forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===sg.waiting)); }
+      if(sg.fu){ c.fu=draft.fu=orig.fu=sg.fu; $("#fFu").value=sg.fu; }
+      sugHost.hidden=true; sugHost.innerHTML=""; save(); render(); toast("Updated"); };
+  };
   $("#addNote").onclick=sendMsg;
   host.querySelectorAll("[data-tag]").forEach(b=>b.addEventListener("click",()=>insertTag(b.dataset.tag)));
   box.addEventListener("input",()=>{ const m=box.value.match(/@([\w]{0,10})$/); if(!m){ sug.hidden=true; return; }
@@ -800,7 +830,7 @@ function openSheet(p,isNew){
   $("#close").onclick=$("#cancel").onclick=$("#scrim").onclick=guardClose(isDirty,close);
   $("#saveBtn").onclick=()=>{
     if(!isNew&&!live()){ sheetClose=null; close(); toast("Someone else deleted this project. Nothing was saved.",{ms:4000}); return; }
-    if($("#fNote").value.trim()) sendMsg();
+    if($("#fNote").value.trim()){ skipSuggest=true; sendMsg(); }
     readInputs();
     // the status follows the flag, or the milestones; it's only rewritten when one of those changed
     const st=draft.flag||STAGE_STATUS[stepStage(draft.steps)+1];
@@ -1235,6 +1265,23 @@ async function claudeFn(turns,opts={}){
     msgs.push({role:"user",content:results});
   }
   return {text:text||"Done."};
+}
+/* ---------- suggested update after a new project message ---------- */
+async function suggestUpdate(p){
+  if(!p) return null;
+  const [,name]=split(p.name);
+  const convo=p.notes.slice(-8).map(m=>`${m.by?TEAM_LABEL[m.by]||m.by:"Note"}${m.at?" ("+m.at.slice(0,10)+")":""}: ${plainTags(m.text)}`).join("\n");
+  const system=`You keep Northeast International's project tracker up to date. Today is ${iso(TODAY)}. Read the newest message in this project's conversation and decide whether it changes the project's next step, who it is waiting on, or when to follow up. Always answer by calling suggest_update, passing only the fields that should change; pass no fields if nothing should change. next: a short instruction under 70 characters, like "Send tan sample to Keystone". waitingOn: NEI D Lapp, NEI D Glick, Factory, Customer, Freight or Nobody. followUp: YYYY-MM-DD for when someone should check back; only use a date the conversation implies.`;
+  const user=`Project: ${name} for ${p.customer}\nStage: ${stageLabel(p)}\nNext step now: ${p.next||"(none)"}\nWaiting on now: ${p.waiting||"(none)"}\nFollow-up now: ${p.fu||"(none)"}\n\nConversation, oldest first:\n${convo}`;
+  const tool={name:"suggest_update",description:"Suggest changes to this project's next step, waiting on and follow-up date.",input_schema:{type:"object",properties:{next:{type:"string"},waitingOn:{type:"string",enum:LANES},followUp:{type:"string",description:"YYYY-MM-DD"}}}};
+  const {data,error}=await sb.functions.invoke("ai",{body:{system,messages:[{role:"user",content:user}],tools:[tool]}});
+  if(error) return null;
+  const u=((data&&data.content)||[]).find(b=>b.type==="tool_use"&&b.name==="suggest_update"); if(!u) return null;
+  const i=u.input||{}, out={};
+  const nx=String(i.next||"").trim().slice(0,120); if(nx&&nx!==(p.next||"")) out.next=nx;
+  if(LANES.includes(i.waitingOn)&&i.waitingOn!==p.waiting) out.waiting=i.waitingOn;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(i.followUp||"")&&i.followUp!==p.fu&&i.followUp>=iso(TODAY)) out.fu=i.followUp;
+  return Object.keys(out).length?out:null;
 }
 /* ---------- links from emails open the right item ---------- */
 const AI_ON=true; // company Claude key is set in Supabase (ANTHROPIC_API_KEY)
