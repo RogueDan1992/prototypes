@@ -127,6 +127,12 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .stagerow .linkbtn{min-height:44px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 .stagerow .linkbtn[aria-pressed="true"]{text-decoration:none;background:var(--chip);border-radius:var(--r-sm);padding:6px 12px}
 .flrow{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-2)}
+.nextbox{min-height:120px;line-height:1.45;overflow-y:auto}
+.nextbox.open{overflow-y:hidden}
+.odbtn{display:flex;align-items:center;justify-content:center;gap:var(--sp-2);min-height:48px;margin:4px 0 var(--sp-3);padding:10px 16px;border:1px solid var(--go-line);border-radius:var(--r-md);background:var(--go-soft);color:var(--go);font-weight:600;font-size:var(--fs-md);text-decoration:none}
+.odbtn:hover{border-color:var(--go)}
+.odbtn svg{width:20px;height:20px;flex:none}
+.odbtn .ic{width:14px;height:14px}
 .steps button{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:10px 12px;min-height:52px;text-align:left;display:flex;gap:var(--sp-3);align-items:center;font-weight:500}
 .steps button .box{width:22px;height:22px;border-radius:var(--r-sm);border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:var(--fs-md);color:var(--surface)}
 .steps button[data-v="Yes"] .box{background:var(--go-fill);border-color:var(--go-fill);color:var(--on-go)}
@@ -507,6 +513,7 @@ const save=()=>{ try{localStorage.setItem(KEY,JSON.stringify({tab:state.tab,view
 const $=s=>document.querySelector(s);
 // One icon set: line icons at the same 1.8 stroke as the camera and folder
 const IC={check:"M20 6 9 17l-5-5",x:"M18 6 6 18M6 6l12 12",chat:"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",external:"M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6",chevron:"m9 18 6-6-6-6",plus:"M12 5v14M5 12h14"};
+const odBtn=u=>safeUrl(u)?`<a class="odbtn" href="${esc(safeUrl(u))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Open OneDrive folder</span>${ic("external")}</a>`:"";
 const ic=(n,cls)=>`<svg class="ic${cls?" "+cls:""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n]}"/></svg>`;
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const isOpen=p=>!CLOSED.includes(es(p));
@@ -747,6 +754,7 @@ function openSheet(p,isNew){
   <div class="sheet" role="dialog" aria-modal="true" aria-label="Edit project">
     <div class="grab"></div>
     <div class="shead"><div><div class="ctag">${isNew?"New project":esc(draft.customer)}</div><div class="cdate">${isNew?"":esc(d)}</div><h3>${isNew?"Add a project":esc(n)}</h3></div><button class="x" id="close" aria-label="Close">${ic("x")}</button></div>
+    <div id="odHost">${odBtn(draft.folder)}</div>
     ${isNew?`<div class="field"><span class="flabel">Customer</span>${chips("customer",state.customers,draft.customer)}<input type="text" id="fNewCust" placeholder="Or type a new customer name"></div>
       <div class="row2"><div class="field"><label class="flabel" for="fDate">Date customer first asked</label><input type="date" id="fDate" value="${iso(TODAY)}"></div><div class="field"><label class="flabel" for="fName">Product</label><input type="text" id="fName" placeholder="Matches the OneDrive folder name"></div></div>`
     :""}
@@ -762,7 +770,7 @@ function openSheet(p,isNew){
       <div class="stagerow"><span id="stageTxt"></span><button type="button" class="linkbtn" id="skipMode" aria-pressed="false">Mark a step not needed</button></div></div>
     <div class="field"><span class="flabel">Flag</span>${chips("flag",["",...FLAGS],draft.flag,["None",...FLAGS.map(f=>FLAG_LABEL[f])])}</div>
     <div class="field"><span class="flabel">Waiting on</span>${chips("waiting",LANES,draft.waiting,laneLabels)}</div>
-    <div class="field"><label class="flabel" for="fNext">Next step</label><input type="text" id="fNext" value="${esc(draft.next)}" placeholder="What has to happen next"></div>
+    <div class="field"><span class="flrow"><label class="flabel" for="fNext">Next steps / notes</label><button type="button" class="linkbtn" id="nextExp" aria-controls="fNext" aria-expanded="false" hidden>Expand</button></span><textarea id="fNext" class="nextbox" placeholder="What has to happen next. Add as much detail as you need.">${esc(draft.next)}</textarea></div>
     <div class="field"><label class="flabel" for="fFu">Follow up</label><div class="quick"><button type="button" data-q="1">Tomorrow</button><button type="button" data-q="3">3 days</button><button type="button" data-q="7">1 week</button><button type="button" data-q="14">2 weeks</button><button type="button" data-q="0">Clear</button></div><input type="date" id="fFu" value="${esc(draft.fu)}"></div>
     <div class="row2"><div class="field"><label class="flabel" for="fVendor">Factory / vendor</label><input type="text" id="fVendor" value="${esc(draft.vendor)}"></div><div class="field"><span class="flrow"><label class="flabel" for="fFolder">OneDrive link</label>${safeUrl(draft.folder)?`<a class="folder" href="${esc(safeUrl(draft.folder))}" target="_blank" rel="noopener">Open${ic("external")}</a>`:""}</span><input type="url" id="fFolder" value="${esc(draft.folder)}" placeholder="Paste folder link"></div></div>
     ${isNew?"":`<details class="field hist" id="hist"><summary class="flabel">${ic("chevron","hchev")}Change history</summary><div class="hlist" id="hlist">Loading…</div></details>`}
@@ -777,6 +785,13 @@ function openSheet(p,isNew){
     th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${safeImg(m.img)?`<img class="mimg" src="${safeImg(m.img)}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">Notified ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:var(--fs-md)">No messages yet.</span>`;
     th.scrollTop=th.scrollHeight; };
   drawNotes();
+  // Next steps box grows with the text; past the cap, Expand shows the whole note
+  const nx=$("#fNext"), nxBtn=$("#nextExp");
+  const fitNext=()=>{ const big=nx.classList.contains("open"); nx.style.height="auto"; const h=nx.scrollHeight+2; const cap=big?Infinity:260; nx.style.height=Math.min(h,cap)+"px"; nxBtn.hidden=!big&&h<=cap; nxBtn.textContent=big?"Collapse":"Expand"; nxBtn.setAttribute("aria-expanded",big); };
+  nx.addEventListener("input",fitNext);
+  nxBtn.addEventListener("click",()=>{ nx.classList.toggle("open"); fitNext(); });
+  requestAnimationFrame(fitNext);
+  $("#fFolder").addEventListener("input",e=>{ $("#odHost").innerHTML=odBtn(fixUrl(e.target.value)); });
   const box=$("#fNote"), sug=$("#suggest");
   // Adds a tag at the end. Only a half-typed "@name" is replaced, so several people can be tagged in a row; a name already tagged is not added twice.
   const insertTag=n=>{ let v=box.value; const m=v.match(/@(\w{0,10})$/); if(m&&!parseMentions(normTags(m[0])).length) v=v.slice(0,m.index); v=v.replace(/\s*$/,v.trim()?" ":"");
@@ -809,7 +824,7 @@ function openSheet(p,isNew){
     sugHost.innerHTML=`<div class="aisugg-txt"><span class="eyebrow">Suggested update</span><span>${esc(parts.join(" · "))}</span></div><div class="aisugg-btns"><button type="button" class="ok" id="sgApply">Apply</button><button type="button" id="sgIgnore">Ignore</button></div>`;
     $("#sgIgnore").onclick=()=>{ sugHost.hidden=true; sugHost.innerHTML=""; };
     $("#sgApply").onclick=()=>{ const c=live(); if(!c){ sugHost.hidden=true; return; }
-      if(sg.next!=null){ c.next=draft.next=orig.next=sg.next; $("#fNext").value=sg.next; }
+      if(sg.next!=null){ c.next=draft.next=orig.next=sg.next; $("#fNext").value=sg.next; $("#fNext").dispatchEvent(new Event("input")); }
       if(sg.waiting){ c.waiting=draft.waiting=orig.waiting=sg.waiting; host.querySelectorAll('[data-field="waiting"] button').forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===sg.waiting)); }
       if(sg.fu){ c.fu=draft.fu=orig.fu=sg.fu; $("#fFu").value=sg.fu; }
       sugHost.hidden=true; sugHost.innerHTML=""; save(); render(); toast("Updated"); };
