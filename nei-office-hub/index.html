@@ -411,7 +411,7 @@ textarea{min-height:70px;resize:vertical}
 }
 .aisugg{margin-top:var(--sp-2);border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:var(--sp-3);display:flex;gap:var(--sp-3);align-items:center;justify-content:space-between;flex-wrap:wrap}
 .aisugg-wait{font-size:var(--fs-sm);color:var(--muted)}
-.aisugg-txt{display:grid;gap:2px;min-width:0;flex:1 1 220px;font-size:var(--fs-md);overflow-wrap:anywhere}
+.aisugg-txt{display:grid;gap:2px;min-width:0;flex:1 1 220px;font-size:var(--fs-md);overflow-wrap:anywhere;white-space:pre-line;max-height:240px;overflow-y:auto}
 .aisugg .eyebrow{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted)}
 .aisugg-btns{display:flex;gap:var(--sp-2)}
 .aisugg-btns button{min-height:44px;padding:0 var(--sp-4);border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-weight:600}
@@ -820,8 +820,7 @@ function openSheet(p,isNew){
     const cur=live(), parts=[];
     if(sg.waiting) parts.push(sg.waiting==="Customer"?"Waiting on "+cur.customer:LANE_LABEL[sg.waiting]);
     if(sg.fu) parts.push("follow up "+fmt(sg.fu));
-    if(sg.next) parts.push("Next: "+sg.next);
-    sugHost.innerHTML=`<div class="aisugg-txt"><span class="eyebrow">Suggested update</span><span>${esc(parts.join(" · "))}</span></div><div class="aisugg-btns"><button type="button" class="ok" id="sgApply">Apply</button><button type="button" id="sgIgnore">Ignore</button></div>`;
+    sugHost.innerHTML=`<div class="aisugg-txt"><span class="eyebrow">Suggested update</span>${parts.length?`<span>${esc(parts.join(" · "))}</span>`:""}${sg.next?`<span>${esc("Next steps / notes:\n"+sg.next)}</span>`:""}</div><div class="aisugg-btns"><button type="button" class="ok" id="sgApply">Apply</button><button type="button" id="sgIgnore">Ignore</button></div>`;
     $("#sgIgnore").onclick=()=>{ sugHost.hidden=true; sugHost.innerHTML=""; };
     $("#sgApply").onclick=()=>{ const c=live(); if(!c){ sugHost.hidden=true; return; }
       if(sg.next!=null){ c.next=draft.next=orig.next=sg.next; $("#fNext").value=sg.next; $("#fNext").dispatchEvent(new Event("input")); }
@@ -924,7 +923,7 @@ function aiRules(){
 Projects move through stages set by their milestones (${STEPS.join(", ")}): ${STAGE_NAME.join(", ")}. A project can also be flagged Needs Info, On Hold or Dead. Each project's stage field shows where it is. Lists: In progress, Ordered (Order placed and Shipped), Completed (Delivered), Dead. To move a project forward, tick milestones by hand; through update_project you may set status to one of: New Request, Quoting, Quote Sent, Ready to Order, Order Placed, Shipped, Needs Info, On Hold.
 "Waiting on" is one of: NEI D Lapp, NEI D Glick, Factory, Customer, Freight, Nobody. A follow-up date on or before today is overdue.
 Customers: ${state.customers.map(c=>c+(state.custInfo[c]?.code?" ("+state.custInfo[c].code+")":"")).join(", ")}.
-You can read everything in the tracker. You can edit existing projects and office requests (status, waiting on, next step, follow-up, vendor, assignee, due date) and add NEW items. You can NOT delete anything, mark a project Delivered, Completed or Dead, or mark a request Done; if asked, say that is done by hand. You can also add NEW items (projects, customers, office requests, supply list items, office board posts, messages in a project conversation), and every add or edit shows the person a Confirm button first; nothing saves until they tap it. Only add what the person asked for. If they paste a quote, proforma or email, pull out the customer, product and next step and propose a new project. If they tap Cancel, do not try again unless they ask. Keep answers short and plain, a few lines or a short list, written for someone on an iPad. Refer to projects by product name and customer, never by id. You cannot reach OneDrive, email or anything outside this tracker yet; say so if asked.
+You can read everything in the tracker. You can edit existing projects and office requests (status, waiting on, next step, follow-up, vendor, assignee, due date) and add NEW items. You can NOT delete anything, mark a project Delivered, Completed or Dead, or mark a request Done; if asked, say that is done by hand. You can also add NEW items (projects, customers, office requests, supply list items, office board posts, messages in a project conversation), and every add or edit shows the person a Confirm button first; nothing saves until they tap it. Only add what the person asked for. If they paste a quote, proforma or email, pull out the customer, product and next step and propose a new project. If they tap Cancel, do not try again unless they ask. A project's next step is a "Next steps / notes" box: its first line is the next action, and it can hold longer detail below that (quantities, prices, who is doing what, dates) in short lines or "- " bullets. When you change it, send the whole text, keeping details that still apply. Keep answers short and plain, a few lines or a short list, written for someone on an iPad. Refer to projects by product name and customer, never by id. You cannot reach OneDrive, email or anything outside this tracker yet; say so if asked.
 
 Current projects (JSON):
 ${JSON.stringify(state.projects.map(compact))}
@@ -1302,14 +1301,14 @@ async function suggestUpdate(p){
   if(!p) return null;
   const [,name]=split(p.name);
   const convo=p.notes.slice(-8).map(m=>`${m.by?TEAM_LABEL[m.by]||m.by:"Note"}${m.at?" ("+m.at.slice(0,10)+")":""}: ${plainTags(m.text)}`).join("\n");
-  const system=`You keep Northeast International's project tracker up to date. Today is ${iso(TODAY)}. Read the newest message in this project's conversation and decide whether it changes the project's next step, who it is waiting on, or when to follow up. Always answer by calling suggest_update, passing only the fields that should change; pass no fields if nothing should change. next: a short instruction under 70 characters, like "Send tan sample to Keystone". waitingOn: NEI D Lapp, NEI D Glick, Factory, Customer, Freight or Nobody. followUp: YYYY-MM-DD for when someone should check back; only use a date the conversation implies.`;
-  const user=`Project: ${name} for ${p.customer}\nStage: ${stageLabel(p)}\nNext step now: ${p.next||"(none)"}\nWaiting on now: ${p.waiting||"(none)"}\nFollow-up now: ${p.fu||"(none)"}\n\nConversation, oldest first:\n${convo}`;
+  const system=`You keep Northeast International's project tracker up to date. Today is ${iso(TODAY)}. Read the newest message in this project's conversation and decide whether it changes the project's next step, who it is waiting on, or when to follow up. Always answer by calling suggest_update, passing only the fields that should change; pass no fields if nothing should change. next: the project's full "Next steps / notes" text, which replaces what is there now. Start with a short first line saying the next action, like "Send tan sample to Keystone". Under it, add as much detail as is useful from the conversation: quantities, sizes, colors, prices, who is doing what, and dates. Keep any details from the current note that still apply, and drop what is finished. Use short lines or "- " bullets, plain text, no headings. waitingOn: NEI D Lapp, NEI D Glick, Factory, Customer, Freight or Nobody. followUp: YYYY-MM-DD for when someone should check back; only use a date the conversation implies.`;
+  const user=`Project: ${name} for ${p.customer}\nStage: ${stageLabel(p)}\nNext steps / notes now:\n${p.next||"(none)"}\n\nWaiting on now: ${p.waiting||"(none)"}\nFollow-up now: ${p.fu||"(none)"}\n\nConversation, oldest first:\n${convo}`;
   const tool={name:"suggest_update",description:"Suggest changes to this project's next step, waiting on and follow-up date.",input_schema:{type:"object",properties:{next:{type:"string"},waitingOn:{type:"string",enum:LANES},followUp:{type:"string",description:"YYYY-MM-DD"}}}};
   const {data,error}=await sb.functions.invoke("ai",{body:{system,messages:[{role:"user",content:user}],tools:[tool]}});
   if(error) return null;
   const u=((data&&data.content)||[]).find(b=>b.type==="tool_use"&&b.name==="suggest_update"); if(!u) return null;
   const i=u.input||{}, out={};
-  const nx=String(i.next||"").trim().slice(0,120); if(nx&&nx!==(p.next||"")) out.next=nx;
+  const nx=String(i.next||"").trim().slice(0,2000); if(nx&&nx!==(p.next||"")) out.next=nx;
   if(LANES.includes(i.waitingOn)&&i.waitingOn!==p.waiting) out.waiting=i.waitingOn;
   if(/^\d{4}-\d{2}-\d{2}$/.test(i.followUp||"")&&i.followUp!==p.fu&&i.followUp>=iso(TODAY)) out.fu=i.followUp;
   return Object.keys(out).length?out:null;
