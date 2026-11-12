@@ -3,19 +3,19 @@
 <meta name="description" content="Northeast International office and customer projects">
 <meta name="apple-mobile-web-app-title" content="NEI Hub">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: sticky header with search, customer strip, summary tiles, group-by switch, then project cards (all customers by default). Tap a card for a bottom-sheet editor with a per-project conversation and @tags. Office view: greeting, two-column dashboard (my plate + requests | project glance, supply list, office board). */
 :root{
   --bg:#f3f2ef; --surface:#ffffff; --ink:#1c1b1a; --muted:#6b6862; --line:#e2dfd9;
-  --red:#c8102e; --red-soft:#fbe7ea;
-  --ok:#276b43; --ok-soft:#e3f2e8; --warn:#8a5600; --warn-soft:#fbf0d9; --late:#c8102e;
+  --red:#C42A18; --red-soft:#fcebe8;
+  --ok:#276b43; --ok-soft:#e3f2e8; --warn:#8a5600; --warn-soft:#fbf0d9; --late:#C42A18;
   --chip:#efeeea; --note:#f7f5f0;
-  --red-fill:#c8102e; --on-red:#fff;
+  --red-fill:#C42A18; --on-red:#fff;
   /* dark green: progress, done, and main buttons (red stays for alerts only) */
   --go:#1d5a3a; --go-fill:#1d5a3a; --on-go:#fff; --go-soft:#e4efe8; --go-line:#9cc4ad; --on-ok:#fff; --info:#2c5fb3; --info-soft:#e6eefb; --mention-on-ink:#8fdcae;
   /* the header is always dark, in both themes */
-  --hdr-bg:#0d0d0d; --hdr-fg:#f1efea; --hdr-muted:#a29e96; --hdr-dim:#8f8b84; --hdr-line:#3a3835; --hdr-field:#211f1d; --hdr-nav:#1f1e1c; --hdr-navfg:#c9c6bf; --hdr-accent:#7fd1a0; --brand:#c8102e;
+  --hdr-bg:#0d0d0d; --hdr-fg:#f1efea; --hdr-muted:#a29e96; --hdr-dim:#8f8b84; --hdr-line:#3a3835; --hdr-field:#211f1d; --hdr-nav:#1f1e1c; --hdr-navfg:#c9c6bf; --hdr-accent:#7fd1a0; --brand:#E23B28;
   /* type: 6 steps, plus 16px for fields and big buttons (stops iPad zooming in) */
   --fs-xs:12px; --fs-sm:13px; --fs-md:15px; --fs-input:16px; --fs-lg:17px; --fs-xl:22px; --fs-2xl:30px;
   /* corners: small controls, cards and inputs, panels and sheets */
@@ -24,9 +24,10 @@
   --sh-raised:0 1px 3px rgba(0,0,0,.12); --sh-float:0 12px 32px rgba(0,0,0,.22);
   --ls-caps:.07em; --ls-display:.04em;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
-  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
-  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  /* one family, as the NEI brand kit sets for web: Source Sans 3 (headings in bold caps, codes and counts with even-width digits) */
+  --f-display:"Source Sans 3",Helvetica,Arial,sans-serif;
+  --f-body:"Source Sans 3",Helvetica,Arial,sans-serif;
+  --f-mono:"Source Sans 3",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#141312; --surface:#1f1e1c; --ink:#f1efea; --muted:#a29e96; --line:#33312d;
@@ -35,7 +36,7 @@
   --bg:#141312; --surface:#1f1e1c; --ink:#f1efea; --muted:#a29e96; --line:#33312d;
   --red:#ff4d5e; --red-soft:#3a1a1e; --ok:#5cc489; --ok-soft:#183324; --warn:#e3a43a; --warn-soft:#352812; --late:#ff4d5e; --chip:#2a2926; --note:#191816; --red-fill:#d92a3c; --on-ok:#0d2a19; --info:#7aa7f0; --info-soft:#18243a; --mention-on-ink:#1d5a3a; --go:#6fcf97; --go-fill:#2b7a4f; --on-go:#fff; --go-soft:#16291e; --go-line:#2f5c42; --sh-float:0 12px 32px rgba(0,0,0,.5); color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:var(--fs-md);line-height:1.4;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:var(--fs-md);line-height:1.4;-webkit-tap-highlight-color:transparent;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,[role=button]:focus-visible,summary:focus-visible{outline:2px solid var(--go);outline-offset:2px}
 
@@ -159,7 +160,7 @@ textarea{min-height:70px;resize:vertical}
 .btn.primary{background:var(--go-fill);color:var(--on-go);flex:1}
 .btn.ghost{background:var(--chip)}
 .folder{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-md);font-weight:600;color:var(--ink);text-decoration:none}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:var(--r-pill);font-size:var(--fs-md);z-index:20}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:var(--r-pill);font-size:var(--fs-md);z-index:20;display:flex;align-items:center;max-width:calc(100% - 24px)}
 .who{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;font-size:var(--fs-sm);color:var(--muted)}
 .who button{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-pill);padding:6px 12px;min-height:36px;font-size:var(--fs-sm);font-weight:500}
 .who button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
@@ -216,19 +217,47 @@ textarea{min-height:70px;resize:vertical}
 .hright .search{flex:1}
 .bell{position:relative;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--hdr-line);background:var(--hdr-field);color:var(--hdr-fg);border-radius:var(--r-md);width:46px;min-height:46px;flex:none}
 .bell svg{width:20px;height:20px;stroke:currentColor}
-.bell .badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:var(--r-pill);background:var(--brand);color:#fff;font-size:var(--fs-xs);font-weight:600;line-height:20px;text-align:center;border:2px solid var(--hdr-bg)}
+.bell .badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:var(--r-pill);background:var(--red-fill);color:#fff;font-size:var(--fs-xs);font-weight:700;line-height:20px;text-align:center;border:2px solid var(--hdr-bg)}
 .npanel{position:fixed;z-index:11;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;top:calc(72px + env(safe-area-inset-top,0px));right:max(16px,calc((100vw - 1200px)/2 + 16px));width:400px;max-height:min(560px,calc(100vh - 100px));border-radius:var(--r-lg);border:1px solid var(--line);box-shadow:var(--sh-float);overflow:hidden}
 .npanel .nhead{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);padding:14px 16px;border-bottom:1px solid var(--line)}
 .npanel .nhead h3{margin:0;font-family:var(--f-display);font-size:var(--fs-xl);font-weight:700;letter-spacing:var(--ls-display);text-transform:uppercase}
 .npanel .nhead .acts{display:flex;gap:var(--sp-2);align-items:center}
 .npanel .nhead .linkbtn{border:0;background:none;color:var(--ink);font-weight:600;font-size:var(--fs-md);padding:8px 6px;min-height:40px}
 .npanel .x{border:0;background:var(--chip);border-radius:var(--r-pill);width:40px;height:40px;font-size:var(--fs-xl);line-height:1}
-.nlist{overflow:auto;flex:1}
-.nitem{display:grid;grid-template-columns:10px 1fr auto;gap:var(--sp-3);align-items:start;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:14px 16px;min-height:64px}
-.nitem:last-child{border-bottom:0}
+.nlist{overflow-y:auto;overflow-x:hidden;flex:1;overscroll-behavior:contain}
+/* each notification is a row you can open, clear with the X, or swipe away; an unopened tag is locked until it's opened */
+.nrow{position:relative;border-bottom:1px solid var(--line);touch-action:pan-y;background:var(--surface)}
+.nrow:last-child{border-bottom:0}
+.nrow.drag{user-select:none;-webkit-user-select:none}
+.nitem{display:grid;grid-template-columns:10px 1fr auto;gap:var(--sp-3);align-items:start;width:100%;text-align:left;border:0;background:none;padding:14px 16px;min-height:64px}
+.nrow:not(.locked) .nitem{padding-bottom:18px}
 .nitem .dot{width:10px;height:10px;border-radius:50%;margin-top:6px;background:transparent}
-.nitem.unread{background:var(--red-soft)}
-.nitem.unread .dot{background:var(--red)}
+.nrow.unread{background:var(--note)}
+.nrow.unread .dot{background:var(--muted)}
+.nrow.locked{background:var(--red-soft);box-shadow:inset 3px 0 0 var(--red)}
+.nrow.locked .dot{background:var(--red)}
+.nlock{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--red)}
+.nlock svg{width:13px;height:13px}
+.nx{position:absolute;right:8px;bottom:6px;border:0;background:transparent;color:var(--muted);border-radius:var(--r-pill);width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center}
+.nx svg{width:16px;height:16px}
+.nx:hover{background:var(--chip);color:var(--ink)}
+.nrow .nx:focus-visible,.nban .nx:focus-visible{outline:2px solid var(--go);outline-offset:-2px}
+/* new and tagged notifications show in a bar under the header; a tag stays there until it's opened */
+#nbanner{position:sticky;top:calc(var(--hdr-h,76px) + env(safe-area-inset-top,0px) + 8px);z-index:4;display:grid;gap:var(--sp-2)}
+#nbanner:empty{display:none}
+.nban{display:flex;align-items:stretch;gap:var(--sp-2);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-raised);touch-action:pan-y;overflow:hidden}
+.nban.locked{border-color:var(--red);box-shadow:inset 4px 0 0 var(--red),var(--sh-raised)}
+.nbmain{flex:1;min-width:0;border:0;background:none;text-align:left;padding:10px 6px 10px 16px;display:grid;gap:1px;min-height:56px;align-content:center}
+.nbmain .nbk{font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted)}
+.nban.locked .nbk{color:var(--red)}
+.nbmain .nt{font-weight:600;font-size:var(--fs-md);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbmain .nb{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbacts{display:flex;align-items:center;gap:2px;padding-right:8px;flex:none}
+.nbopen{border:0;background:var(--ink);color:var(--surface);font-weight:600;border-radius:var(--r-md);padding:0 16px;min-height:40px}
+.nban.locked .nbopen{background:var(--red-fill);color:var(--on-red)}
+.nban .nx{position:static}
+@media (prefers-reduced-motion:no-preference){.nban{animation:banin .2s ease-out}.nrow.nudge .nlock,.nban.nudge .nbk{animation:nudge .5s ease-in-out}@keyframes banin{from{opacity:0;transform:translateY(-6px)}}@keyframes nudge{20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}}
+.toast .tact{border:0;background:none;color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px;margin-left:12px;padding:6px 4px;min-height:32px}
 .nitem .nt{font-weight:600;font-size:var(--fs-md)}
 .nitem .nw{font-size:var(--fs-xs);color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:var(--ls-caps);font-weight:600}
 .nitem .nb{font-size:var(--fs-md);color:var(--muted);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -429,6 +458,7 @@ textarea{min-height:70px;resize:vertical}
 </header>
 
 <main>
+  <div id="nbanner" aria-label="New notifications"></div>
   <div class="toprow"><div></div><div class="who" id="who"></div></div>
   <div id="officeView" style="display:grid;gap:18px"></div>
   <div id="projView" style="display:grid;gap:18px">
@@ -673,6 +703,7 @@ function renderOffice(){
   keep.forEach(([id,v])=>{ const el=document.getElementById(id); if(el&&v!=null) el.value=v; });
 }
 function openReq(t,isNew,origIn){
+  if(!isNew) markAnchorRead("r-"+t.id);
   const d=JSON.parse(JSON.stringify(t)), orig=origIn||JSON.parse(JSON.stringify(t));
   const plus=k=>{const x=new Date(TODAY);x.setDate(x.getDate()+k);return iso(x)};
   const people=[...TEAM,"Anyone"], plab=people.map(n=>n==="Anyone"?"Anyone":TEAM_LABEL[n]);
@@ -731,7 +762,8 @@ function openSup(x){
 }
 function render(){ renderWho(); renderView(); renderCusts(); renderTiles(); renderGroups(); $("#qclr").hidden=!query; }
 
-function toast(m,o){ $("#toastHost").innerHTML=`<div class="toast" role="status">${esc(m)}</div>`; clearTimeout(toast.t); if(!(o&&o.sticky)) toast.t=setTimeout(()=>$("#toastHost").innerHTML="",o&&o.ms||1800); }
+function toast(m,o){ const h=$("#toastHost"); h.innerHTML=`<div class="toast" role="status">${esc(m)}${o&&o.action?`<button type="button" class="tact">${esc(o.action)}</button>`:""}</div>`; if(o&&o.action) h.querySelector(".tact").onclick=()=>{ h.innerHTML=""; o.onAction(); };
+  clearTimeout(toast.t); if(!(o&&o.sticky)) toast.t=setTimeout(()=>h.innerHTML="",o&&o.ms||1800); }
 // Only http(s) links are shown as links; photos must be inline images
 const safeUrl=u=>{ u=String(u||"").trim(); return /^https?:\/\//i.test(u)?u:""; };
 const fixUrl=u=>{ u=String(u||"").trim(); if(u&&!/^[a-z][a-z0-9+.-]*:/i.test(u)) u="https://"+u; return u; };
@@ -780,7 +812,7 @@ function openSheet(p,isNew){
   const live=()=>isNew?draft:state.projects.find(x=>x.id===draft.id);
   if(!isNew) $("#hist").addEventListener("toggle",e=>{ if(e.target.open) loadHistory(draft.id); });
   // opening the project marks your tags as seen
-  if(!isNew){ live().notes.forEach(m=>{ if(m.mentions.includes(state.me)&&!m.seen.includes(state.me)) m.seen.push(state.me); }); save(); render(); }
+  if(!isNew){ live().notes.forEach(m=>{ if(m.mentions.includes(state.me)&&!m.seen.includes(state.me)) m.seen.push(state.me); }); save(); render(); markAnchorRead("p-"+draft.id); }
   const drawNotes=()=>{ const th=$("#thread"); const ms=live().notes;
     th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${safeImg(m.img)?`<img class="mimg" src="${safeImg(m.img)}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">Notified ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:var(--fs-md)">No messages yet.</span>`;
     th.scrollTop=th.scrollHeight; };
@@ -1170,11 +1202,29 @@ function addInApp(n){
   sb.from("notifications").insert(rows).select("id").then(({data,error})=>{ if(error){ console.error(error); return; }
     const ids=(data||[]).map(r=>r.id); if(ids.length) sb.functions.invoke("push",{body:{ids}}).catch(()=>{}); });
 }
+// A tag (on a project, a request or the office board) has to be opened before it can be cleared.
+// Everything else can be cleared with its X, a swipe, or Clear all. Clearing waits 5 seconds so Undo can bring it back.
+const isTag=x=>x.kind==="tag"||x.kind==="board";
+const isLocked=x=>isTag(x)&&!x.read;
+const nById=id=>state.notifs.find(n=>n.id===id);
+let pendDel={rows:[],t:null}, freshN=null, freshT=null;
 async function loadNotifs(){
   if(!state.me) return;
   const {data,error}=await sb.from("notifications").select("*").eq("recipient",state.me).order("created_at",{ascending:false}).limit(60);
   if(error){ console.error(error); return; }
-  state.notifs=data; renderBell(); if($("#npanel")) drawNotifs();
+  const gone=new Set(pendDel.rows.map(r=>r.id)); state.notifs=data.filter(x=>!gone.has(x.id));
+  settleSeenTags(); drawNotifUI();
+}
+function drawNotifUI(){ renderBell(); if($("#npanel")) drawNotifs(); drawBanner(); }
+function markRead(list){
+  const ids=list.filter(x=>!x.read).map(x=>{ x.read=true; return x.id; }); if(!ids.length) return;
+  drawNotifUI(); sb.from("notifications").update({read:true}).in("id",ids).then(({error})=>{ if(error) console.error(error); });
+}
+function markAnchorRead(a){ if(state.notifs.length) markRead(state.notifs.filter(x=>x.anchor===a)); }
+// a tag on a project whose messages you have already read counts as opened
+function settleSeenTags(){
+  const done=state.notifs.filter(x=>{ if(!isLocked(x)||!String(x.anchor||"").startsWith("p-")) return false; const p=state.projects.find(q=>q.id===x.anchor.slice(2)); return p&&!unseenFor(p,state.me); });
+  if(done.length) markRead(done);
 }
 function renderBell(){
   const b=$("#bell"); if(!b) return; b.hidden=!state.me;
@@ -1183,32 +1233,90 @@ function renderBell(){
   b.setAttribute("aria-label",n?`Notifications, ${n} unread`:"Notifications");
   try{ if("setAppBadge" in navigator){ n?navigator.setAppBadge(n).catch(()=>{}):navigator.clearAppBadge().catch(()=>{}); } }catch(e){}
 }
+function dismiss(list){
+  list=list.filter(x=>x&&!isLocked(x)); if(!list.length) return 0;
+  const ids=new Set(list.map(x=>x.id)); state.notifs=state.notifs.filter(x=>!ids.has(x.id)); pendDel.rows.push(...list);
+  if(freshN&&ids.has(freshN.id)) freshN=null;
+  drawNotifUI(); clearTimeout(pendDel.t); pendDel.t=setTimeout(flushDismiss,5000);
+  const n=pendDel.rows.length; toast(n===1?"Notification cleared":n+" notifications cleared",{ms:5000,action:"Undo",onAction:undoDismiss});
+  return list.length;
+}
+function undoDismiss(){
+  clearTimeout(pendDel.t); const back=pendDel.rows; pendDel={rows:[],t:null}; const have=new Set(state.notifs.map(x=>x.id));
+  state.notifs=state.notifs.concat(back.filter(x=>!have.has(x.id))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)); drawNotifUI();
+}
+function flushDismiss(){
+  clearTimeout(pendDel.t); const ids=pendDel.rows.map(x=>x.id); pendDel={rows:[],t:null}; if(!ids.length) return;
+  sb.from("notifications").delete().in("id",ids).then(({error})=>{ if(error){ console.error(error); loadNotifs(); } });
+}
+window.addEventListener("pagehide",flushDismiss);
+function openNotif(x){
+  closeNotifs(); if(freshN&&freshN.id===x.id) freshN=null; markRead([x]); drawBanner();
+  if(!openAnchor(x.anchor)&&x.anchor) toast("That item was removed.");
+}
+// drag a row or bar sideways to clear it; a locked one only gives a little and springs back
+function swipeable(el,can,go){
+  let sx=0,sy=0,dx=0,on=false,drag=false;
+  el.addEventListener("pointerdown",e=>{ if(e.button||e.target.closest("[data-nx],[data-bx]")) return; sx=e.clientX; sy=e.clientY; dx=0; on=true; drag=false; });
+  el.addEventListener("pointermove",e=>{ if(!on) return; const x=e.clientX-sx,y=e.clientY-sy;
+    if(!drag){ if(Math.abs(x)<10) return; if(Math.abs(y)>Math.abs(x)){ on=false; return; } drag=true; el.classList.add("drag"); try{ el.setPointerCapture(e.pointerId); }catch(_){} }
+    const ok=can(); dx=ok?x:Math.max(-28,Math.min(28,x*.25)); el.style.transform=`translateX(${dx}px)`; el.style.opacity=ok?String(Math.max(.3,1-Math.abs(dx)/el.offsetWidth)):""; });
+  const end=()=>{ if(!on) return; on=false; if(!drag) return; el.classList.remove("drag"); el.dataset.swiped="1"; setTimeout(()=>{ delete el.dataset.swiped; },80);
+    if(can()&&Math.abs(dx)>Math.min(120,el.offsetWidth*.33)){ el.style.transition="transform .16s ease-out,opacity .16s ease-out"; el.style.transform=`translateX(${dx>0?110:-110}%)`; el.style.opacity="0"; setTimeout(go,150); }
+    else{ el.style.transition="transform .18s ease-out,opacity .18s"; el.style.transform=""; el.style.opacity=""; setTimeout(()=>{ el.style.transition=""; },200);
+      if(!can()){ el.classList.add("nudge"); setTimeout(()=>el.classList.remove("nudge"),700); } } };
+  el.addEventListener("pointerup",end); el.addEventListener("pointercancel",end);
+  el.addEventListener("click",e=>{ if(el.dataset.swiped){ e.stopPropagation(); e.preventDefault(); } },true);
+}
+const LOCK_IC=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
 function drawNotifs(){
   const list=$("#nlist"); if(!list) return;
-  list.innerHTML=`<div id="nAlert"></div>`+(state.notifs.length?state.notifs.map(x=>`<button type="button" class="nitem${x.read?"":" unread"}" data-nid="${esc(x.id)}"><span class="dot"></span><span><div class="nt">${esc(x.title)}</div>${x.where_txt?`<div class="nw">${esc(x.where_txt)}</div>`:""}${x.body?`<div class="nb">${esc(x.body)}</div>`:""}</span><span class="ntime">${esc(ago(x.created_at))}</span></button>`).join("")
+  list.innerHTML=`<div id="nAlert"></div>`+(state.notifs.length?state.notifs.map(x=>{ const lock=isLocked(x);
+    return `<div class="nrow${x.read?"":" unread"}${lock?" locked":""}" data-nid="${esc(x.id)}"><button type="button" class="nitem" data-nopen${lock?` aria-label="Tagged you, open to clear: ${esc(x.title)}"`:""}><span class="dot"></span><span><div class="nt">${esc(x.title)}</div>${x.where_txt?`<div class="nw">${esc(x.where_txt)}</div>`:""}${x.body?`<div class="nb">${esc(x.body)}</div>`:""}${lock?`<div class="nlock">${LOCK_IC}Tagged you · open to clear</div>`:""}</span><span class="ntime">${esc(ago(x.created_at))}</span></button>${lock?"":`<button type="button" class="nx" data-nx aria-label="Clear: ${esc(x.title)}">${ic("x")}</button>`}</div>`; }).join("")
     :`<div class="nempty">No notifications. Tags, assignments and finished requests show up here.</div>`);
-  $("#nAll").hidden=!state.notifs.some(x=>!x.read);
+  $("#nAll").hidden=!state.notifs.some(x=>!isLocked(x));
+  list.querySelectorAll(".nrow").forEach(r=>swipeable(r,()=>{ const x=nById(r.dataset.nid); return !!x&&!isLocked(x); },()=>dismiss([nById(r.dataset.nid)])));
   drawAlerts();
 }
 function closeNotifs(){ $("#notifHost").innerHTML=""; }
 function openNotifs(){
   $("#notifHost").innerHTML=`<div class="scrim" id="nScrim" style="background:rgba(0,0,0,.25)"></div>
   <div class="npanel" id="npanel" role="dialog" aria-modal="true" aria-label="Notifications">
-    <div class="nhead"><h3>Notifications</h3><div class="acts"><button type="button" class="linkbtn" id="nAll">Mark all read</button><button type="button" class="x" id="nClose" aria-label="Close">${ic("x")}</button></div></div>
+    <div class="nhead"><h3>Notifications</h3><div class="acts"><button type="button" class="linkbtn" id="nAll">Clear all</button><button type="button" class="x" id="nClose" aria-label="Close">${ic("x")}</button></div></div>
     <div class="nlist" id="nlist"></div></div>`;
   drawNotifs(); drawAlerts();
   $("#nScrim").onclick=closeNotifs; $("#nClose").onclick=closeNotifs;
-  $("#nAll").onclick=async()=>{ const ids=state.notifs.filter(x=>!x.read).map(x=>x.id); state.notifs.forEach(x=>x.read=true); renderBell(); drawNotifs();
-    if(ids.length){ const {error}=await sb.from("notifications").update({read:true}).in("id",ids); if(error) console.error(error); } };
-  $("#nlist").addEventListener("click",async e=>{ const b=e.target.closest("[data-nid]"); if(!b) return; const x=state.notifs.find(n=>n.id===b.dataset.nid); if(!x) return;
-    closeNotifs(); if(!x.read){ x.read=true; renderBell(); sb.from("notifications").update({read:true}).eq("id",x.id).then(({error})=>{ if(error) console.error(error); }); }
-    if(!openAnchor(x.anchor)) toast("That item was removed."); });
+  $("#nAll").onclick=()=>{ const kept=state.notifs.filter(isLocked).length; dismiss(state.notifs.slice());
+    if(kept) toast(`Cleared. ${kept} tagged ${kept>1?"items stay until you open them":"item stays until you open it"}.`,{ms:5000,action:"Undo",onAction:undoDismiss}); };
+  $("#nlist").addEventListener("click",e=>{ const r=e.target.closest(".nrow"); if(!r) return; const x=nById(r.dataset.nid); if(!x) return;
+    if(e.target.closest("[data-nx]")){ dismiss([x]); return; }
+    if(e.target.closest("[data-nopen]")) openNotif(x); });
+  $("#nlist").addEventListener("keydown",e=>{ if(e.key!=="Delete"&&e.key!=="Backspace") return; const r=e.target.closest(".nrow"); const x=r&&nById(r.dataset.nid); if(!x) return; e.preventDefault();
+    if(isLocked(x)){ r.classList.add("nudge"); setTimeout(()=>r.classList.remove("nudge"),700); } else dismiss([x]); });
 }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&$("#npanel")) closeNotifs(); });
 document.addEventListener("click",e=>{ if(e.target.closest("#bell")) $("#npanel")?closeNotifs():openNotifs(); });
+// bar under the header: the newest unopened tag stays until it's opened; any other new one shows for 8 seconds
+function drawBanner(){
+  const host=$("#nbanner"); if(!host) return;
+  if(freshN&&!state.notifs.some(n=>n.id===freshN.id&&!n.read)) freshN=null;
+  const locked=state.notifs.filter(isLocked), tag=locked[0];
+  const card=(x,lock)=>`<div class="nban${lock?" locked":""}" data-nid="${esc(x.id)}" role="${lock?"alert":"status"}"><button type="button" class="nbmain" data-bopen><span class="nbk">${lock?"Tagged you"+(locked.length>1?` · ${locked.length} to open`:""):"New"}</span><span class="nt">${esc(x.title)}</span>${x.body?`<span class="nb">${esc(x.body)}</span>`:""}</button><span class="nbacts"><button type="button" class="nbopen" data-bopen>Open</button>${lock?"":`<button type="button" class="nx" data-bx aria-label="Clear: ${esc(x.title)}">${ic("x")}</button>`}</span></div>`;
+  const html=(tag?card(tag,true):"")+(freshN?card(freshN,false):"");
+  if(host.dataset.sig===html) return; host.dataset.sig=html; host.innerHTML=html;
+  host.querySelectorAll(".nban").forEach(el=>swipeable(el,()=>{ const x=nById(el.dataset.nid); return !!x&&!isLocked(x); },()=>dismiss([nById(el.dataset.nid)])));
+}
+document.addEventListener("click",e=>{ const el=e.target.closest("#nbanner .nban"); if(!el) return; const x=nById(el.dataset.nid); if(!x) return;
+  if(e.target.closest("[data-bx]")){ dismiss([x]); return; }
+  if(e.target.closest("[data-bopen]")) openNotif(x); });
+try{ const hd=document.querySelector("header"); new ResizeObserver(()=>document.documentElement.style.setProperty("--hdr-h",hd.offsetHeight+"px")).observe(hd); }catch(e){}
 function onNotifInsert(row){
   if(!row||row.recipient!==state.me||state.notifs.some(x=>x.id===row.id)) return;
-  state.notifs.unshift(row); renderBell(); if($("#npanel")) drawNotifs(); else toast(row.title);
+  state.notifs.unshift(row);
+  if(!isLocked(row)){ freshN=row; clearTimeout(freshT); freshT=setTimeout(()=>{ freshN=null; drawBanner(); },8000); }
+  drawNotifUI();
+  // with a sheet or panel open the bar is behind it, so also say it in a toast
+  if($("#sheetHost").firstChild||$("#aiHost").firstChild) toast(row.title);
 }
 /* ---------- phone / desktop alerts (web push) ---------- */
 const VAPID="BIb58h-K1fi9q-j40I7HxGGbTcGjopk73yaI3hFc426Kl1l3P6hwlpVS2UumXX-RYE0jOc6PI1KIqH4Y_4zzQPM";

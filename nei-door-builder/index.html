@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-title" content="NEI Doors">
 <meta name="theme-color" content="#0a0a0a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: black app bar (NEI logo, customer, tabs) · Build: live render left / numbered steps right / parts sheet · Orders · Catalog editors
    Brand: NEI red #E23B28 (fills, rules, the key number), #C42A18 for small red text and buttons, black #0A0A0A, square corners, flat surfaces */
@@ -24,16 +24,17 @@
   color-scheme:light;
   --bg:#f3f2ef; --surface:#ffffff; --ink:#1c1b1a; --muted:#66625c; --line:#e0ddd6; --line-2:#c6c2b9;
   --red:#E23B28; --red-ink:#C42A18; --red-soft:#fcebe8; --chip:#efeeea; --ok:#2f7d4f; --black:#0a0a0a;
-  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
-  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  /* one family, as the NEI brand kit sets for web: Source Sans 3 */
+  --f-display:"Source Sans 3",Helvetica,Arial,sans-serif;
+  --f-body:"Source Sans 3",Helvetica,Arial,sans-serif;
+  --f-mono:"Source Sans 3",Helvetica,Arial,sans-serif;
   --caret:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2366625c'/%3E%3C/svg%3E");
   --caret-w:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ffffff'/%3E%3C/svg%3E");
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 var(--f-body);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 var(--f-body);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 img{max-width:100%}
 [hidden]{display:none!important}
 button{font:inherit;color:inherit;border-radius:0;-webkit-tap-highlight-color:transparent}
@@ -48,7 +49,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .bar .in{max-width:1280px;margin:0 auto;padding:12px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
 .brand{display:flex;align-items:center;gap:14px}
 .brand img{height:34px;width:auto;display:block}
-.brand span{font:600 18px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:#e4e2dd;border-left:1px solid #3a3a3a;padding-left:14px;line-height:28px}
+.brand span{font:600 15px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:#e4e2dd;border-left:1px solid #3a3a3a;padding-left:14px;line-height:28px}
 .custsel{display:flex;align-items:center;gap:8px;font-size:12px;color:#a8a49c;text-transform:uppercase;letter-spacing:.08em;font-weight:500}
 .bar select{background-color:#1c1c1c;background-image:var(--caret-w);color:#fff;border:1px solid #3a3a3a;padding:7px 10px;font:inherit;font-size:14px;font-weight:500;text-transform:none;letter-spacing:0}
 .bar select:hover{border-color:#6a6a6a}
@@ -59,13 +60,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 #me{color:#e4e2dd;font-weight:500}
 .tabs{flex-basis:100%;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-top:2px}
 .tabs::-webkit-scrollbar{display:none}
-.tabs a{color:#a8a49c;text-decoration:none;padding:10px 16px 9px;font:600 15px var(--f-display);letter-spacing:.1em;text-transform:uppercase;border-bottom:3px solid transparent;white-space:nowrap;transition:color .12s}
+.tabs a{color:#a8a49c;text-decoration:none;padding:10px 16px 9px;font:600 13.5px var(--f-display);letter-spacing:.1em;text-transform:uppercase;border-bottom:3px solid transparent;white-space:nowrap;transition:color .12s}
 .tabs a:hover{color:#fff}
 .tabs a[aria-current="page"]{color:#fff;border-color:var(--red)}
 .bar :focus-visible{outline-color:#fff}
 main{max-width:1280px;margin:0 auto;padding:22px max(16px,env(safe-area-inset-right,0px)) 56px max(16px,env(safe-area-inset-left,0px))}
-h2{font:700 28px var(--f-display);text-transform:uppercase;letter-spacing:.03em;margin:0;line-height:1.1}
-h3{font:700 18px var(--f-display);text-transform:uppercase;letter-spacing:.06em;margin:0}
+h2{font:700 24px var(--f-display);text-transform:uppercase;letter-spacing:.04em;margin:0;line-height:1.1}
+h3{font:700 15px var(--f-display);text-transform:uppercase;letter-spacing:.07em;margin:0}
 .sub{color:var(--muted);font-size:13px}
 .mono,code{font-family:var(--f-mono);font-size:12px}
 /* build layout */
@@ -81,7 +82,7 @@ h3{font:700 18px var(--f-display);text-transform:uppercase;letter-spacing:.06em;
 .pad{padding:12px 14px}
 .pricecard{background:var(--black);color:#fff;border-left:4px solid var(--red);padding:12px 16px 13px}
 .prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 18px}
-.big{font:700 38px var(--f-display);color:#fff;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:.01em}
+.big{font:700 34px var(--f-display);color:#fff;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:.01em}
 .big.fob{color:#cfccc5}
 .pricecard .k{color:#a8a49c;text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:500}
 .k{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -93,9 +94,9 @@ h3{font:700 18px var(--f-display);text-transform:uppercase;letter-spacing:.06em;
 .steps{display:flex;flex-direction:column;gap:22px;min-width:0;counter-reset:step}
 fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:8px}
 .steps>fieldset:not([hidden]){counter-increment:step}
-legend{font:600 16px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--ink);padding:0 0 7px;margin-bottom:8px;width:100%;display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:1px solid var(--line-2)}
+legend{font:700 14px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--ink);padding:0 0 7px;margin-bottom:8px;width:100%;display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:1px solid var(--line-2)}
 legend .t{display:flex;align-items:center;gap:9px;white-space:nowrap}
-legend .t::before{content:counter(step);font:500 12px var(--f-mono);background:var(--black);color:#fff;min-width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0}
+legend .t::before{content:counter(step);font:600 12.5px var(--f-mono);background:var(--black);color:#fff;min-width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0}
 legend em{font-style:normal;color:var(--muted);text-transform:none;letter-spacing:0;font-family:var(--f-body);font-size:13px;font-weight:500;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--surface);padding:8px 12px;cursor:pointer;font-size:13.5px;text-align:left;min-height:38px;transition:border-color .12s,background-color .12s}
@@ -129,7 +130,7 @@ legend em{font-style:normal;color:var(--muted);text-transform:none;letter-spacin
 .addrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;border-top:2px solid var(--ink);padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));position:sticky;bottom:0;background:var(--bg);z-index:5}
 .addprice{display:flex;flex-direction:column;margin-right:auto;min-width:0}
 .addprice .k{text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:500}
-.addprice strong{font:700 26px var(--f-display);font-variant-numeric:tabular-nums;line-height:1.05;color:var(--red)}
+.addprice strong{font:700 24px var(--f-display);font-variant-numeric:tabular-nums;line-height:1.05;color:var(--red)}
 .stepper{display:flex;border:1px solid var(--line-2);background:var(--surface)}
 .stepper button{background:var(--chip);border:0;width:42px;min-height:42px;font-size:18px;cursor:pointer;transition:background-color .12s}
 .stepper button:hover{background:#e4e2dc}
@@ -165,10 +166,10 @@ input.q{width:58px;padding:5px 6px;font:inherit;border:1px solid var(--line-2);f
 .ocard strong{font-size:15px}
 .pill{display:inline-block;font:500 11px var(--f-mono);padding:2px 7px;background:var(--chip);letter-spacing:.04em;text-transform:uppercase;align-self:flex-start}
 .pill.Draft{background:#fbf0d9;color:#6f4700}.pill.Sent{background:#e6eef8;color:#1d4b85}.pill.Ordered{background:#e3f2e8;color:#22603b}
-#oTitle{font:700 22px var(--f-display);text-transform:uppercase;letter-spacing:.03em;border:1px solid var(--line);padding:5px 9px;max-width:100%;background:var(--surface)}
+#oTitle{font:700 19px var(--f-display);text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line);padding:5px 9px;max-width:100%;background:var(--surface)}
 #oStatus,#slgSel{font:inherit;font-size:13.5px;padding:5px 8px;border:1px solid var(--line-2);background-color:var(--surface)}
 .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
-.subtabs button{border:1px solid var(--line);background:var(--surface);padding:8px 13px;cursor:pointer;font:600 14px var(--f-display);letter-spacing:.07em;text-transform:uppercase;min-height:38px;transition:border-color .12s,background-color .12s}
+.subtabs button{border:1px solid var(--line);background:var(--surface);padding:8px 13px;cursor:pointer;font:600 12.5px var(--f-display);letter-spacing:.08em;text-transform:uppercase;min-height:38px;transition:border-color .12s,background-color .12s}
 .subtabs button:hover{border-color:var(--line-2)}
 .subtabs button[aria-pressed="true"]{background:var(--black);color:#fff;border-color:var(--black)}
 .form{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px}
@@ -193,7 +194,7 @@ input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
 .login{max-width:380px;margin:12vh auto 40px;background:var(--surface);border:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:12px}
 .login .lg{background:var(--black);margin:-24px -24px 6px;padding:18px 22px;border-bottom:3px solid var(--red)}
 .login .lg img{height:40px;display:block}
-.login h3{font-size:22px}
+.login h3{font-size:19px}
 .login input{font:inherit;padding:11px 12px;border:1px solid var(--line-2);font-size:16px}
 .login .btn{min-height:44px}
 .err{color:var(--red-ink);font-size:13.5px}
@@ -220,13 +221,13 @@ input.pr.dirty{border-color:var(--red);background:var(--red-soft)}
   .chip{min-height:42px}
   .who{margin-left:0;flex:1;justify-content:flex-end}
   #me{display:none}
-  .big{font-size:32px}
+  .big{font-size:30px}
 }
 @media (max-width:520px){
-  .brand span{font-size:16px;padding-left:10px}.brand{gap:10px}.brand img{height:30px}
+  .brand span{font-size:13.5px;padding-left:10px}.brand{gap:10px}.brand img{height:30px}
   .addrow{flex-wrap:nowrap;gap:8px}
   .addrow .sub,.addprice .k{display:none}
-  .addprice strong{font-size:23px}
+  .addprice strong{font-size:21px}
   .stepper button{width:38px}.stepper input{width:40px}
   .addrow .btn.red{padding:9px 14px;white-space:nowrap}
 }
@@ -558,7 +559,7 @@ async function render(cv,st){
  x.fillStyle="rgba(255,255,255,.28)";x.fillRect(X(bm-.3),Y(bm+st.h),(unitW+.6)*s,Math.max(1,.12*s));
  const dimText=`≈ ${unitW.toFixed(1)}" × ${st.h}" unit · ${totalW.toFixed(1)}" over trim · viewed from outside`;
  if(cv.id==="cv"&&$("#dims")){$("#dims").textContent=dimText}
- else{x.fillStyle="#2b2b29";x.font=`500 ${Math.max(13,W*0.016)}px "IBM Plex Mono",monospace`;x.textAlign="center";x.fillText(dimText,W/2,H-18)}
+ else{x.fillStyle="#2b2b29";x.font=`500 ${Math.max(13,W*0.016)}px "Source Sans 3",Helvetica,Arial,sans-serif`;x.textAlign="center";x.fillText(dimText,W/2,H-18)}
 }
 function drawSlab(x,sd,o){
  if(!sd)return;
@@ -604,7 +605,7 @@ function drawSlab(x,sd,o){
   x.restore();
   if(!o.glass)for(const r of rects){const rx=o.x+r[0]*sx,ry=o.y+r[1]*sy,rw=r[2]*sx,rh=r[3]*sy;
    x.save();x.beginPath();litePath(r);x.strokeStyle="rgba(40,30,20,.6)";x.lineWidth=1.5;x.stroke();x.restore();
-   if(o.glassName){x.save();x.translate(rx+rw/2,ry+rh/2);if(rw<rh*0.4)x.rotate(-Math.PI/2);x.fillStyle="rgba(20,35,45,.75)";x.font=`600 ${Math.max(9,Math.min(rw,rh)*0.09)}px "IBM Plex Mono",monospace`;x.textAlign="center";x.fillText(o.glassName.toUpperCase(),0,0);x.restore()}}
+   if(o.glassName){x.save();x.translate(rx+rw/2,ry+rh/2);if(rw<rh*0.4)x.rotate(-Math.PI/2);x.fillStyle="rgba(20,35,45,.75)";x.font=`600 ${Math.max(9,Math.min(rw,rh)*0.09)}px "Source Sans 3",Helvetica,Arial,sans-serif`;x.textAlign="center";x.fillText(o.glassName.toUpperCase(),0,0);x.restore()}}
  }
  const eg=x.createLinearGradient(o.x,0,o.x+o.w,0);eg.addColorStop(0,"rgba(0,0,0,.22)");eg.addColorStop(.04,"rgba(0,0,0,0)");eg.addColorStop(.96,"rgba(0,0,0,0)");eg.addColorStop(1,"rgba(0,0,0,.22)");x.fillStyle=eg;x.fillRect(o.x,o.y,o.w,o.h);
  x.restore();
@@ -645,11 +646,11 @@ function thumbs(){
  later.forEach(cv=>THUMB_OBS.observe(cv))}
 function drawPlan(){
  const c=CFG[S.cfg],L=S.hand.startsWith("LH"),IN=S.hand.endsWith("IS"),wy=60,R=42;
- let p=`<text x="120" y="12" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">INSIDE</text><text x="120" y="116" text-anchor="middle" font-size="10" fill="#6b6862" font-family="IBM Plex Mono,monospace">OUTSIDE (you)</text>`;
+ let p=`<text x="120" y="12" text-anchor="middle" font-size="10" fill="#6b6862" font-family="Source Sans 3,Helvetica,Arial,sans-serif">INSIDE</text><text x="120" y="116" text-anchor="middle" font-size="10" fill="#6b6862" font-family="Source Sans 3,Helvetica,Arial,sans-serif">OUTSIDE (you)</text>`;
  if(c.leaves===2){const x1=40,x2=200,ax=L?x1:x2,fx=L?x1+76:x2-76,oy=wy+(IN?-76:76),sweep=(L===IN)?0:1;
-  p+=`<rect x="0" y="${wy-4}" width="${x1}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${240-x2}" height="8" fill="#1c1b1a"/><line x1="${L?x2:x1}" y1="${wy}" x2="${L?x2-76:x1+76}" y2="${wy}" stroke="#6b6862" stroke-width="4"/><line x1="${ax}" y1="${wy}" x2="${ax}" y2="${oy}" stroke="#E23B28" stroke-width="4"/><path d="M${ax} ${oy} A76 76 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#E23B28" stroke-dasharray="4 3"/><circle cx="${ax}" cy="${wy}" r="4" fill="#E23B28"/><text x="120" y="${wy+(IN?18:-8)}" text-anchor="middle" font-size="9" fill="#6b6862" font-family="IBM Plex Mono,monospace">active leaf ${L?"left":"right"} · other leaf fixed</text>`}
+  p+=`<rect x="0" y="${wy-4}" width="${x1}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${240-x2}" height="8" fill="#1c1b1a"/><line x1="${L?x2:x1}" y1="${wy}" x2="${L?x2-76:x1+76}" y2="${wy}" stroke="#6b6862" stroke-width="4"/><line x1="${ax}" y1="${wy}" x2="${ax}" y2="${oy}" stroke="#E23B28" stroke-width="4"/><path d="M${ax} ${oy} A76 76 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#E23B28" stroke-dasharray="4 3"/><circle cx="${ax}" cy="${wy}" r="4" fill="#E23B28"/><text x="120" y="${wy+(IN?18:-8)}" text-anchor="middle" font-size="9" fill="#6b6862" font-family="Source Sans 3,Helvetica,Arial,sans-serif">active leaf ${L?"left":"right"} · other leaf fixed</text>`}
  else{const x1=70,x2=170,hx=L?x1:x2,oy=wy+(IN?-R:R),fx=L?hx+R:hx-R,sweep=(L===IN)?0:1;
-  p+=`<rect x="8" y="${wy-4}" width="${x1-8}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${232-x2}" height="8" fill="#1c1b1a"/><line x1="${hx}" y1="${wy}" x2="${hx}" y2="${oy}" stroke="#E23B28" stroke-width="4"/><path d="M${hx} ${oy} A${R} ${R} 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#E23B28" stroke-dasharray="4 3"/><circle cx="${hx}" cy="${wy}" r="4" fill="#E23B28"/><text x="${hx+(L?-6:6)}" y="${wy+(IN?18:-10)}" text-anchor="${L?"end":"start"}" font-size="9" fill="#6b6862" font-family="IBM Plex Mono,monospace">hinge</text>`}
+  p+=`<rect x="8" y="${wy-4}" width="${x1-8}" height="8" fill="#1c1b1a"/><rect x="${x2}" y="${wy-4}" width="${232-x2}" height="8" fill="#1c1b1a"/><line x1="${hx}" y1="${wy}" x2="${hx}" y2="${oy}" stroke="#E23B28" stroke-width="4"/><path d="M${hx} ${oy} A${R} ${R} 0 0 ${sweep} ${fx} ${wy}" fill="none" stroke="#E23B28" stroke-dasharray="4 3"/><circle cx="${hx}" cy="${wy}" r="4" fill="#E23B28"/><text x="${hx+(L?-6:6)}" y="${wy+(IN?18:-10)}" text-anchor="${L?"end":"start"}" font-size="9" fill="#6b6862" font-family="Source Sans 3,Helvetica,Arial,sans-serif">hinge</text>`}
  $("#plan").innerHTML=p;
 }
 
