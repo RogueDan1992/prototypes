@@ -765,7 +765,7 @@ function renderOrders(){
  $("#oTitle").onchange=e=>saveOrder(o,{title:e.target.value.trim()||o.title});$("#oStatus").onchange=e=>saveOrder(o,{status:e.target.value});
  $("#oBuild").onclick=()=>{CUR=o.id;ls("db-cur-"+CUST,CUR);location.hash="build"};
  $("#xCust").onclick=()=>excel(o,"customer");$("#xFact").onclick=()=>excel(o,"factory");
- $("#oReprice").onclick=()=>saveLines(o,L=>L.forEach(x=>{const ps=parts(x.st),t=totals(ps);x.parts=ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f}));x.each=t.each;x.fob=t.fob})).then(()=>toast("Prices updated"));
+ $("#oReprice").onclick=()=>saveLines(o,L=>L.forEach(x=>{const ps=parts(x.st),t=totals(ps);x.parts=ps.map(p=>({pn:p.pn,desc:p.desc,qty:p.qty,p:p.p,f:p.f,incl:!!p.incl,unit:!!p.unit}));x.each=t.each;x.fob=t.fob})).then(()=>toast("Prices updated"));
  let armed=false;$("#oDel").onclick=async e=>{if(!armed){armed=true;e.target.textContent="Tap again to delete";setTimeout(()=>{armed=false;if(e.target.isConnected)e.target.textContent="Delete order"},3000);return}
   try{await orderWrite({op:"delete",id:o.id})}catch(e){return toast("Couldn't delete the order.")}D.orders=D.orders.filter(x=>x.id!==o.id);saveCache();if(CUR===o.id)CUR=null;OPEN=null;renderOrders();toast("Order deleted")};
 }
