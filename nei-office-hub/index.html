@@ -99,7 +99,23 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .card.st-flag{border-left-color:var(--muted)}
 .card.st-dead{border-left-color:var(--line)}
 .card.soon{border-left:4px solid var(--amber)}
-.card.late{border-left:4px solid var(--late)}
+/* past-due projects are listed in the Needs attention block, so the card itself carries only the tag, not a red edge */
+.attn{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--late);padding:14px 16px 6px;display:grid;gap:var(--sp-2)}
+.attn h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:var(--fs-xl);text-transform:uppercase;letter-spacing:var(--ls-display);display:flex;gap:var(--sp-3);align-items:baseline}
+.attn h2 .cnt{font-size:var(--fs-sm);color:var(--muted);letter-spacing:var(--ls-caps)}
+.arow{display:flex;align-items:center;gap:var(--sp-3);padding:8px 0;border-top:1px solid var(--line);min-height:56px;cursor:pointer}
+.arow .due{flex:none;min-width:104px;text-align:center}
+.arow .at{flex:1;min-width:0;display:grid;gap:1px}
+.arow .at b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow .at span{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow .chev{color:var(--muted);flex:none}
+.arow:hover .at b{text-decoration:underline;text-underline-offset:2px}
+.attn .more{border:0;background:none;font-weight:600;text-decoration:underline;text-underline-offset:2px;padding:10px 0;min-height:44px;justify-self:start}
+.push{flex:none;border:1px solid var(--line);background:var(--surface);font-size:var(--fs-sm);font-weight:600;padding:0 12px;min-height:36px;white-space:nowrap}
+.push:hover{border-color:var(--ink)}
+.cstat .push{float:right;margin:-4px 0 0 10px}
+@media (pointer:coarse){.push{min-height:44px}}
+@media (max-width:640px){.arow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:4px;padding:10px 0}.arow .due{grid-column:1;justify-self:start;min-width:0}.arow .at{grid-column:1}.arow .at span{white-space:normal}.arow .push{grid-column:2;grid-row:1/3;align-self:center}.arow .chev{display:none}}
 /* the one colored mark on a card besides its edge: a short tag that says how late or how soon */
 .due{display:inline-block;font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-caps);padding:2px 8px;white-space:nowrap}
 .due.late{background:var(--red-soft);color:var(--late)}
@@ -478,6 +494,7 @@ textarea{min-height:70px;resize:vertical}
   <div class="toprow"><div></div><div class="who" id="who"></div></div>
   <div id="officeView" style="display:grid;gap:18px"></div>
   <div id="projView" style="display:grid;gap:18px">
+  <section class="attn" id="attn" aria-label="Needs attention" hidden></section>
   <nav class="custs" id="custs" aria-label="Customers"></nav>
   <div class="tabs" id="tabs" role="tablist" aria-label="Project lists"></div>
   <section class="tiles" id="tiles" aria-label="Summary"></section>
@@ -622,13 +639,31 @@ function cardHTML(p,showCust,noWaiting){
   const un=unseenFor(p,state.me), line=statusLine(p,noWaiting,true), tier=isOpen(p)?dueTier(p.fu):"";
   const fuTag=isOpen(p)&&p.fu&&tier?dueTag(p.fu):"", fuNote=!isOpen(p)||!p.fu?"":tier==="late"?`was due ${fmt(p.fu)}`:tier?"":`follow up ${fmt(p.fu)}`;
   const fl=flagOf(p), st=["Delivered","Completed"].includes(es(p))?"st-done":fl==="Dead"?"st-dead":fl?"st-flag":done?"st-go":"";
-  return `<div class="card ${st} ${tier}" data-id="${p.id}" role="button" tabindex="0">
+  return `<div class="card ${st} ${tier==="soon"?"soon":""}" data-id="${p.id}" role="button" tabindex="0">
     <div class="ctop"><div class="cname">${showCust?`<span class="ctag">${esc(p.customer)}</span>`:""}<span class="cdate">${esc(fmt(d)||d)}${p.vendor?" · "+esc(p.vendor):""}</span><span class="ctitle">${esc(n)}</span></div>${un?`<span class="cnew">${un} new for you</span>`:""}</div>
-    ${line||fuTag||fuNote?`<div class="cstat">${fuTag}${esc(line)}${fuNote?`<span class="fu">${line?" · ":""}${esc(line?fuNote:fuNote.charAt(0).toUpperCase()+fuNote.slice(1))}</span>`:""}</div>`:""}
+    ${line||fuTag||fuNote?`<div class="cstat">${fuTag?pushBtn(p):""}${fuTag}${esc(line)}${fuNote?`<span class="fu">${line?" · ":""}${esc(line?fuNote:fuNote.charAt(0).toUpperCase()+fuNote.slice(1))}</span>`:""}</div>`:""}
     <div class="cmeta"><span class="track" role="img" aria-label="${done} of 6 milestones done">${dots}</span><span class="cright"><span class="cstage">${esc(STAGE_NAME[stageOf(p)+1])}</span>${safeUrl(p.folder)?`<a class="cfolder" href="${esc(safeUrl(p.folder))}" target="_blank" rel="noopener" aria-label="Open OneDrive folder" title="Open OneDrive folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></a>`:""}</span></div>
   </div>`;
 }
 // One line saying where the project stands: flag · who has it · follow-up (red when overdue)
+// "Push a week": moves the follow-up to a week from today. It saves like any other edit to the date, with Undo for 5 seconds.
+const pushBtn=p=>`<button type="button" class="push" data-push="${esc(p.id)}" aria-label="Push the follow-up for ${esc(split(p.name)[1])} a week">Push a week</button>`;
+function pushWeek(id){
+  const p=state.projects.find(x=>x.id===id); if(!p) return; const prev=p.fu, d=new Date(TODAY); d.setDate(d.getDate()+7);
+  p.fu=iso(d); save(); render();
+  toast(`Follow-up moved to ${fmt(p.fu)}`,{ms:5000,action:"Undo",onAction:()=>{ const q=state.projects.find(x=>x.id===id); if(q){ q.fu=prev; save(); render(); } }});
+}
+// Needs attention: every open project in view whose follow-up date has passed, most overdue first
+let attnAll=false;
+function renderAttn(){
+  const host=$("#attn"); if(!host) return;
+  const late=state.projects.filter(p=>(!custFilter||p.customer===custFilter)&&isOpen(p)&&dueTier(p.fu)==="late").sort((a,b)=>a.fu.localeCompare(b.fu)||a.name.localeCompare(b.name));
+  host.hidden=!late.length||state.view!=="projects"; if(host.hidden){ host.innerHTML=""; return; }
+  const shown=attnAll?late:late.slice(0,5);
+  host.innerHTML=`<h2>Needs attention <span class="cnt">${late.length} past due</span></h2>`+shown.map(p=>{ const w=p.waiting&&LANE_OF[state.me]===p.waiting?"Waiting on you":p.waiting==="Customer"?"Waiting on "+p.customer:(LANE_LABEL[p.waiting]||"");
+    return `<div class="arow" data-attn="${esc(p.id)}" role="button" tabindex="0">${dueTag(p.fu)}<span class="at"><b>${esc(split(p.name)[1])}</b><span>${esc(p.customer)}${w?" · "+esc(w):""} · was due ${esc(fmt(p.fu))}</span></span>${pushBtn(p)}${ic("chevron","chev")}</div>`; }).join("")
+    +(late.length>5?`<button type="button" class="more" id="attnMore">${attnAll?"Show fewer":`Show all ${late.length}`}</button>`:"");
+}
 function statusLine(p,noWaiting,noFu){
   const parts=[], f=flagOf(p), open=isOpen(p);
   if(f) parts.push(FLAG_LABEL[f]);
@@ -783,7 +818,7 @@ function openSup(x){
     Object.keys(v).forEach(k=>{ if(String(v[k]??"")!==String(x[k]??"")) cur[k]=v[k]; }); delete cur.ex;
     sheetClose=null; save(); close(); render(); toast("Saved"); };
 }
-function render(){ renderWho(); renderView(); renderCusts(); renderTiles(); renderGroups(); $("#qclr").hidden=!query; }
+function render(){ renderWho(); renderView(); renderAttn(); renderCusts(); renderTiles(); renderGroups(); $("#qclr").hidden=!query; }
 
 function toast(m,o){ const h=$("#toastHost"); h.innerHTML=`<div class="toast" role="status">${esc(m)}${o&&o.action?`<button type="button" class="tact">${esc(o.action)}</button>`:""}</div>`; if(o&&o.action) h.querySelector(".tact").onclick=()=>{ h.innerHTML=""; o.onAction(); };
   clearTimeout(toast.t); if(!(o&&o.sticky)) toast.t=setTimeout(()=>h.innerHTML="",o&&o.ms||1800); }
@@ -1159,6 +1194,9 @@ document.addEventListener("click",e=>{
   const z=e.target.closest("[data-zoom]"); if(z&&z.getAttribute("src")){ $("#toastHost").insertAdjacentHTML("beforeend",`<div class="lightbox" id="lb"><img src="${esc(z.src)}" alt=""></div>`); return; }
   if(e.target.closest("#lb")){ $("#lb").remove(); return; }
   if(e.target.closest(".cfolder")) return;
+  const pw=e.target.closest("[data-push]"); if(pw){ pushWeek(pw.dataset.push); return; }
+  if(e.target.id==="attnMore"){ attnAll=!attnAll; renderAttn(); return; }
+  const ar=e.target.closest("[data-attn]"); if(ar){ openSheet(state.projects.find(p=>p.id===ar.dataset.attn)); return; }
   const tb=e.target.closest("[data-tab]"); if(tb){ state.tab=tb.dataset.tab; tileFilter=null; save(); render(); return; }
   const c=e.target.closest(".cbtn"); if(c){ custFilter=c.dataset.c||null; render(); return; }
   const t=e.target.closest(".tile"); if(t){ tileFilter=tileFilter===t.dataset.f?null:t.dataset.f; render(); return; }
@@ -1170,7 +1208,7 @@ document.addEventListener("click",e=>{
 });
 $("#q").addEventListener("input",e=>{ query=e.target.value.trim(); const exact=state.customers.find(c=>c.toLowerCase()===query.toLowerCase()); if(exact){ custFilter=exact; } render(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.id==="supItem"){ e.preventDefault(); $("#supAdd").click(); } });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#lb")) $("#lb").remove(); else if($("#npanel")){} else if(sheetClose&&$("#sheetHost").innerHTML) sheetClose(); else $("#sheetHost").innerHTML=""; } const c=e.target.closest&&e.target.closest(".card"); if(c&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); c.click(); } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#lb")) $("#lb").remove(); else if($("#npanel")){} else if(sheetClose&&$("#sheetHost").innerHTML) sheetClose(); else $("#sheetHost").innerHTML=""; } const c=e.target.closest&&!e.target.closest("button,a")&&e.target.closest(".card,[data-attn]"); if(c&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); c.click(); } });
 
 /* ---------- Supabase: login, shared data, live updates ---------- */
 const SB_URL="https://regdgwfnrtznyfmxtwqu.supabase.co";
