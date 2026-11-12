@@ -203,6 +203,7 @@ textarea{min-height:70px;resize:vertical}
 .sfolder a{display:inline-flex;align-items:center;gap:var(--sp-2);background:var(--red-fill);color:var(--on-red);text-decoration:none;font-weight:600;border-radius:var(--r-md);padding:10px 16px;min-height:44px}
 .sfolder a{background:var(--go-fill);color:var(--on-go)}
 .mimg{display:block;max-width:220px;width:100%;border-radius:var(--r-md);margin:2px 0;cursor:zoom-in}
+.mimg[data-ph]:not([src]){min-height:140px;background:var(--chip);font-size:var(--fs-sm);color:var(--muted);cursor:default}
 .pic{flex:none;display:grid;place-items:center;width:52px;min-height:52px;border-radius:var(--r-md);background:var(--chip);cursor:pointer}
 .pic svg{width:24px;height:24px;stroke:var(--ink)}
 .pending{display:flex;gap:var(--sp-3);align-items:center;font-size:var(--fs-sm);color:var(--muted)}
@@ -768,6 +769,29 @@ function toast(m,o){ const h=$("#toastHost"); h.innerHTML=`<div class="toast" ro
 const safeUrl=u=>{ u=String(u||"").trim(); return /^https?:\/\//i.test(u)?u:""; };
 const fixUrl=u=>{ u=String(u||"").trim(); if(u&&!/^[a-z][a-z0-9+.-]*:/i.test(u)) u="https://"+u; return u; };
 const safeImg=s=>/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s||"")?s:"";
+// Photos live in the private hub-photos bucket; a message's img holds a short pointer "ph:<project>/<message>.jpg".
+// A link to the file is signed for an hour and fetched only when that conversation is on screen.
+const PH_BUCKET="hub-photos", phPath=s=>typeof s==="string"&&s.startsWith("ph:")&&/^[\w.\-\/ ]+$/.test(s.slice(3))?s.slice(3):"";
+const phCache=new Map(), phLive=p=>{ const c=phCache.get(p); return c&&c.exp>Date.now()?c.url:""; };
+async function phUrl(path){ const hit=phLive(path); if(hit) return hit;
+  const {data,error}=await sb.storage.from(PH_BUCKET).createSignedUrl(path,3600); if(error||!data||!data.signedUrl) throw error||new Error("no link");
+  phCache.set(path,{url:data.signedUrl,exp:Date.now()+50*60*1000}); return data.signedUrl; }
+function fillPhotos(root){ root.querySelectorAll("img[data-ph]").forEach(im=>{ if(im.getAttribute("src")) return;
+  phUrl(im.dataset.ph).then(u=>{ if(im.isConnected) im.src=u; }).catch(e=>{ console.error(e); im.alt="This photo couldn't load. Check your connection."; }); }); }
+const msgImg=m=>{ const alt="Photo from "+esc(TEAM_LABEL[m.by]||"note"); if(safeImg(m.img)) return `<img class="mimg" src="${safeImg(m.img)}" alt="${alt}" data-zoom>`;
+  const ph=phPath(m.img); if(!ph) return ""; const u=phLive(ph); return `<img class="mimg" ${u?`src="${esc(u)}" `:""}data-ph="${esc(ph)}" alt="${alt}" data-zoom>`; };
+// A photo still stored inline (just sent, sent from a new project, or sent by an older copy of the hub) is moved to storage in the background
+const phTried=new Set(); let phBusy=false;
+async function sweepInline(){
+  if(phBusy||!state.me||!last||syncFailed||navigator.onLine===false) return; phBusy=true;
+  try{ const todo=[]; state.projects.forEach(pr=>pr.notes.forEach(n=>{ if(safeImg(n.img)&&!phTried.has(n.id)&&last.messages.has(n.id)) todo.push([pr.id,n.id,n.img]); }));
+    for(const [pid,mid,img] of todo){ phTried.add(mid);
+      const blob=await (await fetch(img)).blob(), path=`${pid}/${mid}.jpg`;
+      const {error}=await sb.storage.from(PH_BUCKET).upload(path,blob,{contentType:blob.type||"image/jpeg",upsert:true}); if(error){ console.error(error); continue; }
+      const pr=state.projects.find(x=>x.id===pid), n=pr&&pr.notes.find(x=>x.id===mid); if(!n||n.img!==img) continue;
+      phCache.set(path,{url:img,exp:Date.now()+50*60*1000}); n.img="ph:"+path; save(); } }
+  catch(e){ console.error(e); } finally{ phBusy=false; }
+}
 // Closing a sheet with unsaved changes needs a second tap
 let sheetClose=null;
 function guardClose(isDirty,close){ let armed=false, t=null;
@@ -814,7 +838,7 @@ function openSheet(p,isNew){
   // opening the project marks your tags as seen
   if(!isNew){ live().notes.forEach(m=>{ if(m.mentions.includes(state.me)&&!m.seen.includes(state.me)) m.seen.push(state.me); }); save(); render(); markAnchorRead("p-"+draft.id); }
   const drawNotes=()=>{ const th=$("#thread"); const ms=live().notes;
-    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${safeImg(m.img)?`<img class="mimg" src="${safeImg(m.img)}" alt="Photo from ${esc(TEAM_LABEL[m.by]||"note")}" data-zoom>`:""}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">Notified ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:var(--fs-md)">No messages yet.</span>`;
+    th.innerHTML=ms.map(m=>{ const mine=m.by===state.me; return `<div class="msg ${mine?"mine":""} ${m.by?"":"legacy"}"><div class="mh">${m.by?`<b>${esc(TEAM_LABEL[m.by]||m.by)}</b>`:"<b>Note</b>"}<span>${esc(whenTxt(m.at))}</span></div><div class="mb">${msgImg(m)}${mentionHTML(m.text)}</div>${m.mentions.length?`<div class="sent">Notified ${m.mentions.map(n=>esc(TEAM_LABEL[n])).join(", ")}</div>`:""}</div>`; }).join("")||`<span style="color:var(--muted);font-size:var(--fs-md)">No messages yet.</span>`; fillPhotos(th);
     th.scrollTop=th.scrollHeight; };
   drawNotes();
   // Next steps box grows with the text; past the cap, Expand shows the whole note
@@ -1110,7 +1134,7 @@ document.addEventListener("click",e=>{
   const ud=e.target.closest("[data-undo]"); if(ud){ const u=aiUndo.find(x=>x.id===ud.dataset.undo); if(u){ u.undo(); aiUndo=aiUndo.filter(x=>x!==u); save(); render(); const row=ud.closest(".ai-act"); row.classList.add("undone"); row.innerHTML="<span>Undone</span>"; } return; }
   if(e.target.id==="addCust"){ openCustSheet(); return; }
   const w=e.target.closest("[data-me]"); if(w){ state.me=w.dataset.me; save(); render(); toast("Viewing as "+TEAM_LABEL[state.me]); return; }
-  const z=e.target.closest("[data-zoom]"); if(z){ $("#toastHost").insertAdjacentHTML("beforeend",`<div class="lightbox" id="lb"><img src="${z.src}" alt=""></div>`); return; }
+  const z=e.target.closest("[data-zoom]"); if(z&&z.getAttribute("src")){ $("#toastHost").insertAdjacentHTML("beforeend",`<div class="lightbox" id="lb"><img src="${esc(z.src)}" alt=""></div>`); return; }
   if(e.target.closest("#lb")){ $("#lb").remove(); return; }
   if(e.target.closest(".cfolder")) return;
   const tb=e.target.closest("[data-tab]"); if(tb){ state.tab=tb.dataset.tab; tileFilter=null; save(); render(); return; }
@@ -1450,6 +1474,7 @@ async function loadAll(){
   state.office.posts=po.map(r=>({id:r.id,by:r.author,at:r.at,text:r.body,mentions:r.mentions||[]}));
   last=snap(toRows());
   safeRender();
+  setTimeout(sweepInline,1500);
   openDeepLink();
 }
 function safeRender(){ const a=document.activeElement; if(a&&/INPUT|TEXTAREA/.test(a.tagName)&&a.closest("main")){ pendingRender=true; return; } pendingRender=false; render(); }
