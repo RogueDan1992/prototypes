@@ -287,6 +287,7 @@ textarea{min-height:70px;resize:vertical}
 .nbopen{border:0;background:var(--ink);color:var(--surface);font-weight:600;border-radius:var(--r-md);padding:0 16px;min-height:40px}
 .nban.locked .nbopen{background:var(--red-fill);color:var(--on-red)}
 .nban .nx{position:static}
+.nban.upd{border-color:var(--ink);box-shadow:inset 4px 0 0 var(--ink),var(--sh-raised)}
 @media (prefers-reduced-motion:no-preference){.nban{animation:banin .2s ease-out}.nrow.nudge .nlock,.nban.nudge .nbk{animation:nudge .5s ease-in-out}@keyframes banin{from{opacity:0;transform:translateY(-6px)}}@keyframes nudge{20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}}
 .toast .tact{border:0;background:none;color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px;margin-left:12px;padding:6px 4px;min-height:32px}
 .nitem .nt{font-weight:600;font-size:var(--fs-md)}
@@ -1395,10 +1396,26 @@ function drawBanner(){
   if(freshN&&!state.notifs.some(n=>n.id===freshN.id&&!n.read)) freshN=null;
   const locked=state.notifs.filter(isLocked), tag=locked[0];
   const card=(x,lock)=>`<div class="nban${lock?" locked":""}" data-nid="${esc(x.id)}" role="${lock?"alert":"status"}"><button type="button" class="nbmain" data-bopen><span class="nbk">${lock?"Tagged you"+(locked.length>1?` · ${locked.length} to open`:""):"New"}</span><span class="nt">${esc(x.title)}</span>${x.body?`<span class="nb">${esc(x.body)}</span>`:""}</button><span class="nbacts"><button type="button" class="nbopen" data-bopen>Open</button>${lock?"":`<button type="button" class="nx" data-bx aria-label="Clear: ${esc(x.title)}">${ic("x")}</button>`}</span></div>`;
-  const html=(tag?card(tag,true):"")+(freshN?card(freshN,false):"");
+  const upd=newVer?`<div class="nban upd" role="status"><button type="button" class="nbmain" data-up><span class="nbk">Update</span><span class="nt">New version of the Hub</span><span class="nb">Tap Update to load it.</span></button><span class="nbacts"><button type="button" class="nbopen" data-up>Update</button><button type="button" class="nx" data-upx aria-label="Not now">${ic("x")}</button></span></div>`:"";
+  const html=upd+(tag?card(tag,true):"")+(freshN?card(freshN,false):"");
   if(host.dataset.sig===html) return; host.dataset.sig=html; host.innerHTML=html;
-  host.querySelectorAll(".nban").forEach(el=>swipeable(el,()=>{ const x=nById(el.dataset.nid); return !!x&&!isLocked(x); },()=>dismiss([nById(el.dataset.nid)])));
+  host.querySelectorAll(".nban[data-nid]").forEach(el=>swipeable(el,()=>{ const x=nById(el.dataset.nid); return !!x&&!isLocked(x); },()=>dismiss([nById(el.dataset.nid)])));
 }
+/* ---------- new version bar ----------
+   The page remembers when its own copy was published. Every 15 minutes, and whenever the app comes back into view,
+   it asks the server (headers only) whether a newer copy exists and, if so, shows an Update bar. Nothing reloads on its own. */
+let newVer=0, verSkip=0, verLast=0;
+const PAGE_AT=Date.parse(document.lastModified)||0;
+async function checkVersion(force){
+  if(!PAGE_AT||(!force&&Date.now()-verLast<120000)) return; verLast=Date.now();
+  try{ const r=await fetch(location.pathname+"?v="+Date.now(),{method:"HEAD",cache:"no-store"}); const at=Date.parse(r.headers.get("last-modified")||""); if(!at) return;
+    if(at-PAGE_AT>5000&&at!==verSkip&&at!==newVer){ newVer=at; drawBanner(); } }catch(e){}
+}
+setTimeout(checkVersion,60000); setInterval(checkVersion,15*60*1000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") checkVersion(); });
+document.addEventListener("click",e=>{ if(!e.target.closest("#nbanner .upd")) return;
+  if(e.target.closest("[data-upx]")){ verSkip=newVer; newVer=0; drawBanner(); return; }
+  if(e.target.closest("[data-up]")){ if(syncFailed){ toast("Still saving your last change. Tap Update again in a moment.",{ms:4000}); return; } location.reload(); } });
 document.addEventListener("click",e=>{ const el=e.target.closest("#nbanner .nban"); if(!el) return; const x=nById(el.dataset.nid); if(!x) return;
   if(e.target.closest("[data-bx]")){ dismiss([x]); return; }
   if(e.target.closest("[data-bopen]")) openNotif(x); });
