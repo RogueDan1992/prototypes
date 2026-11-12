@@ -111,6 +111,8 @@ main{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:14px 120px
 .arow .chev{color:var(--muted);flex:none}
 .arow:hover .at b{text-decoration:underline;text-underline-offset:2px}
 .attn .more{border:0;background:none;font-weight:600;text-decoration:underline;text-underline-offset:2px;padding:10px 0;min-height:44px;justify-self:start}
+.attn .more.others{border-top:1px solid var(--line);width:100%;text-align:left;color:var(--muted)}
+.attn.quiet{border-top-color:var(--line)}
 .push{flex:none;border:1px solid var(--line);background:var(--surface);font-size:var(--fs-sm);font-weight:600;padding:0 12px;min-height:36px;white-space:nowrap}
 .push:hover{border-color:var(--ink)}
 .cstat .push{float:right;margin:-4px 0 0 10px}
@@ -653,16 +655,22 @@ function pushWeek(id){
   p.fu=iso(d); save(); render();
   toast(`Follow-up moved to ${fmt(p.fu)}`,{ms:5000,action:"Undo",onAction:()=>{ const q=state.projects.find(x=>x.id===id); if(q){ q.fu=prev; save(); render(); } }});
 }
-// Needs attention: every open project in view whose follow-up date has passed, most overdue first
-let attnAll=false;
+// Needs attention: open projects in view whose follow-up date has passed, most overdue first.
+// The ones waiting on the person signed in come first; everyone else's sit behind a toggle so the block only nags you about your own.
+let attnAll=false, attnOthers=false;
 function renderAttn(){
   const host=$("#attn"); if(!host) return;
   const late=state.projects.filter(p=>(!custFilter||p.customer===custFilter)&&isOpen(p)&&dueTier(p.fu)==="late").sort((a,b)=>a.fu.localeCompare(b.fu)||a.name.localeCompare(b.name));
   host.hidden=!late.length||state.view!=="projects"; if(host.hidden){ host.innerHTML=""; return; }
-  const shown=attnAll?late:late.slice(0,5);
-  host.innerHTML=`<h2>Needs attention <span class="cnt">${late.length} past due</span></h2>`+shown.map(p=>{ const w=p.waiting&&LANE_OF[state.me]===p.waiting?"Waiting on you":p.waiting==="Customer"?"Waiting on "+p.customer:(LANE_LABEL[p.waiting]||"");
-    return `<div class="arow" data-attn="${esc(p.id)}" role="button" tabindex="0">${dueTag(p.fu)}<span class="at"><b>${esc(split(p.name)[1])}</b><span>${esc(p.customer)}${w?" · "+esc(w):""} · was due ${esc(fmt(p.fu))}</span></span>${pushBtn(p)}${ic("chevron","chev")}</div>`; }).join("")
-    +(late.length>5?`<button type="button" class="more" id="attnMore">${attnAll?"Show fewer":`Show all ${late.length}`}</button>`:"");
+  const lane=LANE_OF[state.me], mine=lane?late.filter(p=>p.waiting===lane):[], rest=late.filter(p=>!mine.includes(p));
+  const row=p=>{ const w=p.waiting&&lane===p.waiting?"Waiting on you":p.waiting==="Customer"?"Waiting on "+p.customer:(LANE_LABEL[p.waiting]||"");
+    return `<div class="arow" data-attn="${esc(p.id)}" role="button" tabindex="0">${dueTag(p.fu)}<span class="at"><b>${esc(split(p.name)[1])}</b><span>${esc(p.customer)}${w?" · "+esc(w):""} · was due ${esc(fmt(p.fu))}</span></span>${pushBtn(p)}${ic("chevron","chev")}</div>`; };
+  const shown=attnAll?mine:mine.slice(0,5);
+  host.classList.toggle("quiet",!mine.length);
+  host.innerHTML=`<h2>Needs attention <span class="cnt">${mine.length?mine.length+" waiting on you":"nothing past due is waiting on you"}</span></h2>`
+    +shown.map(row).join("")
+    +(mine.length>5?`<button type="button" class="more" id="attnMore">${attnAll?"Show fewer":`Show all ${mine.length}`}</button>`:"")
+    +(rest.length?`<button type="button" class="more others" id="attnOthers" aria-expanded="${attnOthers}">${attnOthers?"Hide":"Show"} everyone else · ${rest.length} past due</button>`+(attnOthers?rest.map(row).join(""):""):"");
 }
 function statusLine(p,noWaiting,noFu){
   const parts=[], f=flagOf(p), open=isOpen(p);
@@ -1196,6 +1204,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest(".cfolder")) return;
   const pw=e.target.closest("[data-push]"); if(pw){ pushWeek(pw.dataset.push); return; }
   if(e.target.id==="attnMore"){ attnAll=!attnAll; renderAttn(); return; }
+  if(e.target.id==="attnOthers"){ attnOthers=!attnOthers; renderAttn(); return; }
   const ar=e.target.closest("[data-attn]"); if(ar){ openSheet(state.projects.find(p=>p.id===ar.dataset.attn)); return; }
   const tb=e.target.closest("[data-tab]"); if(tb){ state.tab=tb.dataset.tab; tileFilter=null; save(); render(); return; }
   const c=e.target.closest(".cbtn"); if(c){ custFilter=c.dataset.c||null; render(); return; }
