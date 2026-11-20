@@ -1700,7 +1700,30 @@ async function buildReportPDF(ps,filterText,oneCustomer){
   // ---- open projects table
   const groups=reportGroups(ps), title=reportTitle(groups,oneCustomer), sub=reportSub();
   const xs=[]; REPORT_COLS.reduce((x,c,i)=>{ xs[i]=x; return x+c[2]; },M);
-  const FS=9, LH=11, PADY=7, HEADH=20;
+  const FS=9, LH=11, PADY=7, HEADH=20, GAPH=5;
+// Next step notes keep their line breaks. Run-on notes are tidied: " - " separators become bullets and labels like "Status:" start a new paragraph.
+const hOf=ls=>ls.reduce((s,t)=>s+(t===""?GAPH:LH),0);
+const rowH=lines=>Math.max(24,Math.max(LH,...lines.map(hOf))+2*PADY-2);
+const noteLines=(v,w)=>{ let s=String(v??"").replace(/\r\n?/g,"\n");
+s=s.replace(/[ \t]+[-–—][ \t]+(?=\S)/g,"\n- ");
+s=s.replace(/([.!?)]) +((?:Status|Next steps?|Update|Note|Notes|File|Sent):)/g,"$1\n\n$2");
+const out=[];
+s.split("\n").forEach(raw=>{ const line=raw.trim();
+if(!line){ if(out.length&&out[out.length-1]!=="") out.push(""); return; }
+const b=line.match(/^[-*•●·–—]\s+(.*)$/), nm=line.match(/^(\d{1,2}[.)])\s+(.*)$/);
+if(b) doc.splitTextToSize(pdfTxt(b[1]),w-9).forEach((p,j)=>out.push((j?"\u0002":"\u0001")+p));
+else if(nm) doc.splitTextToSize(pdfTxt(nm[2]),w-12).forEach((p,j)=>out.push(j?"\u0003"+p:"\u0004"+nm[1]+"\t"+p));
+else doc.splitTextToSize(pdfTxt(line),w).forEach(p=>out.push(p)); });
+while(out.length&&out[out.length-1]==="") out.pop();
+return out.length?out:[""]; };
+const drawLines=(ls,x,top,center)=>{ let yy=top; ls.forEach(t=>{ if(t===""){ yy+=GAPH; return; }
+const c=t.charCodeAt(0);
+if(c===1){ doc.setFillColor(...TXT); doc.circle(x+2.2,yy-3,1.1,"F"); doc.text(t.slice(1),x+9,yy); }
+else if(c===2) doc.text(t.slice(1),x+9,yy);
+else if(c===3) doc.text(t.slice(1),x+12,yy);
+else if(c===4){ const [n,rest]=t.slice(1).split("\t"); doc.text(n,x,yy); doc.text(rest,x+12,yy); }
+else doc.text(t,x,yy,center?{align:"center"}:{});
+yy+=LH; }); };
   let y=0;
   const colHead=()=>{ rect(M,y,W,HEADH,BLK); font(9.5,true,WHT);
     REPORT_COLS.forEach(([h,,w],i)=>doc.text(h,i===0?xs[i]+w/2:xs[i]+5,y+13.5,i===0?{align:"center"}:{})); y+=HEADH; };
@@ -1708,17 +1731,36 @@ async function buildReportPDF(ps,filterText,oneCustomer){
   startPage(true);
   const showBands=groups.length>1;
   groups.forEach(g=>{
-    const cells=g.rows.map(({vals,late})=>{ const lines=vals.map((v,k)=>{ font(FS,k<2||(k===5&&late)); return k===0?[String(v)]:doc.splitTextToSize(pdfTxt(v),REPORT_COLS[k][2]-10); });
-      return {lines,late,h:Math.max(24,Math.max(...lines.map(l=>l.length))*LH+2*PADY-2)}; });
+    const cells=g.rows.map(({vals,late})=>{ const lines=vals.map((v,k)=>{ font(FS,k<2||(k===5&&late)); return k===0?[String(v)]:k===4?noteLines(v,REPORT_COLS[k][2]-10):doc.splitTextToSize(pdfTxt(v),REPORT_COLS[k][2]-10); });
+      return {lines,late,h:rowH(lines)}; });
     if(showBands){ if(y+30+(cells[0]?cells[0].h:0)>PH-BOTTOM) startPage(false);
       font(12,true); doc.text(pdfTxt(`${g.customer.toUpperCase()}   (${g.rows.length} open)`),M,y+21); hline(M,PW-M,y+27,RED,1.2); y+=27; }
-    cells.forEach(({lines,late,h},i)=>{
-      if(y+h>PH-BOTTOM) startPage(false);
-      if(i%2===1) rect(M,y,W,h,ZEB);
-      lines.forEach((ls,k)=>{ font(FS,k<2||(k===5&&late),k===5&&late?REDTXT:TXT); const w=REPORT_COLS[k][2];
-        const top=y+(h-ls.length*LH)/2+LH-2.8;
-        ls.forEach((t,j)=>doc.text(t,k===0?xs[k]+w/2:xs[k]+5,top+j*LH,k===0?{align:"center"}:{})); });
-      hline(M,PW-M,y+h,BOR,0.5); y+=h; });
+    const TABLE_TOP=BAND+3+18+10+HEADH;
+const drawRow=(lines,late,h,i)=>{
+if(i%2===1) rect(M,y,W,h,ZEB);
+lines.forEach((ls,k)=>{ font(FS,k<2||(k===5&&late),k===5&&late?REDTXT:TXT); const w=REPORT_COLS[k][2];
+const top=y+(h-hOf(ls))/2+LH-2.8;
+drawLines(ls,k===0?xs[k]+w/2:xs[k]+5,top,k===0); });
+hline(M,PW-M,y+h,BOR,0.5); y+=h; };
+cells.forEach(({lines,late,h},i)=>{
+if(y+h<=PH-BOTTOM){ drawRow(lines,late,h,i); return; }
+if(h<=PH-BOTTOM-TABLE_TOP){ startPage(false); drawRow(lines,late,h,i); return; }
+// Too tall for one page: continue the Next step note on the next page, breaking between paragraphs where possible.
+const others=Math.max(...lines.map((l,k)=>k===4?0:l.length));
+let rest=lines[4], first=true, guard=0;
+while(rest.length&&guard++<50){
+const avail=PH-BOTTOM-y-(2*PADY-2);
+let used=0,n=0,lastGap=-1;
+for(;n<rest.length;n++){ const a=rest[n]===""?GAPH:LH; if(used+a>avail) break; used+=a; if(rest[n]==="") lastGap=n; }
+if(n<rest.length&&lastGap>=Math.max(4,n/2)) n=lastGap;
+if(n<rest.length&&(n<4||(first&&n<others))&&y>TABLE_TOP){ startPage(false); continue; }
+const chunk=rest.slice(0,n); rest=rest.slice(n);
+while(chunk.length&&chunk[chunk.length-1]==="") chunk.pop(); while(rest.length&&rest[0]==="") rest.shift();
+font(FS,true);
+const part=first?lines.map((l,k)=>k===4?chunk:l):lines.map((l,k)=>k===0?l:k===1?doc.splitTextToSize(pdfTxt(l.join(" ")+" (continued)"),REPORT_COLS[1][2]-10):k===4?chunk:[""]);
+drawRow(part,late,rowH(part),i); first=false;
+if(rest.length) startPage(false);
+} });
     if(showBands) y+=8;
   });
   if(y+26>PH-BOTTOM) startPage(false);
